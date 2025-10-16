@@ -1,0 +1,265 @@
+// 校内二手物品交易平台数据库设计 - DBML版本
+// Database Markup Language for Second-hand Trading Platform
+
+Project SecondHandTradingPlatform {
+  database_type: 'MySQL'
+  Note: '''
+    # 校内二手物品交易平台数据库
+    设计用于大学校园内的二手物品交易系统
+    支持用户管理、商品发布、交易流程、消息沟通等功能
+  '''
+}
+
+// 1. 用户表
+Table user {
+  user_id int [pk, increment, note: '用户唯一标识']
+  student_id varchar(20) [unique, not null, note: '学号']
+  username varchar(50) [unique, not null, note: '用户名']
+  password varchar(255) [not null, note: '密码(加密存储)']
+  real_name varchar(50) [not null, note: '真实姓名']
+  phone varchar(11) [not null, note: '手机号']
+  email varchar(100) [not null, note: '邮箱']
+  avatar varchar(255) [note: '头像URL']
+  credit_score int [default: 100, note: '信用评分(0-100)']
+  registration_date datetime [default: `CURRENT_TIMESTAMP`, note: '注册时间']
+  last_login datetime [note: '最后登录时间']
+  status user_status [default: 'active', note: '账户状态']
+  
+  Note: '用户基本信息表，支持学号认证'
+}
+
+// 2. 分类表
+Table category {
+  category_id int [pk, increment, note: '分类唯一标识']
+  category_name varchar(50) [not null, note: '分类名称']
+  parent_category_id int [note: '父分类ID，支持多级分类']
+  description text [note: '分类描述']
+  icon varchar(255) [note: '分类图标URL']
+  sort_order int [default: 0, note: '排序顺序']
+  
+  Note: '商品分类表，支持层级分类'
+}
+
+// 3. 商品表
+Table item {
+  item_id int [pk, increment, note: '商品唯一标识']
+  user_id int [not null, ref: > user.user_id, note: '发布用户ID']
+  category_id int [not null, ref: > category.category_id, note: '商品分类ID']
+  title varchar(100) [not null, note: '商品标题']
+  description text [not null, note: '商品描述']
+  price decimal(10,2) [not null, note: '价格']
+  original_price decimal(10,2) [note: '原价']
+  condition_level condition_enum [not null, note: '新旧程度']
+  images json [note: '商品图片URLs(JSON数组)']
+  location varchar(100) [not null, note: '交易地点']
+  publish_date datetime [default: `CURRENT_TIMESTAMP`, note: '发布时间']
+  update_date datetime [default: `CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`, note: '更新时间']
+  status item_status [default: 'available', note: '商品状态']
+  view_count int [default: 0, note: '浏览次数']
+  
+  indexes {
+    user_id [name: 'idx_user_id']
+    category_id [name: 'idx_category_id']
+    status [name: 'idx_status']
+    publish_date [name: 'idx_publish_date']
+    (title, description) [type: fulltext, name: 'idx_title_desc']
+  }
+  
+  Note: '商品信息表，存储所有发布的二手商品'
+}
+
+// 4. 地址表
+Table address {
+  address_id int [pk, increment, note: '地址唯一标识']
+  user_id int [not null, ref: > user.user_id, note: '用户ID']
+  recipient_name varchar(50) [not null, note: '收件人姓名']
+  phone varchar(11) [not null, note: '联系电话']
+  province varchar(20) [not null, note: '省份']
+  city varchar(20) [not null, note: '城市']
+  district varchar(20) [not null, note: '区县']
+  detailed_address varchar(200) [not null, note: '详细地址']
+  postal_code varchar(6) [note: '邮政编码']
+  is_default boolean [default: false, note: '是否默认地址']
+  address_type address_type_enum [default: 'dormitory', note: '地址类型']
+  
+  indexes {
+    user_id [name: 'idx_user_id']
+  }
+  
+  Note: '用户收货地址表'
+}
+
+// 5. 订单表
+Table order {
+  order_id int [pk, increment, note: '订单唯一标识']
+  order_number varchar(32) [unique, not null, note: '订单编号']
+  buyer_id int [not null, ref: > user.user_id, note: '买家用户ID']
+  seller_id int [not null, ref: > user.user_id, note: '卖家用户ID']
+  item_id int [not null, ref: > item.item_id, note: '商品ID']
+  address_id int [not null, ref: > address.address_id, note: '收货地址ID']
+  total_amount decimal(10,2) [not null, note: '订单总金额']
+  payment_method payment_method_enum [not null, note: '支付方式']
+  payment_status payment_status_enum [default: 'pending', note: '支付状态']
+  delivery_method delivery_method_enum [not null, note: '交付方式']
+  order_status order_status_enum [default: 'pending_payment', note: '订单状态']
+  create_time datetime [default: `CURRENT_TIMESTAMP`, note: '创建时间']
+  payment_time datetime [note: '支付时间']
+  ship_time datetime [note: '发货时间']
+  complete_time datetime [note: '完成时间']
+  notes text [note: '订单备注']
+  
+  indexes {
+    buyer_id [name: 'idx_buyer_id']
+    seller_id [name: 'idx_seller_id']
+    item_id [name: 'idx_item_id']
+    order_status [name: 'idx_order_status']
+    create_time [name: 'idx_create_time']
+  }
+  
+  Note: '订单交易记录表'
+}
+
+// 6. 消息表
+Table message {
+  message_id int [pk, increment, note: '消息唯一标识']
+  sender_id int [not null, ref: > user.user_id, note: '发送者用户ID']
+  receiver_id int [not null, ref: > user.user_id, note: '接收者用户ID']
+  item_id int [not null, ref: > item.item_id, note: '相关商品ID']
+  content text [not null, note: '消息内容']
+  message_type message_type_enum [default: 'text', note: '消息类型']
+  send_time datetime [default: `CURRENT_TIMESTAMP`, note: '发送时间']
+  is_read boolean [default: false, note: '是否已读']
+  reply_to int [ref: > message.message_id, note: '回复的消息ID']
+  
+  indexes {
+    sender_id [name: 'idx_sender_id']
+    receiver_id [name: 'idx_receiver_id']
+    item_id [name: 'idx_item_id']
+    send_time [name: 'idx_send_time']
+    (sender_id, receiver_id, item_id) [name: 'idx_conversation']
+  }
+  
+  Note: '用户间消息沟通表'
+}
+
+// 7. 收藏表 (多对多关系表)
+Table wishlist {
+  wishlist_id int [pk, increment, note: '收藏记录唯一标识']
+  user_id int [not null, ref: > user.user_id, note: '用户ID']
+  item_id int [not null, ref: > item.item_id, note: '商品ID']
+  add_time datetime [default: `CURRENT_TIMESTAMP`, note: '收藏时间']
+  notes varchar(200) [note: '收藏备注']
+  
+  indexes {
+    user_id [name: 'idx_user_id']
+    item_id [name: 'idx_item_id']
+    add_time [name: 'idx_add_time']
+    (user_id, item_id) [unique, name: 'uk_user_item']
+  }
+  
+  Note: '用户收藏商品关系表'
+}
+
+// 8. 评价表
+Table review {
+  review_id int [pk, increment, note: '评价唯一标识']
+  order_id int [not null, ref: > order.order_id, note: '订单ID']
+  reviewer_id int [not null, ref: > user.user_id, note: '评价者用户ID']
+  reviewee_id int [not null, ref: > user.user_id, note: '被评价者用户ID']
+  rating int [not null, note: '评分(1-5)']
+  content text [note: '评价内容']
+  review_time datetime [default: `CURRENT_TIMESTAMP`, note: '评价时间']
+  
+  indexes {
+    reviewee_id [name: 'idx_reviewee_id']
+    review_time [name: 'idx_review_time']
+    (order_id, reviewer_id) [unique, name: 'uk_order_reviewer']
+  }
+  
+  Note: '交易后评价表'
+}
+
+// 枚举类型定义
+Enum user_status {
+  active [note: '活跃']
+  frozen [note: '冻结']
+  deleted [note: '已删除']
+}
+
+Enum condition_enum {
+  brand_new [note: '全新']
+  like_new [note: '几乎全新']
+  very_good [note: '非常好']
+  good [note: '良好']
+  acceptable [note: '可接受']
+}
+
+Enum item_status {
+  available [note: '在售']
+  sold [note: '已售出']
+  removed [note: '已下架']
+}
+
+Enum address_type_enum {
+  dormitory [note: '宿舍']
+  home [note: '家庭']
+  other [note: '其他']
+}
+
+Enum payment_method_enum {
+  alipay [note: '支付宝']
+  wechat [note: '微信支付']
+  cash [note: '现金']
+}
+
+Enum payment_status_enum {
+  pending [note: '待支付']
+  paid [note: '已支付']
+  refunded [note: '已退款']
+}
+
+Enum delivery_method_enum {
+  meet [note: '面交']
+  express [note: '快递']
+}
+
+Enum order_status_enum {
+  pending_payment [note: '待支付']
+  paid [note: '已支付']
+  shipped [note: '已发货']
+  completed [note: '已完成']
+  cancelled [note: '已取消']
+}
+
+Enum message_type_enum {
+  text [note: '文本']
+  image [note: '图片']
+}
+
+// 关系定义
+Ref: category.parent_category_id > category.category_id // 分类层级关系
+
+// 表组定义
+TableGroup user_management {
+  user
+  address
+  Note: '用户管理相关表'
+}
+
+TableGroup product_management {
+  category
+  item
+  wishlist
+  Note: '商品管理相关表'
+}
+
+TableGroup transaction_management {
+  order
+  review
+  Note: '交易管理相关表'
+}
+
+TableGroup communication {
+  message
+  Note: '沟通交流相关表'
+}
