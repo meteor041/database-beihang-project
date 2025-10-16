@@ -1,0 +1,10 @@
+[database]
+host = your_host_here
+port = 3306
+database = your_database_here
+username = your_username_here
+password = your_password_here
+
+[ssl]
+ca_file = pem/ca-bundle.pem
+check_hostname = false
