@@ -173,8 +173,8 @@
             >
               <div class="address-info">
                 <div class="address-header">
-                  <span class="recipient">{{ address.recipient_name }}</span>
-                  <span class="phone">{{ address.phone }}</span>
+                  <span class="recipient">{{ address.receiver_name }}</span>
+                  <span class="phone">{{ address.receiver_phone }}</span>
                   <span v-if="address.is_default" class="default-badge">默认</span>
                 </div>
                 <div class="address-detail">
@@ -294,6 +294,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { itemAPI, addressAPI, orderAPI } from '@/api'
+import type { Item, Address, OrderStatistics } from '@/types'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -302,7 +303,6 @@ const activeTab = ref('info')
 const updating = ref(false)
 const updateMessage = ref('')
 
-// 用户信息表单
 const userForm = ref({
   student_id: '',
   username: '',
@@ -311,16 +311,14 @@ const userForm = ref({
   email: ''
 })
 
-// 我的商品
-const myItems = ref([])
+const myItems = ref<Item[]>([])
 const itemsLoading = ref(false)
 const itemStatus = ref('available')
 
-// 地址管理
-const addresses = ref([])
+const addresses = ref<Address[]>([])
 const addressesLoading = ref(false)
 const showAddressModal = ref(false)
-const editingAddress = ref(null)
+const editingAddress = ref<Address | null>(null)
 const addressForm = ref({
   recipient_name: '',
   phone: '',
@@ -331,8 +329,18 @@ const addressForm = ref({
   is_default: false
 })
 
-// 统计信息
-const stats = ref({})
+interface Stats {
+  buyer_stats?: {
+    total_orders?: number
+    total_spent?: number
+  }
+  seller_stats?: {
+    total_sales?: number
+    total_earned?: number
+  }
+}
+
+const stats = ref<any>({})
 
 const currentUser = computed(() => userStore.currentUser)
 
@@ -343,17 +351,17 @@ const tabs = [
   { key: 'stats', label: '统计信息' }
 ]
 
-const statusMap = {
+const statusMap: Record<string, string> = {
   'available': '在售',
   'sold': '已售出',
   'removed': '已下架'
 }
 
-const getStatusText = (status: string) => {
+const getStatusText = (status: string): string => {
   return statusMap[status] || status
 }
 
-const initUserForm = () => {
+const initUserForm = (): void => {
   if (currentUser.value) {
     userForm.value = {
       student_id: currentUser.value.student_id || '',
@@ -365,9 +373,9 @@ const initUserForm = () => {
   }
 }
 
-const switchTab = (tab: string) => {
+const switchTab = (tab: string): void => {
   activeTab.value = tab
-  
+
   switch (tab) {
     case 'items':
       loadMyItems()
@@ -381,13 +389,13 @@ const switchTab = (tab: string) => {
   }
 }
 
-const updateUserInfo = async () => {
+const updateUserInfo = async (): Promise<void> => {
   updating.value = true
   updateMessage.value = ''
 
   try {
     const result = await userStore.updateUserInfo(userForm.value)
-    
+
     if (result.success) {
       updateMessage.value = '信息更新成功'
     } else {
@@ -400,7 +408,7 @@ const updateUserInfo = async () => {
   }
 }
 
-const loadMyItems = async () => {
+const loadMyItems = async (): Promise<void> => {
   if (!currentUser.value) return
 
   itemsLoading.value = true
@@ -418,15 +426,15 @@ const loadMyItems = async () => {
   }
 }
 
-const viewItem = (itemId: number) => {
+const viewItem = (itemId: number): void => {
   router.push(`/items/${itemId}`)
 }
 
-const editItem = (itemId: number) => {
+const editItem = (itemId: number): void => {
   router.push(`/items/${itemId}/edit`)
 }
 
-const loadAddresses = async () => {
+const loadAddresses = async (): Promise<void> => {
   if (!currentUser.value) return
 
   addressesLoading.value = true
@@ -440,22 +448,11 @@ const loadAddresses = async () => {
   }
 }
 
-interface Address {
-  address_id: number
-  recipient_name: string
-  phone: string
-  province: string
-  city: string
-  district: string
-  detailed_address: string
-  is_default: boolean
-}
-
-const editAddress = (address: Address) => {
+const editAddress = (address: Address): void => {
   editingAddress.value = address
   addressForm.value = {
-    recipient_name: address.recipient_name,
-    phone: address.phone,
+    recipient_name: address.receiver_name,
+    phone: address.receiver_phone,
     province: address.province,
     city: address.city,
     district: address.district,
@@ -465,7 +462,7 @@ const editAddress = (address: Address) => {
   showAddressModal.value = true
 }
 
-const closeAddressModal = () => {
+const closeAddressModal = (): void => {
   showAddressModal.value = false
   editingAddress.value = null
   addressForm.value = {
@@ -479,11 +476,19 @@ const closeAddressModal = () => {
   }
 }
 
-const saveAddress = async () => {
+const saveAddress = async (): Promise<void> => {
+  if (!currentUser.value) return
+
   try {
     const addressData = {
-      ...addressForm.value,
-      user_id: currentUser.value.user_id
+      receiver_name: addressForm.value.recipient_name,
+      receiver_phone: addressForm.value.phone,
+      province: addressForm.value.province,
+      city: addressForm.value.city,
+      district: addressForm.value.district,
+      detailed_address: addressForm.value.detailed_address,
+      address_type: 'other' as const,
+      is_default: addressForm.value.is_default
     }
 
     if (editingAddress.value) {
@@ -500,7 +505,9 @@ const saveAddress = async () => {
   }
 }
 
-const setDefaultAddress = async (addressId: number) => {
+const setDefaultAddress = async (addressId: number): Promise<void> => {
+  if (!currentUser.value) return
+
   try {
     await addressAPI.setDefaultAddress(addressId, {
       user_id: currentUser.value.user_id
@@ -512,8 +519,8 @@ const setDefaultAddress = async (addressId: number) => {
   }
 }
 
-const deleteAddress = async (addressId: number) => {
-  if (!confirm('确定要删除这个地址吗？')) {
+const deleteAddress = async (addressId: number): Promise<void> => {
+  if (!confirm('确定要删除这个地址吗?') || !currentUser.value) {
     return
   }
 
@@ -528,14 +535,14 @@ const deleteAddress = async (addressId: number) => {
   }
 }
 
-const loadStats = async () => {
+const loadStats = async (): Promise<void> => {
   if (!currentUser.value) return
 
   try {
     const response = await orderAPI.getOrderStatistics({
       user_id: currentUser.value.user_id
     })
-    stats.value = response
+    stats.value = response.data || {}
   } catch (error) {
     console.error('Failed to load stats:', error)
   }

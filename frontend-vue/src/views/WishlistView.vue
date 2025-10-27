@@ -73,28 +73,28 @@
           </button>
         </div>
 
-        <div class="item-image" @click="goToItem(item.item_id)">
-          <img 
-            :src="item.images && item.images[0] ? item.images[0] : '/placeholder.jpg'" 
-            :alt="item.title"
+        <div class="item-image" @click="item.item && goToItem(item.item.item_id)">
+          <img
+            :src="item.item?.images && item.item.images[0] ? item.item.images[0] : '/placeholder.jpg'"
+            :alt="item.item?.title"
           />
-          <div v-if="item.status !== 'available'" class="status-overlay">
-            {{ getStatusText(item.status) }}
+          <div v-if="item.item && item.item.status !== 'available'" class="status-overlay">
+            {{ getStatusText(item.item.status) }}
           </div>
         </div>
 
         <div class="item-info">
-          <h3 @click="goToItem(item.item_id)">{{ item.title }}</h3>
+          <h3 @click="item.item && goToItem(item.item.item_id)">{{ item.item?.title }}</h3>
           <div class="item-details">
-            <span class="item-price">¥{{ item.price }}</span>
-            <span class="item-condition">{{ getConditionText(item.condition_level) }}</span>
+            <span class="item-price">¥{{ item.item?.price }}</span>
+            <span class="item-condition">{{ item.item && getConditionText(item.item.condition_level) }}</span>
           </div>
           <div class="item-meta">
-            <span class="item-seller">{{ item.seller_name }}</span>
-            <span class="item-category">{{ item.category_name }}</span>
+            <span class="item-seller">{{ item.item?.username }}</span>
+            <span class="item-category">{{ item.item?.category_name }}</span>
           </div>
           <div class="wishlist-info">
-            <span class="add-time">收藏于 {{ formatDate(item.add_time) }}</span>
+            <span class="add-time">收藏于 {{ formatDate(item.wishlist_date) }}</span>
             <div v-if="item.notes" class="notes">
               备注：{{ item.notes }}
             </div>
@@ -102,8 +102,8 @@
         </div>
 
         <div class="item-actions">
-          <button 
-            v-if="item.status === 'available'"
+          <button
+            v-if="item.item && item.item.status === 'available'"
             @click="contactSeller(item)"
             class="contact-btn"
           >
@@ -166,14 +166,15 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { wishlistAPI, itemAPI } from '@/api'
+import type { Wishlist, Category } from '@/types'
 
 const router = useRouter()
 const userStore = useUserStore()
 
-const wishlistItems = ref([])
-const categories = ref([])
+const wishlistItems = ref<Wishlist[]>([])
+const categories = ref<Category[]>([])
 const loading = ref(false)
-const selectedItems = ref([])
+const selectedItems = ref<number[]>([])
 const pagination = ref({
   page: 1,
   limit: 20,
@@ -181,22 +182,20 @@ const pagination = ref({
   pages: 0
 })
 
-// 筛选和排序参数
 const selectedCategory = ref('')
 const sortBy = ref('add_time')
 const sortOrder = ref('DESC')
 const page = ref(1)
 
-// 编辑备注相关
 const showNotesModal = ref(false)
-const editingItem = ref(null)
+const editingItem = ref<Wishlist | null>(null)
 const editingNotes = ref('')
 
 const isAllSelected = computed(() => {
   return wishlistItems.value.length > 0 && selectedItems.value.length === wishlistItems.value.length
 })
 
-const conditionMap = {
+const conditionMap: Record<string, string> = {
   'brand_new': '全新',
   'like_new': '几乎全新',
   'very_good': '非常好',
@@ -204,25 +203,25 @@ const conditionMap = {
   'acceptable': '可接受'
 }
 
-const statusMap = {
+const statusMap: Record<string, string> = {
   'available': '在售',
   'sold': '已售出',
   'removed': '已下架'
 }
 
-const getConditionText = (condition: string) => {
+const getConditionText = (condition: string): string => {
   return conditionMap[condition] || condition
 }
 
-const getStatusText = (status: string) => {
+const getStatusText = (status: string): string => {
   return statusMap[status] || status
 }
 
-const formatDate = (dateString: string) => {
+const formatDate = (dateString: string): string => {
   return new Date(dateString).toLocaleDateString('zh-CN')
 }
 
-const loadCategories = async () => {
+const loadCategories = async (): Promise<void> => {
   try {
     const response = await itemAPI.getCategories()
     categories.value = response.categories || []
@@ -231,8 +230,8 @@ const loadCategories = async () => {
   }
 }
 
-const loadWishlist = async () => {
-  if (!userStore.isLoggedIn) {
+const loadWishlist = async (): Promise<void> => {
+  if (!userStore.isLoggedIn || !userStore.currentUser) {
     router.push('/login')
     return
   }
@@ -252,9 +251,7 @@ const loadWishlist = async () => {
 
     const response = await wishlistAPI.getWishlist(userStore.currentUser.user_id, params)
     wishlistItems.value = response.wishlist || []
-    pagination.value = response.pagination || pagination.value
-    
-    // 清空选择
+
     selectedItems.value = []
   } catch (error) {
     console.error('Failed to load wishlist:', error)
@@ -263,7 +260,7 @@ const loadWishlist = async () => {
   }
 }
 
-const changePage = (newPage: number) => {
+const changePage = (newPage: number): void => {
   if (newPage >= 1 && newPage <= pagination.value.pages) {
     page.value = newPage
     loadWishlist()
@@ -332,44 +329,33 @@ const goToItem = (itemId: number) => {
   router.push(`/items/${itemId}`)
 }
 
-interface WishlistItem {
-  item_id: number
-  seller_id: number
-  title: string
-  price: number
-  image_url: string
-  notes?: string
-  added_at: string
+const contactSeller = (item: Wishlist): void => {
+  if (!item.item) return
+  router.push(`/messages?user_id=${item.item.user_id}&item_id=${item.item_id}`)
 }
 
-const contactSeller = (item: WishlistItem) => {
-  router.push(`/messages?user_id=${item.seller_id}&item_id=${item.item_id}`)
-}
-
-const editNotes = (item: WishlistItem) => {
+const editNotes = (item: Wishlist): void => {
   editingItem.value = item
   editingNotes.value = item.notes || ''
   showNotesModal.value = true
 }
 
-const closeNotesModal = () => {
+const closeNotesModal = (): void => {
   showNotesModal.value = false
   editingItem.value = null
   editingNotes.value = ''
 }
 
-const saveNotes = async () => {
+const saveNotes = async (): Promise<void> => {
   if (!editingItem.value) return
 
   try {
     await wishlistAPI.updateWishlistNotes(editingItem.value.wishlist_id, {
-      user_id: userStore.currentUser.user_id,
       notes: editingNotes.value
     })
 
-    // 更新本地数据
-    const index = wishlistItems.value.findIndex(item => item.wishlist_id === editingItem.value.wishlist_id)
-    if (index !== -1) {
+    const index = wishlistItems.value.findIndex(item => item.wishlist_id === editingItem.value?.wishlist_id)
+    if (index !== -1 && editingItem.value && wishlistItems.value[index]) {
       wishlistItems.value[index].notes = editingNotes.value
     }
 

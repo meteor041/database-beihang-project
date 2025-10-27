@@ -185,7 +185,7 @@ export const messageAPI = {
   getConversations: (userId: number): Promise<ConversationsResponse> =>
     api.get(`/messages/conversations/${userId}`),
 
-  getConversationMessages: (params: { user_id: number; other_user_id: number; item_id?: number }): Promise<MessagesResponse> =>
+  getConversationMessages: (params: { user_id: number; other_user_id: number; item_id?: number; page?: number; limit?: number }): Promise<MessagesResponse> =>
     api.get('/messages/conversation', { params }),
 
   markMessageRead: (messageId: number, data: any): Promise<ApiResponse> =>

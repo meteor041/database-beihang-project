@@ -32,15 +32,33 @@ const router = createRouter({
       component: () => import('../views/ItemDetailView.vue'),
     },
     {
+      path: '/items/:id/edit',
+      name: 'item-edit',
+      component: () => import('../views/ItemEditView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/publish',
       name: 'publish',
       component: () => import('../views/PublishView.vue'),
       meta: { requiresAuth: true }
     },
     {
+      path: '/order/create',
+      name: 'checkout',
+      component: () => import('../views/CheckoutView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/orders',
       name: 'orders',
       component: () => import('../views/OrdersView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/orders/:id',
+      name: 'order-detail',
+      component: () => import('../views/OrderDetailView.vue'),
       meta: { requiresAuth: true }
     },
     {

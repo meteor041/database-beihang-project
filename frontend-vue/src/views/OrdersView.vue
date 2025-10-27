@@ -30,7 +30,7 @@
         <div class="order-header">
           <div class="order-info">
             <span class="order-number">订单号：{{ order.order_number }}</span>
-            <span class="order-date">{{ formatDate(order.create_time) }}</span>
+            <span class="order-date">{{ formatDate(order.order_date) }}</span>
           </div>
           <div class="order-status">
             <span :class="['status-badge', getStatusClass(order.order_status)]">
