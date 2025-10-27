@@ -168,10 +168,26 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { itemAPI } from '@/api'
 
+interface Category {
+  category_id: number
+  category_name: string
+}
+
+interface PublishForm {
+  title: string
+  category_id: string
+  price: string
+  original_price: string
+  condition_level: string
+  location: string
+  description: string
+  images: string[]
+}
+
 const router = useRouter()
 const userStore = useUserStore()
 
-const form = ref({
+const form = ref<PublishForm>({
   title: '',
   category_id: '',
   price: '',
@@ -182,13 +198,13 @@ const form = ref({
   images: []
 })
 
-const categories = ref([])
+const categories = ref<Category[]>([])
 const loading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
-const fileInput = ref(null)
+const fileInput = ref<HTMLInputElement | null>(null)
 
-const loadCategories = async () => {
+const loadCategories = async (): Promise<void> => {
   try {
     const response = await itemAPI.getCategories()
     categories.value = response.categories || []
@@ -197,13 +213,14 @@ const loadCategories = async () => {
   }
 }
 
-const triggerFileInput = () => {
+const triggerFileInput = (): void => {
   fileInput.value?.click()
 }
 
-const handleImageUpload = (event) => {
-  const files = Array.from(event.target.files)
-  
+const handleImageUpload = (event: Event): void => {
+  const target = event.target as HTMLInputElement
+  const files = Array.from(target.files || [])
+
   if (form.value.images.length + files.length > 9) {
     errorMessage.value = '最多只能上传9张图片'
     return
@@ -217,52 +234,53 @@ const handleImageUpload = (event) => {
 
     const reader = new FileReader()
     reader.onload = (e) => {
-      form.value.images.push(e.target.result)
+      if (e.target?.result) {
+        form.value.images.push(e.target.result as string)
+      }
     }
     reader.readAsDataURL(file)
   })
 
-  // 清空文件输入
-  event.target.value = ''
+  target.value = ''
 }
 
-const removeImage = (index) => {
+const removeImage = (index: number): void => {
   form.value.images.splice(index, 1)
 }
 
-const validateForm = () => {
+const validateForm = (): string | null => {
   if (!form.value.title.trim()) {
     return '请输入商品标题'
   }
-  
+
   if (!form.value.category_id) {
     return '请选择商品分类'
   }
-  
+
   if (!form.value.price || parseFloat(form.value.price) <= 0) {
     return '请输入有效的售价'
   }
-  
+
   if (form.value.original_price && parseFloat(form.value.original_price) < parseFloat(form.value.price)) {
     return '原价不能低于售价'
   }
-  
+
   if (!form.value.condition_level) {
     return '请选择商品成色'
   }
-  
+
   if (!form.value.location.trim()) {
     return '请输入交易地点'
   }
-  
+
   if (!form.value.description.trim()) {
     return '请输入商品描述'
   }
-  
+
   return null
 }
 
-const handlePublish = async () => {
+const handlePublish = async (): Promise<void> => {
   const validationError = validateForm()
   if (validationError) {
     errorMessage.value = validationError
@@ -292,22 +310,23 @@ const handlePublish = async () => {
     }
 
     const response = await itemAPI.createItem(publishData)
-    
+
     if (response.item_id) {
       successMessage.value = '商品发布成功！即将跳转到商品详情页...'
       setTimeout(() => {
         router.push(`/items/${response.item_id}`)
       }, 2000)
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Failed to publish item:', error)
-    errorMessage.value = error.response?.data?.error || '发布失败，请重试'
+    const err = error as { response?: { data?: { error?: string } } }
+    errorMessage.value = err.response?.data?.error || '发布失败，请重试'
   } finally {
     loading.value = false
   }
 }
 
-const resetForm = () => {
+const resetForm = (): void => {
   form.value = {
     title: '',
     category_id: '',

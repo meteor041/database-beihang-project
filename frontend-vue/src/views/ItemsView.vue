@@ -126,21 +126,28 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { itemAPI } from '@/api'
+import type { Item, Category } from '@/types'
+
+interface Pagination {
+  page: number
+  limit: number
+  total: number
+  pages: number
+}
 
 const router = useRouter()
 const route = useRoute()
 
-const items = ref([])
-const categories = ref([])
+const items = ref<Item[]>([])
+const categories = ref<Category[]>([])
 const loading = ref(false)
-const pagination = ref({
+const pagination = ref<Pagination>({
   page: 1,
   limit: 20,
   total: 0,
   pages: 0
 })
 
-// 搜索和筛选参数
 const searchKeyword = ref('')
 const selectedCategory = ref('')
 const minPrice = ref('')
@@ -149,7 +156,7 @@ const sortBy = ref('publish_date')
 const sortOrder = ref('DESC')
 const page = ref(1)
 
-const conditionMap = {
+const conditionMap: Record<string, string> = {
   'brand_new': '全新',
   'like_new': '几乎全新',
   'very_good': '非常好',
@@ -157,7 +164,7 @@ const conditionMap = {
   'acceptable': '可接受'
 }
 
-const getConditionText = (condition: string) => {
+const getConditionText = (condition: string): string => {
   return conditionMap[condition] || condition
 }
 
@@ -194,7 +201,7 @@ const loadItems = async () => {
   }
 }
 
-const handleSearch = async () => {
+const handleSearch = async (): Promise<void> => {
   if (!searchKeyword.value.trim()) {
     loadItems()
     return
@@ -202,7 +209,7 @@ const handleSearch = async () => {
 
   loading.value = true
   try {
-    const params: Record<string, string | number> = {
+    const params: any = {
       keyword: searchKeyword.value,
       page: 1,
       limit: pagination.value.limit,
@@ -230,19 +237,19 @@ const handleSearch = async () => {
   }
 }
 
-const applyFilters = () => {
+const applyFilters = (): void => {
   page.value = 1
   handleSearch()
 }
 
-const changePage = (newPage: number) => {
+const changePage = (newPage: number): void => {
   if (newPage >= 1 && newPage <= pagination.value.pages) {
     page.value = newPage
     loadItems()
   }
 }
 
-const goToItem = (itemId: number) => {
+const goToItem = (itemId: number): void => {
   router.push(`/items/${itemId}`)
 }
 

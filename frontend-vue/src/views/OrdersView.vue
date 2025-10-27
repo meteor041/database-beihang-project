@@ -116,22 +116,23 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { orderAPI } from '@/api'
+import type { Order } from '@/types'
 
 const router = useRouter()
 const userStore = useUserStore()
 
-const orders = ref([])
+const orders = ref<Order[]>([])
 const loading = ref(false)
-const activeTab = ref('buyer')
+const activeTab = ref<'buyer' | 'seller'>('buyer')
 const page = ref(1)
 const limit = ref(10)
 
 const tabs = [
-  { key: 'buyer', label: '我买到的' },
-  { key: 'seller', label: '我卖出的' }
+  { key: 'buyer' as const, label: '我买到的' },
+  { key: 'seller' as const, label: '我卖出的' }
 ]
 
-const statusMap = {
+const statusMap: Record<string, string> = {
   'pending_payment': '待支付',
   'paid': '已支付',
   'shipped': '已发货',
@@ -139,18 +140,18 @@ const statusMap = {
   'cancelled': '已取消'
 }
 
-const paymentMethodMap = {
+const paymentMethodMap: Record<string, string> = {
   'alipay': '支付宝',
   'wechat': '微信支付',
   'cash': '现金支付'
 }
 
-const getStatusText = (status: string) => {
+const getStatusText = (status: string): string => {
   return statusMap[status] || status
 }
 
-const getStatusClass = (status: string) => {
-  const classMap = {
+const getStatusClass = (status: string): string => {
+  const classMap: Record<string, string> = {
     'pending_payment': 'pending',
     'paid': 'paid',
     'shipped': 'shipped',
@@ -160,40 +161,28 @@ const getStatusClass = (status: string) => {
   return classMap[status] || 'default'
 }
 
-const getPaymentMethodText = (method: string) => {
+const getPaymentMethodText = (method: string): string => {
   return paymentMethodMap[method] || method
 }
 
-const formatDate = (dateString: string) => {
+const formatDate = (dateString: string): string => {
   return new Date(dateString).toLocaleString('zh-CN')
 }
 
-interface Order {
-  order_id: number
-  order_status: string
-  item_title: string
-  item_price: number
-  quantity: number
-  total_amount: number
-  created_at: string
-  buyer_name?: string
-  seller_name?: string
+const canCancel = (order: Order): boolean => {
+  return order.order_status === 'pending'
 }
 
-const canCancel = (order: Order) => {
-  return order.order_status === 'pending_payment'
+const canPay = (order: Order): boolean => {
+  return order.order_status === 'pending' && activeTab.value === 'buyer'
 }
 
-const canPay = (order: Order) => {
-  return order.order_status === 'pending_payment' && activeTab.value === 'buyer'
-}
-
-const canConfirm = (order: Order) => {
+const canConfirm = (order: Order): boolean => {
   return order.order_status === 'shipped' && activeTab.value === 'buyer'
 }
 
-const loadOrders = async (newPage = 1) => {
-  if (!userStore.isLoggedIn) {
+const loadOrders = async (newPage = 1): Promise<void> => {
+  if (!userStore.isLoggedIn || !userStore.currentUser) {
     router.push('/login')
     return
   }
@@ -207,7 +196,7 @@ const loadOrders = async (newPage = 1) => {
       page: page.value,
       limit: limit.value
     })
-    
+
     orders.value = response.orders || []
   } catch (error) {
     console.error('Failed to load orders:', error)
@@ -216,14 +205,14 @@ const loadOrders = async (newPage = 1) => {
   }
 }
 
-const switchTab = (tab: string) => {
+const switchTab = (tab: 'buyer' | 'seller'): void => {
   activeTab.value = tab
   page.value = 1
   loadOrders()
 }
 
-const cancelOrder = async (orderId: number) => {
-  if (!confirm('确定要取消这个订单吗？')) {
+const cancelOrder = async (orderId: number): Promise<void> => {
+  if (!confirm('确定要取消这个订单吗?') || !userStore.currentUser) {
     return
   }
 
@@ -231,8 +220,7 @@ const cancelOrder = async (orderId: number) => {
     await orderAPI.cancelOrder(orderId, {
       user_id: userStore.currentUser.user_id
     })
-    
-    // 重新加载订单列表
+
     loadOrders(page.value)
   } catch (error) {
     console.error('Failed to cancel order:', error)
@@ -240,14 +228,15 @@ const cancelOrder = async (orderId: number) => {
   }
 }
 
-const payOrder = async (orderId: number) => {
+const payOrder = async (orderId: number): Promise<void> => {
+  if (!userStore.currentUser) return
+
   try {
     await orderAPI.updatePaymentStatus(orderId, {
       user_id: userStore.currentUser.user_id,
       payment_status: 'paid'
     })
-    
-    // 重新加载订单列表
+
     loadOrders(page.value)
     alert('支付成功！')
   } catch (error) {

@@ -4,321 +4,296 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**校内二手物品交易平台** (Campus Second-hand Trading Platform) - A full-stack web application for students to buy and sell second-hand items on campus. This is a database course project at Beihang University that emphasizes native SQL operations over ORM abstractions.
+**校内二手物品交易平台** (Campus Second-hand Trading Platform) - A full-stack database application project for Beihang University's Database Systems course. This system manages 6-8 entities (users, items, orders, messages, wishlist, addresses, categories) with complete CRUD operations using native SQL.
 
 **Tech Stack:**
-- **Backend:** Flask (Python) with PyMySQL
-- **Frontend:** Vue 3 + TypeScript + Vite + Pinia
-- **Database:** Huawei Cloud GaussDB (MySQL-compatible)
+- **Frontend**: Vue 3 + TypeScript + Vite + Pinia + Element Plus
+- **Backend**: Python Flask with raw SQL (no ORM)
+- **Database**: Huawei Cloud GaussDB (for MySQL) with SSL connection
+- **Node Version**: ^20.19.0 || >=22.12.0
+
+**Academic Constraints:**
+- **CRITICAL**: ALL database operations MUST use raw SQL queries (no ORM abstractions like Django filters)
+- High-level frameworks (like Django) are allowed ONLY for database connection
+- Stored procedures and triggers MUST be implemented in raw SQL
+- This is a 2-person team project with clear task division
 
 ## Project Structure
 
 ```
 .
-├── backend/              # Flask REST API server
-│   ├── app.py           # Main application entry point
-│   ├── db.py            # Database connection manager
-│   └── routes/          # API route blueprints (user, item, order, message, wishlist, address)
-├── frontend-vue/        # Vue 3 frontend application
+├── backend/                 # Main Flask backend (active)
+│   ├── app.py              # Flask app entry point with blueprint registration
+│   ├── db.py               # Database manager with connection pool & raw SQL execution
+│   └── routes/             # API route blueprints (6 modules)
+│       ├── user_routes.py      # User management (register, login, auth)
+│       ├── item_routes.py      # Item management (publish, browse, search)
+│       ├── order_routes.py     # Transaction management (create, pay, track)
+│       ├── message_routes.py   # Messaging system (send, receive, conversations)
+│       ├── wishlist_routes.py  # Wishlist management (add, remove, list)
+│       └── address_routes.py   # Address management (CRUD, default address)
+├── backend-new/            # Alternative backend structure (not in use)
+├── frontend-vue/           # Vue 3 SPA
 │   ├── src/
-│   │   ├── api/         # API client with axios
-│   │   ├── views/       # Page components
-│   │   ├── components/  # Reusable components
-│   │   ├── router/      # Vue Router configuration
-│   │   └── stores/      # Pinia state management
-│   └── package.json
-├── database/            # SQL schema and migrations
-│   └── database_schema.sql  # Complete database schema with 8 tables
-├── docs/                # Project documentation (in Chinese)
-├── test/                # API testing scripts
-└── config.ini.example   # Database configuration template
+│   │   ├── views/          # 16 core pages (Home, ItemDetail, Orders, etc.)
+│   │   ├── components/     # Reusable components (ItemCard, UserAvatar, etc.)
+│   │   ├── stores/         # Pinia stores (user, cart, message)
+│   │   ├── router/         # Vue Router configuration
+│   │   └── api/            # API client with axios interceptors
+│   └── package.json        # Frontend dependencies and scripts
+├── database/
+│   └── database_schema.sql # Complete DDL with constraints, indexes, triggers
+├── docs/                   # Project documentation (Chinese)
+│   ├── 功能模块定义.md      # Detailed functional requirements (6 modules)
+│   ├── 前端设计文档.md      # Frontend design specs (16 pages, API mapping)
+│   └── 数据流图.md          # Data flow diagrams (DFD 0-2 layers)
+├── test/
+│   └── try_api.py          # API testing script
+├── config.ini              # Database credentials (gitignored)
+├── config.ini.example      # Config template
+└── pem/
+    └── ca-bundle.pem       # SSL certificate for GaussDB
 ```
 
-## Critical Constraints
+## Common Commands
 
-### Database Operations Requirement
-**IMPORTANT:** This is a database course project with strict requirements:
-- **All database operations MUST use native SQL statements** - no ORM query builders allowed
-- DO NOT use high-level frameworks like Django ORM's `filter()`, SQLAlchemy query builders, etc.
-- Raw SQL is enforced for: SELECT, INSERT, UPDATE, DELETE, stored procedures, and triggers
-- The only exception: High-level frameworks can be used for initial table creation (e.g., Django models)
-
-### Current Implementation Pattern
-The codebase uses PyMySQL with raw SQL via the `DatabaseManager` class in [db.py](backend/db.py):
-- `execute_query()` - for SELECT operations (returns list of dicts)
-- `execute_insert()` - for INSERT operations (returns lastrowid)
-- `execute_update()` - for UPDATE/DELETE operations (returns rowcount)
-- All SQL uses parameterized queries with `%s` placeholders for security
-- A singleton instance `db_manager` is exported from [db.py](backend/db.py) and imported by all route modules
-
-## Database Architecture
-
-The system manages **8 core entities** (as required by the project):
-
-1. **user** - User accounts with student ID, credentials, credit scoring
-2. **category** - Two-level hierarchical product categories
-3. **item** - Product listings with pricing, images (JSON), condition levels
-4. **address** - User shipping addresses with default address support
-5. **order** - Transaction records with payment/delivery tracking
-6. **message** - User-to-user messaging tied to items
-7. **wishlist** - User favorites (many-to-many relationship)
-8. **review** - Post-transaction ratings (1-5 stars)
-
-**Key relationships:**
-- Orders link buyer, seller, item, and address
-- Messages create conversations between users about specific items
-- Credit scores update based on transaction completion (+5) or violations (-10)
-
-**See:** [database_schema.sql](database/database_schema.sql) for complete schema including indexes, constraints, and initial category data.
-
-## Development Commands
-
-### Backend Setup & Execution
-```bash
-# Setup (first time)
-cp config.ini.example config.ini
-# Edit config.ini with your GaussDB credentials
-
-# Install dependencies
-pip install flask flask-cors pymysql configparser
-
-# Run development server (http://localhost:5000)
-cd backend
-python app.py
-
-# Test database connection
-curl http://localhost:5000/api/health
-```
-
-### Frontend Setup & Execution
+### Frontend Development
 ```bash
 cd frontend-vue
-
-# Install dependencies
-npm install
-
-# Development server with hot reload (http://localhost:5173)
-npm run dev
-
-# Type checking
-npm run type-check
-
-# Production build
-npm run build
-
-# Lint and auto-fix
-npm run lint
-
-# Format code with Prettier
-npm run format
-
-# Run unit tests (Vitest)
-npm run test:unit
-
-# Run E2E tests (Playwright)
-npx playwright install  # First time only
-npm run test:e2e
-npm run test:e2e -- --project=chromium  # Specific browser
-npm run test:e2e -- tests/example.spec.ts  # Specific file
+npm install                  # Install dependencies
+npm run dev                  # Start dev server (localhost:5173)
+npm run build                # Production build with type checking
+npm run type-check           # TypeScript type checking only
+npm run lint                 # ESLint with auto-fix
+npm run format               # Prettier formatting
+npm run test:unit            # Run Vitest unit tests
+npm run test:e2e             # Run Playwright E2E tests
 ```
+
+### Backend Development
+```bash
+cd backend
+python3 app.py               # Start Flask server (localhost:5000)
+# The backend has no requirements.txt - manually install:
+pip3 install flask flask-cors pymysql
+```
+
+### Database Setup
+1. Copy `config.ini.example` to `config.ini` and fill in GaussDB credentials
+2. Ensure `pem/ca-bundle.pem` exists for SSL connection
+3. Execute `database/database_schema.sql` on GaussDB to create tables
 
 ### Testing
 ```bash
-# Backend API testing
+# Test backend API
 cd test
-python try_api.py
+python3 try_api.py
+
+# Test frontend in isolation
+cd frontend-vue
+npm run test:unit -- <test-file>  # Run specific test
+npm run test:e2e -- --debug       # Debug E2E tests
 ```
 
-## Backend Architecture
+## Architecture & Key Design Patterns
 
-### Request Flow
-1. Client request → Flask route (in `routes/`)
-2. Route validates input and extracts parameters
-3. Raw SQL query constructed with parameterized placeholders
-4. `db_manager` executes query via PyMySQL
-5. Results formatted as JSON response
+### Backend Architecture (Flask + Raw SQL)
 
-### Route Blueprints
-All routes registered in [app.py](backend/app.py) with `/api/` prefix:
-- `/api/users/*` - Registration, login, profile, credit scoring ([user_routes.py](backend/routes/user_routes.py))
-- `/api/items/*` - CRUD, search, categories, user's items ([item_routes.py](backend/routes/item_routes.py))
-- `/api/orders/*` - Create, status updates, payment, statistics ([order_routes.py](backend/routes/order_routes.py))
-- `/api/messages/*` - Send, conversations, mark read, unread counts ([message_routes.py](backend/routes/message_routes.py))
-- `/api/wishlist/*` - Add/remove favorites, statistics ([wishlist_routes.py](backend/routes/wishlist_routes.py))
-- `/api/addresses/*` - CRUD, default address management ([address_routes.py](backend/routes/address_routes.py))
+**Database Manager Pattern** ([backend/db.py](backend/db.py)):
+- `DatabaseManager` class handles connection pooling with context managers
+- Three execution methods:
+  - `execute_query(sql, params)` - SELECT queries returning dict list
+  - `execute_update(sql, params)` - UPDATE/DELETE returning row count
+  - `execute_insert(sql, params)` - INSERT returning last insert ID
+- Built-in utilities: `hash_password()`, `generate_order_number()`
+- SSL connection to GaussDB with certificate validation
 
-**Blueprint Naming Convention:**
-- Blueprint variable: `{feature}_bp` (e.g., `user_bp`, `item_bp`)
-- Blueprint name parameter: `'{feature}'` (e.g., `'user'`, `'item'`)
-- Example: `user_bp = Blueprint('user', __name__)`
+**Blueprint-based Routes** ([backend/app.py](backend/app.py)):
+- All routes organized into 6 blueprints with `/api/<resource>` prefix
+- CORS enabled for frontend communication
+- Health check endpoint: `GET /api/health`
 
-### Security Patterns
-- Passwords hashed with SHA-256 via `db_manager.hash_password()`
-- SQL injection prevention via parameterized queries
-- Input validation (email regex, phone regex, password strength)
-  - Helper functions in route files: `validate_email()`, `validate_phone()`, `validate_password()`
-- Soft deletes for users (status='deleted')
-- Account locking after 5 failed login attempts
-- Route guards in frontend for authenticated routes
-
-### Error Handling Pattern
-All route endpoints follow a consistent error handling pattern:
+**Raw SQL Enforcement**:
 ```python
-try:
-    # 1. Extract and validate request data
-    data = request.get_json()
-
-    # 2. Validate required fields
-    if not data.get('required_field'):
-        return jsonify({'error': 'Error message'}), 400
-
-    # 3. Execute SQL operations
-    result = db_manager.execute_query(sql, params)
-
-    # 4. Return success response
-    return jsonify({'data': result}), 200
-
-except Exception as e:
-    # 5. Catch-all error handler
-    return jsonify({'error': str(e)}), 500
-```
-
-## Frontend Architecture
-
-### State Management
-- **Pinia stores** in [src/stores/](frontend-vue/src/stores/): Global state for user auth, cart, etc.
-- **Local storage**: Persists user session and token
-
-### API Client
-Centralized axios instance in [src/api/index.ts](frontend-vue/src/api/index.ts):
-- Base URL: `http://localhost:5000/api`
-- Request interceptor: Adds `Authorization: Bearer <token>` from localStorage
-- Response interceptor: Extracts `response.data`, handles errors
-- Organized by feature: `userAPI`, `itemAPI`, `orderAPI`, `messageAPI`, `wishlistAPI`, `addressAPI`
-
-### Routing
-[src/router/index.ts](frontend-vue/src/router/index.ts) defines routes with:
-- `meta.requiresAuth` for protected routes
-- `beforeEach` guard redirects unauthenticated users to `/login`
-- Lazy loading for non-critical routes
-
-### Key Views
-- `/` - Home page with featured items
-- `/login`, `/register` - Authentication
-- `/items` - Product listing with search/filters
-- `/items/:id` - Product detail page
-- `/publish` - Create new listing (auth required)
-- `/orders`, `/messages`, `/wishlist`, `/profile` - User dashboard features
-
-## Common Development Patterns
-
-### Adding a New API Endpoint
-
-**Backend** ([backend/routes/](backend/routes/)):
-```python
-@blueprint_name.route('/example', methods=['POST'])
-def example_endpoint():
-    try:
-        data = request.get_json()
-
-        # Validate input
-        if not data.get('required_field'):
-            return jsonify({'error': 'Field required'}), 400
-
-        # Execute raw SQL (REQUIRED - no ORM!)
-        sql = """
-        SELECT column1, column2
-        FROM table_name
-        WHERE condition = %s
-        """
-        result = db_manager.execute_query(sql, (data['param'],))
-
-        return jsonify({'data': result}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-```
-
-**Frontend** ([frontend-vue/src/api/index.ts](frontend-vue/src/api/index.ts)):
-```typescript
-export const featureAPI = {
-  exampleMethod: (data: any) => api.post('/endpoint', data),
-  // GET with query params
-  getExample: (params: any) => api.get('/endpoint', { params })
-}
-```
-
-### Working with the Database
-
-**Configuration:**
-1. Copy `config.ini.example` to `config.ini`
-2. Update `[database]` section with GaussDB credentials
-3. Update `[ssl]` section - ca_file path points to `pem/ca-bundle.pem`
-
-**Connection Pattern:**
-```python
-# Preferred: Use helper methods on db_manager singleton
-result = db_manager.execute_query(sql, params)  # For SELECT
-user_id = db_manager.execute_insert(sql, params)  # For INSERT
-rows_affected = db_manager.execute_update(sql, params)  # For UPDATE/DELETE
-
-# Alternative: Direct context manager (for complex transactions)
-with db_manager.get_connection() as conn:
-    with conn.cursor() as cursor:
-        cursor.execute(sql, params)
-        conn.commit()  # For INSERT/UPDATE/DELETE
-        return cursor.fetchall()  # For SELECT
-```
-
-**Always use parameterized queries:**
-```python
-# CORRECT - parameterized with tuple
+# CORRECT - Use db_manager with raw SQL
 sql = "SELECT * FROM user WHERE user_id = %s"
 result = db_manager.execute_query(sql, (user_id,))
 
-# CORRECT - multiple parameters
-sql = "SELECT * FROM user WHERE username = %s OR phone = %s"
-result = db_manager.execute_query(sql, (username, phone))
-
-# WRONG - SQL injection vulnerability!
-sql = f"SELECT * FROM user WHERE user_id = {user_id}"
-
-# WRONG - String formatting (vulnerable)
-sql = "SELECT * FROM user WHERE user_id = {}".format(user_id)
+# WRONG - No ORM methods allowed
+user = User.objects.filter(user_id=user_id)  # NOT ALLOWED
 ```
 
-**Database Manager Utilities:**
-```python
-# Password hashing
-hashed = db_manager.hash_password(plain_password)
+### Frontend Architecture (Vue 3 Composition API)
 
-# Order number generation (32-char UUID without dashes)
-order_num = db_manager.generate_order_number()
-```
+**16 Core Pages** (see [docs/前端设计文档.md](docs/前端设计文档.md:50-577)):
+1. Home (`/`) - Item grid with infinite scroll
+2. Search (`/search`) - Multi-filter search with sidebar
+3. ItemDetail (`/item/:id`) - Full item info, seller card, recommendations
+4. Checkout (`/checkout`) - Order confirmation, address/payment selection
+5. Orders (`/orders`) - Order list with status tabs (buyer/seller views)
+6. OrderDetail (`/order/:id`) - Order timeline, logistics tracking
+7. Messages (`/messages`) - Split-pane chat interface
+8. Wishlist (`/wishlist`) - Favorited items with batch operations
+9. Addresses (`/addresses`) - Address CRUD with default management
+10. Profile (`/profile`) - User dashboard with statistics
+11. ProfileEdit (`/profile/edit`) - Avatar upload, info update
+12. Publish (`/publish`) - Item creation with image upload (max 9)
+13. MyItems (`/my-items`) - Seller's item management
+14. Login (`/login`) - Multi-method login (username/student_id/phone)
+15. Register (`/register`) - Student registration with validation
+16. UserProfile (`/user/:id`) - Public profile view
 
-## Project Documentation
+**State Management** (Pinia stores in [frontend-vue/src/stores/](frontend-vue/src/stores/)):
+- `user.ts` - Authentication state, login/logout actions
+- `cart.ts` - Checkout flow state (item, address, payment method)
+- `message.ts` - Conversations, unread count, real-time updates
 
-Detailed Chinese documentation in [docs/](docs/):
-- [功能模块定义.md](docs/功能模块定义.md) - Complete feature specifications for all 6 modules
-- [作业目标.md](docs/作业目标.md) - Project requirements and grading criteria
-- [数据流图.md](docs/数据流图.md) - Data flow diagrams
-- [任务流程.md](docs/任务流程.md) - Development workflow
+**API Client** ([frontend-vue/src/api/index.ts](docs/前端设计文档.md:703-784)):
+- Axios instance with request/response interceptors
+- JWT token auto-injection from localStorage
+- Centralized error handling with Element Plus messages
+- 6 API modules: `userAPI`, `itemAPI`, `orderAPI`, `messageAPI`, `wishlistAPI`, `addressAPI`
 
-## Node Version Requirement
+### Database Schema Design
 
-**Frontend requires Node.js:** `^20.19.0 || >=22.12.0` (specified in [frontend-vue/package.json](frontend-vue/package.json))
+**7 Core Tables** ([database/database_schema.sql](database/database_schema.sql)):
+1. `user` - Student accounts with credit scoring system
+2. `category` - Two-level hierarchy (parent_category_id self-reference)
+3. `item` - Items with JSON images array, condition levels (5 enums)
+4. `order` - Orders with status flow: pending → paid → shipped → completed
+5. `message` - User-to-user messaging with item context
+6. `wishlist` - Many-to-many user-item relationship with notes
+7. `address` - User addresses with default flag
 
-Use `nvm` or `fnm` to switch Node versions if needed:
+**Key Constraints**:
+- Credit score CHECK: 0-100 range
+- Phone regex: `^1[3-9][0-9]{9}$`
+- Email regex validation
+- Foreign keys with ON DELETE CASCADE/SET NULL
+- Indexes on high-frequency query columns
+
+**Status Enums**:
+- User status: active, frozen, deleted
+- Item status: available, sold, deleted
+- Item condition: brand_new, like_new, very_good, good, acceptable
+- Order status: pending, paid, shipped, completed, cancelled
+
+## Development Workflow
+
+### Adding a New API Endpoint
+
+1. **Database Layer** - Write raw SQL in appropriate route file:
+   ```python
+   # In backend/routes/user_routes.py
+   @user_bp.route('/<int:user_id>/stats', methods=['GET'])
+   def get_user_stats(user_id):
+       sql = """
+           SELECT
+               COUNT(DISTINCT i.item_id) as total_items,
+               COUNT(DISTINCT o.order_id) as total_orders
+           FROM user u
+           LEFT JOIN item i ON u.user_id = i.user_id
+           LEFT JOIN `order` o ON u.user_id = o.buyer_id
+           WHERE u.user_id = %s
+       """
+       result = db_manager.execute_query(sql, (user_id,))
+       return jsonify(result[0])
+   ```
+
+2. **Frontend API Client** - Add method to corresponding API module:
+   ```typescript
+   // In frontend-vue/src/api/index.ts
+   export const userAPI = {
+     // ... existing methods
+     getStats: (id) => api.get(`/users/${id}/stats`)
+   }
+   ```
+
+3. **Frontend Component** - Call API in Vue component:
+   ```vue
+   <script setup lang="ts">
+   import { userAPI } from '@/api'
+   const stats = await userAPI.getStats(userId)
+   </script>
+   ```
+
+### Modifying Database Schema
+
+1. Update `database/database_schema.sql` with ALTER statements
+2. Document changes in project report (required for course)
+3. Test with `test/try_api.py` to verify data integrity
+4. Update corresponding route handlers if columns changed
+
+### Testing API Endpoints
+
+Use the health check as a template:
 ```bash
-nvm use 22  # or nvm use 20.19
+curl http://localhost:5000/api/health
 ```
+
+For authenticated endpoints, include JWT token:
+```bash
+curl -H "Authorization: Bearer <token>" http://localhost:5000/api/users/1
+```
+
+## Academic Requirements Checklist
+
+This project must fulfill specific course requirements:
+
+**Database Design**:
+- ✅ 6-8 entities implemented (7 tables)
+- ✅ ER diagram provided in docs
+- ✅ Normalized to 3NF (documented in project report)
+- ✅ Indexes defined for performance
+
+**Functionality**:
+- ✅ Query (SELECT with JOIN, WHERE, ORDER BY)
+- ✅ Insert (user registration, item publishing)
+- ✅ Delete (soft delete with status update)
+- ✅ Update (item editing, order status changes)
+
+**SQL Constraints**:
+- ✅ Raw SQL only - NO ORM query builders
+- ✅ Stored procedures in database_schema.sql
+- ✅ Triggers for auto-updates (credit score, timestamps)
+
+**Project Artifacts**:
+- System design report (功能设计 + 数据库设计)
+- Implementation report (SQL statements + running results)
+- Source code with database dump
+- Live demo presentation
 
 ## Important Notes
 
-- **SSL Configuration:** Database connection uses SSL with CA certificate in `pem/ca-bundle.pem`
-- **CORS:** Enabled in Flask backend to allow frontend requests from different origin
-- **JSON Support:** MySQL `item.images` column uses JSON type to store image URL arrays
-- **Credit System:** Automated scoring affects user privileges (initial: 100, range: 0-100)
-- **Soft Deletes:** Users marked as `status='deleted'` instead of hard deletion
-- **Order Numbers:** Auto-generated 32-character UUIDs via `db_manager.generate_order_number()`
-- **Fulltext Search:** `item` table has fulltext index on title+description for search functionality
-- **Chinese Characters:** Flask configured with `JSON_AS_ASCII=False`, database uses `utf8mb4` charset
+### Security
+- Passwords hashed with SHA256 via `db_manager.hash_password()`
+- SQL injection prevention through parameterized queries (`%s` placeholders)
+- JWT tokens for session management
+- SSL/TLS for database connections
+
+### Performance Optimization
+- Database: Indexes on user_id, item_id, category_id, order_id
+- Frontend: Image lazy loading, route lazy loading, skeleton screens
+- API: Pagination for list endpoints (default 20 items per page)
+
+### Common Pitfalls
+1. **DO NOT** use Django ORM or SQLAlchemy query methods - violates course rules
+2. **DO NOT** commit `config.ini` with credentials to git
+3. **ALWAYS** use parameterized queries, never string concatenation for SQL
+4. **REMEMBER** to update both buyer and seller views when modifying order logic
+5. **CHECK** credit score constraints before updates (0-100 range)
+
+### File References in Code
+When discussing code locations, use markdown links:
+- Files: [app.py](backend/app.py)
+- Specific lines: [db.py:53-58](backend/db.py#L53-L58)
+- Ranges: [user_routes.py:10-25](backend/routes/user_routes.py#L10-L25)
+
+## Contact & Documentation
+
+- Frontend design details: [docs/前端设计文档.md](docs/前端设计文档.md)
+- Data flow diagrams: [docs/数据流图.md](docs/数据流图.md)
+- Functional requirements: [docs/功能模块定义.md](docs/功能模块定义.md)
+- Project objectives: [docs/作业目标.md](docs/作业目标.md)
+
+For course-specific questions, refer to [docs/作业目标.md](docs/作业目标.md) which contains the complete assignment specifications from the Database Systems course.

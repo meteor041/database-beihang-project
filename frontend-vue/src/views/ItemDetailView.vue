@@ -114,12 +114,13 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { itemAPI, wishlistAPI } from '@/api'
+import type { Item } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 
-const item = ref(null)
+const item = ref<Item | null>(null)
 const loading = ref(false)
 const currentImage = ref('')
 const isWishlisted = ref(false)
@@ -128,7 +129,7 @@ const wishlistLoading = ref(false)
 const isLoggedIn = computed(() => userStore.isLoggedIn)
 const currentUser = computed(() => userStore.currentUser)
 
-const conditionMap = {
+const conditionMap: Record<string, string> = {
   'brand_new': '全新',
   'like_new': '几乎全新',
   'very_good': '非常好',
@@ -136,11 +137,11 @@ const conditionMap = {
   'acceptable': '可接受'
 }
 
-const getConditionText = (condition: string) => {
+const getConditionText = (condition: string): string => {
   return conditionMap[condition] || condition
 }
 
-const loadItem = async () => {
+const loadItem = async (): Promise<void> => {
   const itemId = route.params.id
   if (!itemId) return
 
@@ -148,14 +149,12 @@ const loadItem = async () => {
   try {
     const response = await itemAPI.getItem(Number(itemId))
     item.value = response.item
-    
-    // 设置默认显示的图片
-    if (item.value.images && item.value.images.length > 0) {
-      currentImage.value = item.value.images[0]
+
+    if (item.value?.images && item.value.images.length > 0) {
+      currentImage.value = item.value.images[0] || ''
     }
 
-    // 检查收藏状态
-    if (isLoggedIn.value) {
+    if (isLoggedIn.value && item.value) {
       checkWishlistStatus()
     }
   } catch (error) {
@@ -165,22 +164,22 @@ const loadItem = async () => {
   }
 }
 
-const checkWishlistStatus = async () => {
-  if (!isLoggedIn.value || !item.value) return
+const checkWishlistStatus = async (): Promise<void> => {
+  if (!isLoggedIn.value || !item.value || !currentUser.value) return
 
   try {
     const response = await wishlistAPI.checkWishlistStatus({
       user_id: currentUser.value.user_id,
       item_id: item.value.item_id
     })
-    isWishlisted.value = response.is_favorited
+    isWishlisted.value = response.is_favorited || false
   } catch (error) {
     console.error('Failed to check wishlist status:', error)
   }
 }
 
-const toggleWishlist = async () => {
-  if (!isLoggedIn.value || !item.value) return
+const toggleWishlist = async (): Promise<void> => {
+  if (!isLoggedIn.value || !item.value || !currentUser.value) return
 
   wishlistLoading.value = true
   try {
@@ -204,23 +203,23 @@ const toggleWishlist = async () => {
   }
 }
 
-const contactSeller = () => {
+const contactSeller = (): void => {
   if (!isLoggedIn.value) {
     router.push('/login')
     return
   }
-  
-  // 跳转到消息页面，开始与卖家的对话
+
+  if (!item.value) return
   router.push(`/messages?user_id=${item.value.user_id}&item_id=${item.value.item_id}`)
 }
 
-const buyNow = () => {
+const buyNow = (): void => {
   if (!isLoggedIn.value) {
     router.push('/login')
     return
   }
-  
-  // 跳转到下单页面
+
+  if (!item.value) return
   router.push(`/order/create?item_id=${item.value.item_id}`)
 }
 

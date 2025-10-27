@@ -6,128 +6,212 @@
         <h1>校内二手物品交易平台</h1>
         <p>安全、便捷的校园二手交易平台，让闲置物品重新焕发价值</p>
         <div class="hero-actions">
-          <router-link to="/items" class="btn btn-primary">浏览商品</router-link>
-          <router-link v-if="isLoggedIn" to="/publish" class="btn btn-secondary">发布商品</router-link>
-          <router-link v-else to="/register" class="btn btn-secondary">立即注册</router-link>
+          <el-button type="primary" size="large" @click="router.push('/items')">
+            <el-icon><Search /></el-icon>
+            浏览商品
+          </el-button>
+          <el-button
+            v-if="isLoggedIn"
+            type="success"
+            size="large"
+            @click="router.push('/publish')"
+          >
+            <el-icon><Plus /></el-icon>
+            发布商品
+          </el-button>
+          <el-button
+            v-else
+            type="success"
+            size="large"
+            plain
+            @click="router.push('/register')"
+          >
+            <el-icon><UserFilled /></el-icon>
+            立即注册
+          </el-button>
         </div>
       </div>
     </section>
 
     <!-- 商品分类 -->
     <section class="categories">
-      <h2>商品分类</h2>
-      <div class="category-grid">
-        <div 
-          v-for="category in categories" 
-          :key="(category as any).category_id"
-          class="category-card"
-          @click="goToCategory(category.category_id)"
+      <h2>
+        <el-icon><Grid /></el-icon>
+        商品分类
+      </h2>
+
+      <el-row :gutter="20" v-loading="categoriesLoading">
+        <el-col
+          v-for="category in categories"
+          :key="category.category_id"
+          :xs="12"
+          :sm="8"
+          :md="6"
+          :lg="4"
         >
-          <div class="category-icon">📱</div>
-          <h3>{{ category.category_name }}</h3>
-          <p>{{ category.item_count }} 件商品</p>
-        </div>
-      </div>
+          <el-card
+            class="category-card"
+            shadow="hover"
+            @click="goToCategory(category.category_id)"
+          >
+            <div class="category-icon">📱</div>
+            <h3>{{ category.category_name }}</h3>
+            <p>{{ category.item_count || 0 }} 件商品</p>
+          </el-card>
+        </el-col>
+      </el-row>
+
+      <EmptyState
+        v-if="!categoriesLoading && categories.length === 0"
+        description="暂无分类数据"
+      />
     </section>
 
     <!-- 最新商品 -->
     <section class="latest-items">
       <div class="section-header">
-        <h2>最新商品</h2>
-        <router-link to="/items" class="view-all">查看全部</router-link>
+        <h2>
+          <el-icon><Clock /></el-icon>
+          最新商品
+        </h2>
+        <el-link type="primary" @click="router.push('/items')">
+          查看全部 <el-icon><ArrowRight /></el-icon>
+        </el-link>
       </div>
-      <div class="items-grid">
-        <div 
-          v-for="item in latestItems" 
-          :key="item.item_id"
-          class="item-card"
-          @click="goToItem(item.item_id)"
-        >
-          <div class="item-image">
-            <img 
-              :src="item.images && item.images[0] ? item.images[0] : '/placeholder.jpg'" 
-              :alt="item.title"
-            />
-          </div>
-          <div class="item-info">
-            <h3>{{ item.title }}</h3>
-            <p class="item-price">¥{{ item.price }}</p>
-            <p class="item-seller">{{ item.username }}</p>
-          </div>
-        </div>
+
+      <div v-loading="itemsLoading">
+        <el-row :gutter="20" v-if="latestItems.length > 0">
+          <el-col
+            v-for="item in latestItems"
+            :key="item.item_id"
+            :xs="24"
+            :sm="12"
+            :md="8"
+            :lg="6"
+          >
+            <ItemCard :item="item" @click="goToItem(item.item_id)" />
+          </el-col>
+        </el-row>
+
+        <EmptyState
+          v-else-if="!itemsLoading"
+          description="暂无商品"
+          action-text="发布商品"
+          @action="router.push('/publish')"
+        />
       </div>
     </section>
 
     <!-- 平台特色 -->
     <section class="features">
-      <h2>平台特色</h2>
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">🔒</div>
-          <h3>安全可靠</h3>
-          <p>实名认证，信用评级，保障交易安全</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">💬</div>
-          <h3>便捷沟通</h3>
-          <p>内置消息系统，买卖双方实时沟通</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🚀</div>
-          <h3>快速交易</h3>
-          <p>校园内交易，面交更便捷</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">♻️</div>
-          <h3>环保理念</h3>
-          <p>让闲置物品重新焕发价值</p>
-        </div>
-      </div>
+      <h2>
+        <el-icon><Star /></el-icon>
+        平台特色
+      </h2>
+
+      <el-row :gutter="30">
+        <el-col
+          v-for="feature in features"
+          :key="feature.title"
+          :xs="24"
+          :sm="12"
+          :md="6"
+        >
+          <el-card class="feature-card" shadow="hover">
+            <div class="feature-icon">{{ feature.icon }}</div>
+            <h3>{{ feature.title }}</h3>
+            <p>{{ feature.description }}</p>
+          </el-card>
+        </el-col>
+      </el-row>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { itemAPI } from '@/api'
+import { ElMessage } from 'element-plus'
+import ItemCard from '@/components/ItemCard.vue'
+import EmptyState from '@/components/EmptyState.vue'
+import type { Item, Category } from '@/types'
 
 const router = useRouter()
 const userStore = useUserStore()
 
-const categories = ref([])
-const latestItems = ref([])
+const categories = ref<Category[]>([])
+const latestItems = ref<Item[]>([])
+const categoriesLoading = ref(false)
+const itemsLoading = ref(false)
 
 const isLoggedIn = computed(() => userStore.isLoggedIn)
 
+// 平台特色数据
+const features = [
+  {
+    icon: '🔒',
+    title: '安全可靠',
+    description: '实名认证，信用评级，保障交易安全'
+  },
+  {
+    icon: '💬',
+    title: '便捷沟通',
+    description: '内置消息系统，买卖双方实时沟通'
+  },
+  {
+    icon: '🚀',
+    title: '快速交易',
+    description: '校园内交易，面交更便捷'
+  },
+  {
+    icon: '♻️',
+    title: '环保理念',
+    description: '让闲置物品重新焕发价值'
+  }
+]
+
+// 加载分类
 const loadCategories = async () => {
   try {
-    const response = await itemAPI.getCategories()
+    categoriesLoading.value = true
+    const response: any = await itemAPI.getCategories()
     categories.value = response.categories || []
   } catch (error) {
     console.error('Failed to load categories:', error)
+    ElMessage.error('加载分类失败')
+  } finally {
+    categoriesLoading.value = false
   }
 }
 
+// 加载最新商品
 const loadLatestItems = async () => {
   try {
-    const response = await itemAPI.getItems({ 
-      page: 1, 
-      limit: 8, 
+    itemsLoading.value = true
+    const response: any = await itemAPI.getItems({
+      page: 1,
+      limit: 8,
       sort_by: 'publish_date',
-      sort_order: 'DESC'
+      sort_order: 'DESC',
+      status: 'available'
     })
     latestItems.value = response.items || []
   } catch (error) {
     console.error('Failed to load latest items:', error)
+    ElMessage.error('加载商品失败')
+  } finally {
+    itemsLoading.value = false
   }
 }
 
+// 跳转到分类页面
 const goToCategory = (categoryId: number) => {
   router.push(`/items?category_id=${categoryId}`)
 }
 
+// 跳转到商品详情
 const goToItem = (itemId: number) => {
   router.push(`/items/${itemId}`)
 }
@@ -140,7 +224,7 @@ onMounted(() => {
 
 <style scoped>
 .home {
-  max-width: 1800px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -148,58 +232,40 @@ onMounted(() => {
 .hero {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 100px 40px;
+  padding: 80px 40px;
   text-align: center;
-  border-radius: 12px;
-  margin-bottom: 80px;
+  border-radius: 16px;
+  margin-bottom: 60px;
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
 }
 
 .hero-content h1 {
-  font-size: 3.5rem;
-  margin-bottom: 25px;
+  font-size: 3rem;
+  margin: 0 0 20px 0;
   font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .hero-content p {
   font-size: 1.2rem;
-  margin-bottom: 40px;
-  opacity: 0.9;
+  margin: 0 0 40px 0;
+  opacity: 0.95;
 }
 
 .hero-actions {
   display: flex;
-  gap: 20px;
+  gap: 16px;
   justify-content: center;
   flex-wrap: wrap;
 }
 
-.btn {
-  padding: 12px 30px;
-  border-radius: 6px;
-  text-decoration: none;
-  font-weight: 500;
-  transition: all 0.3s;
+.hero-actions .el-button {
+  min-width: 140px;
+  transition: transform 0.2s;
 }
 
-.btn-primary {
-  background: white;
-  color: #667eea;
-}
-
-.btn-primary:hover {
+.hero-actions .el-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-
-.btn-secondary {
-  background: transparent;
-  color: white;
-  border: 2px solid white;
-}
-
-.btn-secondary:hover {
-  background: white;
-  color: #667eea;
 }
 
 /* 分类部分 */
@@ -207,47 +273,45 @@ onMounted(() => {
   margin-bottom: 60px;
 }
 
-.categories h2 {
-  text-align: center;
-  margin-bottom: 40px;
-  color: #2c3e50;
-  font-size: 2rem;
-}
-
-.category-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 30px;
+.categories h2,
+.latest-items h2,
+.features h2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 30px;
+  font-size: 1.8rem;
+  color: #303133;
+  font-weight: 600;
 }
 
 .category-card {
-  background: white;
-  padding: 30px 20px;
-  border-radius: 8px;
   text-align: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   cursor: pointer;
   transition: all 0.3s;
+  margin-bottom: 20px;
 }
 
 .category-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
 }
 
 .category-icon {
-  font-size: 2.5rem;
+  font-size: 3rem;
   margin-bottom: 15px;
 }
 
 .category-card h3 {
-  color: #2c3e50;
-  margin-bottom: 10px;
+  font-size: 1.1rem;
+  color: #303133;
+  margin: 0 0 8px 0;
 }
 
 .category-card p {
-  color: #6c757d;
+  color: #909399;
   font-size: 0.9rem;
+  margin: 0;
 }
 
 /* 最新商品 */
@@ -259,78 +323,14 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 40px;
+  margin-bottom: 30px;
 }
 
-.section-header h2 {
-  color: #2c3e50;
-  font-size: 2rem;
-}
-
-.view-all {
-  color: #007bff;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.view-all:hover {
-  text-decoration: underline;
-}
-
-.items-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 30px;
-}
-
-.item-card {
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.item-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-}
-
-.item-image {
-  height: 200px;
-  overflow: hidden;
-}
-
-.item-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.item-info {
-  padding: 15px;
-}
-
-.item-info h3 {
-  color: #2c3e50;
-  margin-bottom: 8px;
-  font-size: 1.1rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.item-price {
-  color: #e74c3c;
-  font-weight: 600;
-  font-size: 1.2rem;
-  margin-bottom: 5px;
-}
-
-.item-seller {
-  color: #6c757d;
-  font-size: 0.9rem;
+.section-header .el-link {
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 /* 平台特色 */
@@ -338,73 +338,70 @@ onMounted(() => {
   margin-bottom: 60px;
 }
 
-.features h2 {
-  text-align: center;
-  margin-bottom: 40px;
-  color: #2c3e50;
-  font-size: 2rem;
-}
-
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 40px;
-}
-
 .feature-card {
   text-align: center;
-  padding: 40px 30px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  height: 100%;
   transition: all 0.3s;
 }
 
 .feature-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
 .feature-icon {
   font-size: 3.5rem;
-  margin-bottom: 25px;
+  margin-bottom: 20px;
 }
 
 .feature-card h3 {
-  color: #2c3e50;
-  margin-bottom: 18px;
-  font-size: 1.4rem;
+  font-size: 1.3rem;
+  color: #303133;
+  margin: 0 0 15px 0;
+  font-weight: 600;
 }
 
 .feature-card p {
-  color: #6c757d;
+  color: #606266;
   line-height: 1.6;
-  font-size: 1rem;
+  font-size: 14px;
+  margin: 0;
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
+  .hero {
+    padding: 60px 20px;
+    margin-bottom: 40px;
+  }
+
   .hero-content h1 {
     font-size: 2rem;
   }
-  
+
   .hero-content p {
     font-size: 1rem;
   }
-  
+
   .hero-actions {
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
   }
-  
-  .btn {
-    width: 200px;
+
+  .hero-actions .el-button {
+    width: 100%;
   }
-  
+
+  .categories h2,
+  .latest-items h2,
+  .features h2 {
+    font-size: 1.5rem;
+  }
+
   .section-header {
     flex-direction: column;
-    gap: 20px;
-    text-align: center;
+    gap: 16px;
+    align-items: flex-start;
   }
 }
 </style>

@@ -1,67 +1,186 @@
 <template>
-  <div id="app">
-    <nav class="navbar">
-      <div class="nav-container">
-        <router-link to="/" class="nav-logo">
-          <h2>校内二手交易平台</h2>
-        </router-link>
-        
-        <div class="nav-menu">
-          <router-link to="/" class="nav-link">首页</router-link>
-          <router-link to="/items" class="nav-link">商品</router-link>
-          
-          <div v-if="isLoggedIn" class="nav-user">
-            <router-link to="/messages" class="nav-link">消息</router-link>
-            <router-link to="/orders" class="nav-link">订单</router-link>
-            <router-link to="/wishlist" class="nav-link">收藏</router-link>
-            <div class="user-dropdown">
-              <span class="user-name">{{ username }}</span>
-              <div class="dropdown-menu">
-                <router-link to="/profile" class="dropdown-item">个人中心</router-link>
-                <router-link to="/publish" class="dropdown-item">发布商品</router-link>
-                <a @click="handleLogout" class="dropdown-item">退出登录</a>
-              </div>
-            </div>
-          </div>
-          
-          <div v-else class="nav-auth">
-            <router-link to="/login" class="nav-link">登录</router-link>
-            <router-link to="/register" class="nav-link nav-register">注册</router-link>
+  <el-config-provider :locale="locale">
+    <div id="app">
+      <!-- 顶部导航栏 -->
+      <el-header class="app-header">
+        <div class="header-container">
+          <!-- Logo -->
+          <router-link to="/" class="logo">
+            <el-icon :size="28"><ShoppingBag /></el-icon>
+            <span class="logo-text">校内二手交易平台</span>
+          </router-link>
+
+          <!-- 导航菜单 -->
+          <el-menu
+            :default-active="activeRoute"
+            mode="horizontal"
+            :ellipsis="false"
+            class="nav-menu"
+            router
+          >
+            <el-menu-item index="/">
+              <el-icon><HomeFilled /></el-icon>
+              <span>首页</span>
+            </el-menu-item>
+
+            <el-menu-item index="/items">
+              <el-icon><Goods /></el-icon>
+              <span>商品</span>
+            </el-menu-item>
+
+            <!-- 已登录用户菜单 -->
+            <template v-if="isLoggedIn">
+              <el-menu-item index="/publish">
+                <el-icon><Plus /></el-icon>
+                <span>发布</span>
+              </el-menu-item>
+
+              <el-menu-item index="/messages">
+                <el-badge :value="unreadCount" :hidden="unreadCount === 0" class="message-badge">
+                  <el-icon><ChatDotRound /></el-icon>
+                  <span>消息</span>
+                </el-badge>
+              </el-menu-item>
+
+              <el-menu-item index="/orders">
+                <el-icon><Tickets /></el-icon>
+                <span>订单</span>
+              </el-menu-item>
+
+              <el-menu-item index="/wishlist">
+                <el-icon><Star /></el-icon>
+                <span>收藏</span>
+              </el-menu-item>
+            </template>
+          </el-menu>
+
+          <!-- 右侧用户区域 -->
+          <div class="user-section">
+            <template v-if="isLoggedIn">
+              <!-- 用户下拉菜单 -->
+              <el-dropdown trigger="click" @command="handleCommand">
+                <div class="user-info">
+                  <UserAvatar
+                    :avatar="currentUser?.avatar"
+                    :username="currentUser?.username"
+                    :size="32"
+                    clickable
+                  />
+                  <span class="username">{{ currentUser?.username }}</span>
+                  <el-icon><ArrowDown /></el-icon>
+                </div>
+
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="profile">
+                      <el-icon><User /></el-icon>
+                      个人中心
+                    </el-dropdown-item>
+                    <el-dropdown-item command="my-items">
+                      <el-icon><Box /></el-icon>
+                      我的商品
+                    </el-dropdown-item>
+                    <el-dropdown-item command="addresses">
+                      <el-icon><Location /></el-icon>
+                      地址管理
+                    </el-dropdown-item>
+                    <el-dropdown-item divided command="logout">
+                      <el-icon><SwitchButton /></el-icon>
+                      退出登录
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </template>
+
+            <!-- 未登录用户 -->
+            <template v-else>
+              <el-button @click="router.push('/login')">登录</el-button>
+              <el-button type="primary" @click="router.push('/register')">注册</el-button>
+            </template>
           </div>
         </div>
-      </div>
-    </nav>
+      </el-header>
 
-    <main class="main-content">
-      <RouterView />
-    </main>
+      <!-- 主内容区域 -->
+      <el-main class="app-main">
+        <router-view v-slot="{ Component }">
+          <transition name="fade" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
+      </el-main>
 
-    <footer class="footer">
-      <div class="footer-content">
-        <p>&copy; 2024 校内二手物品交易平台. All rights reserved.</p>
-      </div>
-    </footer>
-  </div>
+      <!-- 底部 -->
+      <el-footer class="app-footer">
+        <div class="footer-content">
+          <p>&copy; 2024-2025 校内二手物品交易平台. All rights reserved.</p>
+          <p class="footer-links">
+            <a href="/about">关于我们</a>
+            <span class="divider">|</span>
+            <a href="#">帮助中心</a>
+            <span class="divider">|</span>
+            <a href="#">联系我们</a>
+          </p>
+        </div>
+      </el-footer>
+    </div>
+  </el-config-provider>
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
+import UserAvatar from '@/components/UserAvatar.vue'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
+const locale = zhCn
+
+const unreadCount = ref(0)
 
 const isLoggedIn = computed(() => userStore.isLoggedIn)
-const username = computed(() => userStore.username)
+const currentUser = computed(() => userStore.currentUser)
+const activeRoute = computed(() => route.path)
 
-const handleLogout = () => {
-  userStore.logout()
-  router.push('/')
+// 处理下拉菜单命令
+const handleCommand = async (command: string) => {
+  switch (command) {
+    case 'profile':
+      router.push('/profile')
+      break
+    case 'my-items':
+      router.push('/my-items')
+      break
+    case 'addresses':
+      router.push('/addresses')
+      break
+    case 'logout':
+      try {
+        await ElMessageBox.confirm('确定要退出登录吗?', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+
+        userStore.logout()
+        ElMessage.success('退出登录成功')
+        router.push('/')
+      } catch {
+        // 用户取消操作
+      }
+      break
+  }
 }
 
+// 初始化
 onMounted(() => {
   userStore.initUser()
+  // TODO: 定期获取未读消息数
 })
 </script>
 
@@ -70,154 +189,192 @@ onMounted(() => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background-color: #f5f7fa;
 }
 
-.navbar {
-  background: #fff;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+.app-header {
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 1000;
+  padding: 0;
+  height: 64px;
+  line-height: 64px;
 }
 
-.nav-container {
-  max-width: 1800px;
+.header-container {
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 0 40px;
+  padding: 0 24px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  height: 70px;
+  justify-content: space-between;
+  height: 100%;
 }
 
-.nav-logo h2 {
-  color: #2c3e50;
-  margin: 0;
-  font-size: 1.5rem;
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: #303133;
+  font-size: 18px;
+  font-weight: 600;
+  margin-right: 40px;
+  white-space: nowrap;
+  transition: color 0.3s;
+}
+
+.logo:hover {
+  color: #409eff;
+}
+
+.logo-text {
+  display: inline-block;
 }
 
 .nav-menu {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.nav-link {
-  color: #2c3e50;
-  text-decoration: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  transition: background-color 0.3s;
-}
-
-.nav-link:hover {
-  background-color: #f8f9fa;
-}
-
-.nav-link.router-link-active {
-  background-color: #007bff;
-  color: white;
-}
-
-.nav-register {
-  background-color: #007bff;
-  color: white !important;
-}
-
-.nav-register:hover {
-  background-color: #0056b3 !important;
-}
-
-.nav-user {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.user-dropdown {
-  position: relative;
-}
-
-.user-name {
-  color: #2c3e50;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 8px 16px;
-  border-radius: 4px;
-  transition: background-color 0.3s;
-}
-
-.user-name:hover {
-  background-color: #f8f9fa;
-}
-
-.dropdown-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  min-width: 120px;
-  display: none;
-}
-
-.user-dropdown:hover .dropdown-menu {
-  display: block;
-}
-
-.dropdown-item {
-  display: block;
-  padding: 8px 16px;
-  color: #2c3e50;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.dropdown-item:hover {
-  background-color: #f8f9fa;
-}
-
-.main-content {
   flex: 1;
-  max-width: 1800px;
-  margin: 0 auto;
-  padding: 30px 40px;
-  width: 100%;
-  box-sizing: border-box;
+  border-bottom: none;
+  background: transparent;
 }
 
-.footer {
-  background: #2c3e50;
-  color: white;
+.nav-menu :deep(.el-menu-item) {
+  padding: 0 20px;
+}
+
+.message-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 20px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 20px;
+  transition: background-color 0.3s;
+}
+
+.user-info:hover {
+  background-color: #f5f7fa;
+}
+
+.username {
+  font-size: 14px;
+  font-weight: 500;
+  color: #303133;
+}
+
+.app-main {
+  flex: 1;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.app-footer {
+  background: #303133;
+  color: #ffffff;
   text-align: center;
-  padding: 20px 0;
-  margin-top: auto;
+  height: auto;
+  padding: 30px 20px;
 }
 
 .footer-content {
-  max-width: 1800px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 0 40px;
 }
 
+.footer-content p {
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.footer-links a {
+  color: #ffffff;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.footer-links a:hover {
+  color: #409eff;
+}
+
+.divider {
+  margin: 0 12px;
+  color: #909399;
+}
+
+/* 页面切换动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* 响应式设计 */
 @media (max-width: 1024px) {
-  .nav-container {
-    flex-direction: column;
+  .header-container {
+    padding: 0 16px;
+  }
+
+  .logo {
+    margin-right: 20px;
+  }
+
+  .logo-text {
+    display: none;
+  }
+
+  .nav-menu :deep(.el-menu-item) {
+    padding: 0 12px;
+  }
+
+  .nav-menu :deep(.el-menu-item span) {
+    display: none;
+  }
+
+  .username {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-header {
     height: auto;
-    padding: 15px 30px;
+    line-height: normal;
   }
-  
-  .nav-menu {
-    margin-top: 15px;
+
+  .header-container {
     flex-wrap: wrap;
-    justify-content: center;
+    padding: 12px;
   }
-  
-  .main-content {
-    padding: 20px 30px;
+
+  .nav-menu {
+    width: 100%;
+    order: 3;
+    margin-top: 12px;
+  }
+
+  .app-main {
+    padding: 16px;
   }
 }
 </style>

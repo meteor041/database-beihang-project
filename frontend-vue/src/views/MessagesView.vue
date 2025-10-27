@@ -112,58 +112,49 @@ import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { messageAPI } from '@/api'
+import type { Conversation, Message } from '@/types'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
-const conversations = ref([])
-const messages = ref([])
-const selectedConversation = ref(null)
+const conversations = ref<Conversation[]>([])
+const messages = ref<Message[]>([])
+const selectedConversation = ref<Conversation | null>(null)
 const newMessage = ref('')
 
 const conversationsLoading = ref(false)
 const messagesLoading = ref(false)
 const sendingMessage = ref(false)
 
-const messagesArea = ref(null)
+const messagesArea = ref<HTMLElement | null>(null)
 
 const currentUser = computed(() => userStore.currentUser)
 
-const formatTime = (timeString: string) => {
+const formatTime = (timeString: string): string => {
   const date = new Date(timeString)
   const now = new Date()
   const diff = now.getTime() - date.getTime()
-  
-  if (diff < 60000) { // 1分钟内
+
+  if (diff < 60000) {
     return '刚刚'
-  } else if (diff < 3600000) { // 1小时内
+  } else if (diff < 3600000) {
     return `${Math.floor(diff / 60000)}分钟前`
-  } else if (diff < 86400000) { // 24小时内
+  } else if (diff < 86400000) {
     return `${Math.floor(diff / 3600000)}小时前`
   } else {
     return date.toLocaleDateString('zh-CN')
   }
 }
 
-interface Conversation {
-  other_user_id: number
-  item_id: number
-  other_user_name: string
-  item_title: string
-  last_message: string
-  last_message_time: string
-  unread_count: number
+const isActiveConversation = (conversation: Conversation): boolean => {
+  return selectedConversation.value !== null &&
+    selectedConversation.value.other_user_id === conversation.other_user_id &&
+    selectedConversation.value.item_id === conversation.item_id
 }
 
-const isActiveConversation = (conversation: Conversation) => {
-  return selectedConversation.value && 
-         selectedConversation.value.other_user_id === conversation.other_user_id &&
-         selectedConversation.value.item_id === conversation.item_id
-}
-
-const loadConversations = async () => {
-  if (!userStore.isLoggedIn) {
+const loadConversations = async (): Promise<void> => {
+  if (!userStore.isLoggedIn || !currentUser.value) {
     router.push('/login')
     return
   }
@@ -179,8 +170,8 @@ const loadConversations = async () => {
   }
 }
 
-const loadMessages = async () => {
-  if (!selectedConversation.value) return
+const loadMessages = async (): Promise<void> => {
+  if (!selectedConversation.value || !currentUser.value) return
 
   messagesLoading.value = true
   try {
@@ -192,9 +183,8 @@ const loadMessages = async () => {
       limit: 50
     })
     
-    messages.value = (response.messages || []).reverse() // 按时间正序显示
-    
-    // 滚动到底部
+    messages.value = (response.messages || []).reverse()
+
     nextTick(() => {
       scrollToBottom()
     })
@@ -205,13 +195,13 @@ const loadMessages = async () => {
   }
 }
 
-const selectConversation = (conversation: Conversation) => {
+const selectConversation = (conversation: Conversation): void => {
   selectedConversation.value = conversation
   loadMessages()
 }
 
-const sendMessage = async () => {
-  if (!newMessage.value.trim() || !selectedConversation.value || sendingMessage.value) {
+const sendMessage = async (): Promise<void> => {
+  if (!newMessage.value.trim() || !selectedConversation.value || sendingMessage.value || !currentUser.value) {
     return
   }
 
@@ -228,10 +218,7 @@ const sendMessage = async () => {
       message_type: 'text'
     })
 
-    // 重新加载消息
     loadMessages()
-    
-    // 更新会话列表
     loadConversations()
   } catch (error) {
     console.error('Failed to send message:', error)
@@ -241,17 +228,22 @@ const sendMessage = async () => {
   }
 }
 
-const scrollToBottom = () => {
+const scrollToBottom = (): void => {
   if (messagesArea.value) {
     messagesArea.value.scrollTop = messagesArea.value.scrollHeight
   }
 }
 
-// 监听路由参数，自动选择会话
 watch(() => route.query, (newQuery) => {
-  if (newQuery.user_id && newQuery.item_id) {
-    const conversation = conversations.value.find(conv => 
-      conv.other_user_id == newQuery.user_id && conv.item_id == newQuery.item_id
+  const userId = newQuery.user_id
+  const itemId = newQuery.item_id
+
+  if (userId && itemId) {
+    const userIdNum = typeof userId === 'string' ? parseInt(userId) : userId
+    const itemIdNum = typeof itemId === 'string' ? parseInt(itemId) : itemId
+
+    const conversation = conversations.value.find(conv =>
+      conv.other_user_id === userIdNum && conv.item_id === itemIdNum
     )
     if (conversation) {
       selectConversation(conversation)
@@ -264,7 +256,7 @@ onMounted(() => {
     router.push('/login')
     return
   }
-  
+
   loadConversations()
 })
 </script>

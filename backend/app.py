@@ -17,7 +17,13 @@ from routes.address_routes import address_bp
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False  # 支持中文字符
-CORS(app)  # 允许跨域请求
+
+# 配置CORS,允许所有来源(开发环境)
+CORS(app,
+     origins=['http://localhost:3001', 'http://localhost:5173', 'http://127.0.0.1:3001', 'http://127.0.0.1:5173'],
+     supports_credentials=True,
+     allow_headers=['Content-Type', 'Authorization'],
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
 
 # 注册蓝图
 app.register_blueprint(user_bp, url_prefix='/api/users')
@@ -71,5 +77,5 @@ if __name__ == '__main__':
     print("API文档: http://localhost:5000/")
     print("健康检查: http://localhost:5000/api/health")
     print("=" * 50)
-    
+
     app.run(debug=True, host='0.0.0.0', port=5000)

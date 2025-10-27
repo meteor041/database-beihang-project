@@ -1,189 +1,220 @@
-<template>
-  <div class="login-container">
-    <div class="login-card">
-      <h2>用户登录</h2>
-      <form @submit.prevent="handleLogin" class="login-form">
-        <div class="form-group">
-          <label for="loginField">用户名/学号/手机号</label>
-          <input
-            id="loginField"
-            v-model="loginForm.loginField"
-            type="text"
-            placeholder="请输入用户名、学号或手机号"
-            required
-          />
-        </div>
-        
-        <div class="form-group">
-          <label for="password">密码</label>
-          <input
-            id="password"
-            v-model="loginForm.password"
-            type="password"
-            placeholder="请输入密码"
-            required
-          />
-        </div>
-        
-        <div v-if="errorMessage" class="error-message">
-          {{ errorMessage }}
-        </div>
-        
-        <button type="submit" class="login-btn" :disabled="loading">
-          {{ loading ? '登录中...' : '登录' }}
-        </button>
-      </form>
-      
-      <div class="login-footer">
-        <p>还没有账号？ <router-link to="/register">立即注册</router-link></p>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { User, Lock, UserFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const userStore = useUserStore()
 
-const loginForm = ref({
+const loginFormRef = ref<FormInstance>()
+const loading = ref(false)
+const rememberMe = ref(false)
+
+interface LoginForm {
+  loginField: string
+  password: string
+}
+
+const loginForm = ref<LoginForm>({
   loginField: '',
   password: ''
 })
 
-const loading = ref(false)
-const errorMessage = ref('')
+const rules: FormRules<LoginForm> = {
+  loginField: [
+    { required: true, message: '请输入用户名、学号或手机号', trigger: 'blur' },
+    { min: 2, message: '长度至少为 2 个字符', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, message: '密码长度至少为 6 位', trigger: 'blur' }
+  ]
+}
 
-const handleLogin = async () => {
-  if (!loginForm.value.loginField || !loginForm.value.password) {
-    errorMessage.value = '请填写完整的登录信息'
-    return
-  }
-  
-  loading.value = true
-  errorMessage.value = ''
-  
+const handleLogin = async (): Promise<void> => {
+  if (!loginFormRef.value) return
+
   try {
+    await loginFormRef.value.validate()
+    loading.value = true
+
     const result = await userStore.login({
       login_field: loginForm.value.loginField,
       password: loginForm.value.password
     })
-    
+
     if (result.success) {
+      ElMessage.success('登录成功!')
+
+      if (rememberMe.value) {
+        localStorage.setItem('rememberMe', 'true')
+      }
+
       router.push('/')
     } else {
-      errorMessage.value = result.message
+      ElMessage.error(result.message || '登录失败')
     }
-  } catch {
-    errorMessage.value = '登录失败，请检查网络连接'
+  } catch (error) {
+    console.error('Login validation failed:', error)
   } finally {
     loading.value = false
   }
 }
 </script>
 
+<template>
+  <div class="login-container">
+    <el-card class="login-card" shadow="always">
+      <template #header>
+        <div class="card-header">
+          <el-icon :size="48" color="#409eff"><UserFilled /></el-icon>
+          <h2>用户登录</h2>
+          <p>欢迎回到校内二手交易平台</p>
+        </div>
+      </template>
+
+      <el-form
+        ref="loginFormRef"
+        :model="loginForm"
+        :rules="rules"
+        label-position="top"
+        size="large"
+        @submit.prevent="handleLogin"
+      >
+        <el-form-item label="用户名/学号/手机号" prop="loginField">
+          <el-input
+            v-model="loginForm.loginField"
+            placeholder="请输入用户名、学号或手机号"
+            clearable
+          >
+            <template #prefix>
+              <el-icon><User /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
+
+        <el-form-item label="密码" prop="password">
+          <el-input
+            v-model="loginForm.password"
+            type="password"
+            placeholder="请输入密码"
+            show-password
+            clearable
+            @keyup.enter="handleLogin"
+          >
+            <template #prefix>
+              <el-icon><Lock /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
+
+        <el-form-item>
+          <div class="form-footer">
+            <el-checkbox v-model="rememberMe">记住我</el-checkbox>
+            <el-link type="primary" :underline="false">忘记密码?</el-link>
+          </div>
+        </el-form-item>
+
+        <el-form-item>
+          <el-button
+            type="primary"
+            :loading="loading"
+            native-type="submit"
+            style="width: 100%"
+            size="large"
+          >
+            {{ loading ? '登录中...' : '登录' }}
+          </el-button>
+        </el-form-item>
+      </el-form>
+
+      <el-divider>或</el-divider>
+
+      <div class="register-link">
+        <span>还没有账号？</span>
+        <el-link type="primary" @click="router.push('/register')">
+          立即注册
+        </el-link>
+      </div>
+    </el-card>
+  </div>
+</template>
+
 <style scoped>
 .login-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 80vh;
-  padding: 40px;
+  min-height: calc(100vh - 200px);
+  padding: 40px 20px;
 }
 
 .login-card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-  padding: 50px;
   width: 100%;
-  max-width: 500px;
+  max-width: 480px;
 }
 
-.login-card h2 {
+.card-header {
   text-align: center;
-  margin-bottom: 40px;
-  color: #2c3e50;
-  font-size: 2rem;
+  padding: 20px 0;
 }
 
-.login-form {
+.card-header h2 {
+  margin: 20px 0 10px 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.card-header p {
+  margin: 0;
+  font-size: 14px;
+  color: #909399;
+}
+
+.form-footer {
   display: flex;
-  flex-direction: column;
-  gap: 25px;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
 }
 
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.register-link {
+  text-align: center;
+  font-size: 14px;
+  color: #606266;
 }
 
-.form-group label {
+.register-link span {
+  margin-right: 8px;
+}
+
+:deep(.el-form-item__label) {
   font-weight: 500;
-  color: #2c3e50;
-  font-size: 16px;
+  color: #303133;
 }
 
-.form-group input {
-  padding: 15px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: border-color 0.3s;
+:deep(.el-input__wrapper) {
+  transition: all 0.3s;
 }
 
-.form-group input:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+:deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px var(--el-color-primary) inset;
 }
 
-.login-btn {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 15px;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
+@media (max-width: 768px) {
+  .login-container {
+    padding: 20px 10px;
+  }
 
-.login-btn {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 12px;
-  border-radius: 4px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
+  .login-card {
+    max-width: 100%;
+  }
 
-.login-btn:hover:not(:disabled) {
-  background-color: #0056b3;
-}
-
-.login-btn:disabled {
-  background-color: #6c757d;
-  cursor: not-allowed;
-}
-
-.login-footer {
-  text-align: center;
-  margin-top: 20px;
-}
-
-.login-footer a {
-  color: #007bff;
-  text-decoration: none;
-}
-
-.login-footer a:hover {
-  text-decoration: underline;
+  .card-header h2 {
+    font-size: 24px;
+  }
 }
 </style>
