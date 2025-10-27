@@ -152,7 +152,7 @@
         <div v-if="activeTab === 'addresses'" class="tab-content">
           <div class="section-header">
             <h2>收货地址</h2>
-            <button @click="showAddressModal = true" class="add-btn">
+            <button @click="openCreateAddress" class="add-btn">
               添加地址
             </button>
           </div>
@@ -173,8 +173,8 @@
             >
               <div class="address-info">
                 <div class="address-header">
-                  <span class="recipient">{{ address.receiver_name }}</span>
-                  <span class="phone">{{ address.receiver_phone }}</span>
+                  <span class="recipient">{{ address.recipient_name }}</span>
+                  <span class="phone">{{ address.phone }}</span>
                   <span v-if="address.is_default" class="default-badge">默认</span>
                 </div>
                 <div class="address-detail">
@@ -182,7 +182,7 @@
                 </div>
               </div>
               <div class="address-actions">
-                <button @click="editAddress(address)" class="edit-btn">
+                <button @click="openEditAddress(address)" class="edit-btn">
                   编辑
                 </button>
                 <button 
@@ -232,58 +232,14 @@
     <!-- 地址编辑弹窗 -->
     <div v-if="showAddressModal" class="modal-overlay" @click="closeAddressModal">
       <div class="modal-content" @click.stop>
-        <h3>{{ editingAddress ? '编辑地址' : '添加地址' }}</h3>
-        <form @submit.prevent="saveAddress" class="address-form">
-          <div class="form-row">
-            <div class="form-group">
-              <label>收件人</label>
-              <input v-model="addressForm.recipient_name" type="text" required />
-            </div>
-            <div class="form-group">
-              <label>手机号</label>
-              <input v-model="addressForm.phone" type="tel" required />
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>省份</label>
-              <input v-model="addressForm.province" type="text" required />
-            </div>
-            <div class="form-group">
-              <label>城市</label>
-              <input v-model="addressForm.city" type="text" required />
-            </div>
-            <div class="form-group">
-              <label>区县</label>
-              <input v-model="addressForm.district" type="text" required />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>详细地址</label>
-            <input v-model="addressForm.detailed_address" type="text" required />
-          </div>
-
-          <div class="form-group">
-            <label>
-              <input 
-                v-model="addressForm.is_default" 
-                type="checkbox"
-              />
-              设为默认地址
-            </label>
-          </div>
-
-          <div class="modal-actions">
-            <button type="button" @click="closeAddressModal" class="cancel-btn">
-              取消
-            </button>
-            <button type="submit" class="save-btn">
-              保存
-            </button>
-          </div>
-        </form>
+        <h3>{{ addressModalMode === 'edit' ? '编辑地址' : '添加地址' }}</h3>
+        <AddressForm
+          :address="addressInitialValue || undefined"
+          :loading="addressModalLoading"
+          :submit-text="addressModalMode === 'edit' ? '保存修改' : '添加地址'"
+          @save="handleAddressSave"
+          @cancel="closeAddressModal"
+        />
       </div>
     </div>
   </div>
@@ -294,7 +250,9 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { itemAPI, addressAPI, orderAPI } from '@/api'
-import type { Item, Address, OrderStatistics } from '@/types'
+import type { Item, Address, AddressParams, OrderStatistics } from '@/types'
+import AddressForm from '@/components/AddressForm.vue'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -319,15 +277,8 @@ const addresses = ref<Address[]>([])
 const addressesLoading = ref(false)
 const showAddressModal = ref(false)
 const editingAddress = ref<Address | null>(null)
-const addressForm = ref({
-  recipient_name: '',
-  phone: '',
-  province: '',
-  city: '',
-  district: '',
-  detailed_address: '',
-  is_default: false
-})
+const addressModalMode = ref<'create' | 'edit'>('create')
+const addressModalLoading = ref(false)
 
 interface Stats {
   buyer_stats?: {
@@ -357,7 +308,8 @@ const statusMap: Record<string, string> = {
   'removed': '已下架'
 }
 
-const getStatusText = (status: string): string => {
+const getStatusText = (status?: string): string => {
+  if (!status) return '未知状态'
   return statusMap[status] || status
 }
 
@@ -448,60 +400,70 @@ const loadAddresses = async (): Promise<void> => {
   }
 }
 
-const editAddress = (address: Address): void => {
-  editingAddress.value = address
-  addressForm.value = {
-    recipient_name: address.receiver_name,
-    phone: address.receiver_phone,
+type AddressFormValue = Omit<AddressParams, 'user_id'>
+
+const addressInitialValue = computed<AddressFormValue | null>(() => {
+  if (!editingAddress.value) {
+    return null
+  }
+  const address = editingAddress.value
+  return {
+    recipient_name: address.recipient_name,
+    phone: address.phone,
     province: address.province,
     city: address.city,
     district: address.district,
     detailed_address: address.detailed_address,
+    postal_code: address.postal_code ?? '',
+    address_type: address.address_type,
     is_default: address.is_default
   }
+})
+
+const openCreateAddress = (): void => {
+  editingAddress.value = null
+  addressModalMode.value = 'create'
+  showAddressModal.value = true
+}
+
+const openEditAddress = (address: Address): void => {
+  editingAddress.value = address
+  addressModalMode.value = 'edit'
   showAddressModal.value = true
 }
 
 const closeAddressModal = (): void => {
   showAddressModal.value = false
+  addressModalLoading.value = false
   editingAddress.value = null
-  addressForm.value = {
-    recipient_name: '',
-    phone: '',
-    province: '',
-    city: '',
-    district: '',
-    detailed_address: '',
-    is_default: false
-  }
+  addressModalMode.value = 'create'
 }
 
-const saveAddress = async (): Promise<void> => {
+const handleAddressSave = async (value: AddressFormValue): Promise<void> => {
   if (!currentUser.value) return
 
+  const payload: AddressParams = {
+    ...value,
+    user_id: currentUser.value.user_id
+  }
+
   try {
-    const addressData = {
-      receiver_name: addressForm.value.recipient_name,
-      receiver_phone: addressForm.value.phone,
-      province: addressForm.value.province,
-      city: addressForm.value.city,
-      district: addressForm.value.district,
-      detailed_address: addressForm.value.detailed_address,
-      address_type: 'other' as const,
-      is_default: addressForm.value.is_default
-    }
-
-    if (editingAddress.value) {
-      await addressAPI.updateAddress(editingAddress.value.address_id, addressData)
+    addressModalLoading.value = true
+    if (addressModalMode.value === 'edit' && editingAddress.value) {
+      await addressAPI.updateAddress(editingAddress.value.address_id, payload)
+      ElMessage.success('地址更新成功')
     } else {
-      await addressAPI.addAddress(addressData)
+      await addressAPI.addAddress(payload)
+      ElMessage.success('地址添加成功')
     }
-
     closeAddressModal()
     loadAddresses()
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to save address:', error)
-    alert('保存地址失败，请重试')
+    const backendMessage = error?.response?.data?.error
+    ElMessage.error(backendMessage || '保存地址失败，请重试')
+  } finally {
+    addressModalLoading.value = false
   }
 }
 
@@ -542,7 +504,7 @@ const loadStats = async (): Promise<void> => {
     const response = await orderAPI.getOrderStatistics({
       user_id: currentUser.value.user_id
     })
-    stats.value = response.data || {}
+    stats.value = response || {}
   } catch (error) {
     console.error('Failed to load stats:', error)
   }
@@ -955,37 +917,6 @@ onMounted(() => {
 .modal-content h3 {
   color: #2c3e50;
   margin-bottom: 20px;
-}
-
-.address-form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 15px;
-  justify-content: flex-end;
-  margin-top: 20px;
-}
-
-.cancel-btn,
-.save-btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.cancel-btn {
-  background: #6c757d;
-  color: white;
-}
-
-.save-btn {
-  background: #007bff;
-  color: white;
 }
 
 @media (max-width: 768px) {

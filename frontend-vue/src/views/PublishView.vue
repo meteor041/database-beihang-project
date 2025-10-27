@@ -167,6 +167,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { itemAPI } from '@/api'
+import type { ConditionLevel } from '@/types'
 
 interface Category {
   category_id: number
@@ -287,7 +288,7 @@ const handlePublish = async (): Promise<void> => {
     return
   }
 
-  if (!userStore.isLoggedIn) {
+  if (!userStore.isLoggedIn || !userStore.currentUser) {
     router.push('/login')
     return
   }
@@ -300,10 +301,10 @@ const handlePublish = async (): Promise<void> => {
     const publishData = {
       user_id: userStore.currentUser.user_id,
       title: form.value.title.trim(),
-      category_id: parseInt(form.value.category_id),
+      category_id: parseInt(form.value.category_id, 10),
       price: parseFloat(form.value.price),
       original_price: form.value.original_price ? parseFloat(form.value.original_price) : null,
-      condition_level: form.value.condition_level,
+      condition_level: form.value.condition_level as ConditionLevel,
       location: form.value.location.trim(),
       description: form.value.description.trim(),
       images: form.value.images

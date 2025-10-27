@@ -343,13 +343,13 @@ const handleSubmit = async (): Promise<void> => {
   try {
     const updateData: any = {
       title: form.value.title.trim(),
-      category_id: Number(form.value.category_id),
       price: parseFloat(form.value.price),
       original_price: form.value.original_price ? parseFloat(form.value.original_price) : undefined,
       condition_level: form.value.condition_level,
       location: form.value.location.trim(),
       description: form.value.description.trim(),
-      images: form.value.images
+      images: form.value.images,
+      user_id: userStore.currentUser?.user_id
     }
 
     await itemAPI.updateItem(item.value.item_id, updateData)

@@ -20,7 +20,7 @@
             </div>
             <div class="status-info">
               <h2>{{ getStatusText(order.order_status) }}</h2>
-              <p class="status-time">{{ formatDate(order.order_date) }}</p>
+              <p class="status-time">{{ formatDate(order.create_time) }}</p>
             </div>
           </div>
         </div>
@@ -29,11 +29,11 @@
         <div class="section timeline-section">
           <h3>订单进度</h3>
           <div class="timeline">
-            <div :class="['timeline-item', { active: isStatusActive('pending') }]">
+            <div :class="['timeline-item', { active: isStatusActive('pending_payment') }]">
               <div class="timeline-dot"></div>
               <div class="timeline-content">
                 <div class="timeline-title">订单创建</div>
-                <div class="timeline-time">{{ formatDate(order.order_date) }}</div>
+                <div class="timeline-time">{{ formatDate(order.create_time) }}</div>
               </div>
             </div>
             <div :class="['timeline-item', { active: isStatusActive('paid') }]">
@@ -77,7 +77,7 @@
             />
             <div class="item-info">
               <h4>{{ order.item_title }}</h4>
-              <p class="item-price">¥{{ order.item_price }}</p>
+              <p class="item-price">¥{{ order.total_amount }}</p>
             </div>
           </div>
         </div>
@@ -92,7 +92,7 @@
             </div>
             <div class="info-item">
               <span class="label">创建时间：</span>
-              <span class="value">{{ formatDate(order.order_date) }}</span>
+              <span class="value">{{ formatDate(order.create_time) }}</span>
             </div>
             <div class="info-item">
               <span class="label">支付方式：</span>
@@ -102,9 +102,9 @@
               <span class="label">配送方式：</span>
               <span class="value">{{ getDeliveryMethodText(order.delivery_method) }}</span>
             </div>
-            <div v-if="order.remarks" class="info-item">
+            <div v-if="order.notes" class="info-item">
               <span class="label">订单备注：</span>
-              <span class="value">{{ order.remarks }}</span>
+              <span class="value">{{ order.notes }}</span>
             </div>
           </div>
         </div>
@@ -114,8 +114,8 @@
           <h3>收货地址</h3>
           <div class="address-card">
             <div class="address-header">
-              <span class="recipient">{{ order.address.receiver_name }}</span>
-              <span class="phone">{{ order.address.receiver_phone }}</span>
+              <span class="recipient">{{ order.address.recipient_name }}</span>
+              <span class="phone">{{ order.address.phone }}</span>
             </div>
             <div class="address-detail">
               {{ order.address.province }} {{ order.address.city }}
@@ -130,11 +130,11 @@
           <div class="info-list">
             <div class="info-item">
               <span class="label">卖家：</span>
-              <span class="value">{{ order.seller_username }}</span>
+              <span class="value">{{ order.seller_name }}</span>
             </div>
             <div class="info-item">
               <span class="label">买家：</span>
-              <span class="value">{{ order.buyer_username }}</span>
+              <span class="value">{{ order.buyer_name }}</span>
             </div>
           </div>
         </div>
@@ -145,7 +145,7 @@
           <div class="summary-list">
             <div class="summary-item">
               <span>商品金额：</span>
-              <span>¥{{ order.item_price }}</span>
+              <span>¥{{ order.total_amount }}</span>
             </div>
             <div class="summary-item total">
               <span>实付金额：</span>
@@ -199,38 +199,21 @@ import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { orderAPI } from '@/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import type { Order, OrderStatus } from '@/types'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
-interface OrderDetail {
-  order_id: number
-  order_number: string
-  order_status: string
-  order_date: string
-  payment_time?: string
-  ship_time?: string
-  complete_time?: string
-  item_id: number
-  item_title: string
-  item_price: number
-  item_images?: string[]
-  total_amount: number
-  payment_method: string
-  delivery_method: string
-  remarks?: string
-  buyer_id: number
-  buyer_username: string
-  seller_id: number
-  seller_username: string
+type OrderDetail = Order & {
   address?: {
-    receiver_name: string
-    receiver_phone: string
+    recipient_name: string
+    phone: string
     province: string
     city: string
     district: string
     detailed_address: string
+    postal_code?: string | null
   }
 }
 
@@ -238,90 +221,92 @@ const order = ref<OrderDetail | null>(null)
 const loading = ref(false)
 
 const isBuyer = computed(() => {
-  return order.value && userStore.currentUser && order.value.buyer_id === userStore.currentUser.user_id
+  return Boolean(order.value && userStore.currentUser && order.value.buyer_id === userStore.currentUser.user_id)
 })
 
-const canCancel = computed(() => {
-  return order.value?.order_status === 'pending'
-})
+const canCancel = computed(() => order.value?.order_status === 'pending_payment')
 
-const canPay = computed(() => {
-  return isBuyer.value && order.value?.order_status === 'pending'
-})
+const canPay = computed(() => isBuyer.value && order.value?.order_status === 'pending_payment')
 
-const canConfirm = computed(() => {
-  return isBuyer.value && order.value?.order_status === 'shipped'
-})
+const canConfirm = computed(() => isBuyer.value && order.value?.order_status === 'shipped')
 
 const canContact = computed(() => {
-  return order.value && ['pending', 'paid', 'shipped'].includes(order.value.order_status)
+  if (!order.value) return false
+  return ['pending_payment', 'paid', 'shipped'].includes(order.value.order_status)
 })
 
-const statusMap: Record<string, string> = {
-  'pending': '待支付',
-  'paid': '已支付',
-  'shipped': '已发货',
-  'completed': '已完成',
-  'cancelled': '已取消'
+const statusMap: Record<OrderStatus, string> = {
+  pending_payment: '待支付',
+  paid: '已支付',
+  shipped: '已发货',
+  completed: '已完成',
+  cancelled: '已取消'
 }
 
 const paymentMethodMap: Record<string, string> = {
-  'alipay': '支付宝',
-  'wechat': '微信支付',
-  'cash': '线下支付'
+  alipay: '支付宝',
+  wechat: '微信支付',
+  cash: '线下支付'
 }
 
 const deliveryMethodMap: Record<string, string> = {
-  'pickup': '自取',
-  'express': '快递配送'
+  meet: '当面交易',
+  express: '快递配送'
 }
 
-const getStatusText = (status: string): string => {
-  return statusMap[status] || status
-}
+const getStatusText = (status: OrderStatus): string => statusMap[status] || status
 
-const getPaymentMethodText = (method: string): string => {
-  return paymentMethodMap[method] || method
-}
+const getPaymentMethodText = (method: string): string => paymentMethodMap[method] || method
 
-const getDeliveryMethodText = (method: string): string => {
-  return deliveryMethodMap[method] || method
-}
+const getDeliveryMethodText = (method: string): string => deliveryMethodMap[method] || method
 
-const getStatusClass = (status: string): string => {
-  const classMap: Record<string, string> = {
-    'pending': 'pending',
-    'paid': 'paid',
-    'shipped': 'shipped',
-    'completed': 'completed',
-    'cancelled': 'cancelled'
+const getStatusClass = (status: OrderStatus): string => {
+  const classMap: Record<OrderStatus, string> = {
+    pending_payment: 'pending',
+    paid: 'paid',
+    shipped: 'shipped',
+    completed: 'completed',
+    cancelled: 'cancelled'
   }
   return classMap[status] || 'default'
 }
 
-const getStatusIcon = (status: string): string => {
-  const iconMap: Record<string, string> = {
-    'pending': '⏰',
-    'paid': '💰',
-    'shipped': '🚚',
-    'completed': '✅',
-    'cancelled': '❌'
+const getStatusIcon = (status: OrderStatus): string => {
+  const iconMap: Record<OrderStatus, string> = {
+    pending_payment: '⏰',
+    paid: '💰',
+    shipped: '🚚',
+    completed: '✅',
+    cancelled: '❌'
   }
   return iconMap[status] || '📦'
 }
 
-const isStatusActive = (status: string): boolean => {
+const isStatusActive = (status: OrderStatus): boolean => {
   if (!order.value) return false
-
-  const statusOrder = ['pending', 'paid', 'shipped', 'completed']
+  const statusOrder: OrderStatus[] = ['pending_payment', 'paid', 'shipped', 'completed']
   const currentIndex = statusOrder.indexOf(order.value.order_status)
   const targetIndex = statusOrder.indexOf(status)
-
+  if (currentIndex === -1 || targetIndex === -1) return false
   return currentIndex >= targetIndex
 }
 
-const formatDate = (dateString: string): string => {
+const formatDate = (dateString?: string | null): string => {
+  if (!dateString) return '-'
   return new Date(dateString).toLocaleString('zh-CN')
+}
+
+const normaliseImages = (images: unknown): string[] => {
+  if (Array.isArray(images)) return images as string[]
+  if (typeof images === 'string') {
+    try {
+      const parsed = JSON.parse(images)
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  }
+  return []
 }
 
 const loadOrder = async (): Promise<void> => {
@@ -335,12 +320,33 @@ const loadOrder = async (): Promise<void> => {
   loading.value = true
   try {
     const response = await orderAPI.getOrder(Number(orderId))
-    order.value = response.data?.order as any || null
+    const raw = response.order as any
 
-    if (!order.value) {
+    if (!raw) {
       ElMessage.error('订单不存在')
       setTimeout(() => router.back(), 1500)
+      return
     }
+
+    const detail: OrderDetail = {
+      ...raw,
+      item_images: normaliseImages(raw.item_images),
+      buyer_name: raw.buyer_name ?? raw.buyer_username ?? raw.buyer_name,
+      seller_name: raw.seller_name ?? raw.seller_username ?? raw.seller_name,
+      address: raw.recipient_name
+        ? {
+            recipient_name: raw.recipient_name,
+            phone: raw.address_phone ?? raw.phone,
+            province: raw.province,
+            city: raw.city,
+            district: raw.district,
+            detailed_address: raw.detailed_address,
+            postal_code: raw.postal_code ?? null
+          }
+        : undefined
+    }
+
+    order.value = detail
   } catch (error) {
     console.error('Failed to load order:', error)
     ElMessage.error('加载订单失败')

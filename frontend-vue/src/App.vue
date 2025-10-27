@@ -61,7 +61,7 @@
               <el-dropdown trigger="click" @command="handleCommand">
                 <div class="user-info">
                   <UserAvatar
-                    :avatar="currentUser?.avatar"
+                    :avatar="currentUser?.avatar || undefined"
                     :username="currentUser?.username"
                     :size="32"
                     clickable
@@ -75,14 +75,6 @@
                     <el-dropdown-item command="profile">
                       <el-icon><User /></el-icon>
                       个人中心
-                    </el-dropdown-item>
-                    <el-dropdown-item command="my-items">
-                      <el-icon><Box /></el-icon>
-                      我的商品
-                    </el-dropdown-item>
-                    <el-dropdown-item command="addresses">
-                      <el-icon><Location /></el-icon>
-                      地址管理
                     </el-dropdown-item>
                     <el-dropdown-item divided command="logout">
                       <el-icon><SwitchButton /></el-icon>
@@ -152,12 +144,6 @@ const handleCommand = async (command: string) => {
   switch (command) {
     case 'profile':
       router.push('/profile')
-      break
-    case 'my-items':
-      router.push('/my-items')
-      break
-    case 'addresses':
-      router.push('/addresses')
       break
     case 'logout':
       try {

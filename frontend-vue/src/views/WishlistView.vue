@@ -73,28 +73,28 @@
           </button>
         </div>
 
-        <div class="item-image" @click="item.item && goToItem(item.item.item_id)">
+        <div class="item-image" @click="goToItem(item.item_id)">
           <img
-            :src="item.item?.images && item.item.images[0] ? item.item.images[0] : '/placeholder.jpg'"
-            :alt="item.item?.title"
+            :src="item.images && item.images[0] ? item.images[0] : '/placeholder.jpg'"
+            :alt="item.title"
           />
-          <div v-if="item.item && item.item.status !== 'available'" class="status-overlay">
-            {{ getStatusText(item.item.status) }}
+          <div v-if="item.status && item.status !== 'available'" class="status-overlay">
+            {{ getStatusText(item.status) }}
           </div>
         </div>
 
         <div class="item-info">
-          <h3 @click="item.item && goToItem(item.item.item_id)">{{ item.item?.title }}</h3>
+          <h3 @click="goToItem(item.item_id)">{{ item.title }}</h3>
           <div class="item-details">
-            <span class="item-price">¥{{ item.item?.price }}</span>
-            <span class="item-condition">{{ item.item && getConditionText(item.item.condition_level) }}</span>
+            <span class="item-price">¥{{ item.price }}</span>
+            <span class="item-condition">{{ item.condition_level && getConditionText(item.condition_level) }}</span>
           </div>
           <div class="item-meta">
-            <span class="item-seller">{{ item.item?.username }}</span>
-            <span class="item-category">{{ item.item?.category_name }}</span>
+            <span class="item-seller">{{ item.seller_name }}</span>
+            <span class="item-category">{{ item.category_name }}</span>
           </div>
           <div class="wishlist-info">
-            <span class="add-time">收藏于 {{ formatDate(item.wishlist_date) }}</span>
+            <span class="add-time">收藏于 {{ formatDate(item.add_time) }}</span>
             <div v-if="item.notes" class="notes">
               备注：{{ item.notes }}
             </div>
@@ -103,7 +103,7 @@
 
         <div class="item-actions">
           <button
-            v-if="item.item && item.item.status === 'available'"
+            v-if="item.status === 'available'"
             @click="contactSeller(item)"
             class="contact-btn"
           >
@@ -217,7 +217,8 @@ const getStatusText = (status: string): string => {
   return statusMap[status] || status
 }
 
-const formatDate = (dateString: string): string => {
+const formatDate = (dateString?: string): string => {
+  if (!dateString) return '-'
   return new Date(dateString).toLocaleDateString('zh-CN')
 }
 
@@ -250,7 +251,20 @@ const loadWishlist = async (): Promise<void> => {
     }
 
     const response = await wishlistAPI.getWishlist(userStore.currentUser.user_id, params)
-    wishlistItems.value = response.wishlist || []
+    wishlistItems.value = (response.wishlist || []).map((entry) => ({
+      ...entry,
+      images: Array.isArray(entry.images) ? entry.images : []
+    }))
+
+    if (response.pagination) {
+      page.value = response.pagination.page
+      pagination.value = {
+        page: response.pagination.page,
+        limit: response.pagination.limit,
+        total: response.pagination.total,
+        pages: response.pagination.pages
+      }
+    }
 
     selectedItems.value = []
   } catch (error) {
@@ -276,6 +290,11 @@ const toggleSelectAll = () => {
 }
 
 const removeFromWishlist = async (wishlistId: number) => {
+  if (!userStore.currentUser) {
+    router.push('/login')
+    return
+  }
+
   if (!confirm('确定要取消收藏这个商品吗？')) {
     return
   }
@@ -301,16 +320,25 @@ const removeFromWishlist = async (wishlistId: number) => {
 const batchRemove = async () => {
   if (selectedItems.value.length === 0) return
 
+  if (!userStore.currentUser) {
+    router.push('/login')
+    return
+  }
+
   if (!confirm(`确定要取消收藏这 ${selectedItems.value.length} 个商品吗？`)) {
     return
   }
 
   try {
     // 获取对应的商品ID
-    const itemIds = selectedItems.value.map(wishlistId => {
-      const item = wishlistItems.value.find(item => item.wishlist_id === wishlistId)
-      return item?.item_id
-    }).filter(Boolean)
+    const itemIds = selectedItems.value
+      .map((wishlistId) => wishlistItems.value.find(item => item.wishlist_id === wishlistId)?.item_id)
+      .filter((id): id is number => typeof id === 'number')
+
+    if (itemIds.length === 0) {
+      loadWishlist()
+      return
+    }
 
     await wishlistAPI.batchRemoveFromWishlist({
       user_id: userStore.currentUser.user_id,
@@ -329,9 +357,24 @@ const goToItem = (itemId: number) => {
   router.push(`/items/${itemId}`)
 }
 
-const contactSeller = (item: Wishlist): void => {
-  if (!item.item) return
-  router.push(`/messages?user_id=${item.item.user_id}&item_id=${item.item_id}`)
+const contactSeller = async (item: Wishlist): Promise<void> => {
+  if (!userStore.isLoggedIn) {
+    router.push('/login')
+    return
+  }
+
+  try {
+    const response = await itemAPI.getItem(item.item_id)
+    const detail = response.item
+    if (detail?.user_id) {
+      router.push(`/messages?user_id=${detail.user_id}&item_id=${detail.item_id}`)
+    } else {
+      router.push(`/items/${item.item_id}`)
+    }
+  } catch (error) {
+    console.error('Failed to load item for messaging:', error)
+    router.push(`/items/${item.item_id}`)
+  }
 }
 
 const editNotes = (item: Wishlist): void => {
@@ -347,10 +390,11 @@ const closeNotesModal = (): void => {
 }
 
 const saveNotes = async (): Promise<void> => {
-  if (!editingItem.value) return
+  if (!editingItem.value || !userStore.currentUser) return
 
   try {
     await wishlistAPI.updateWishlistNotes(editingItem.value.wishlist_id, {
+      user_id: userStore.currentUser.user_id,
       notes: editingNotes.value
     })
 

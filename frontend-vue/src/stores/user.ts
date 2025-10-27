@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { userAPI } from '@/api'
+import type { User, LoginParams, RegisterParams } from '@/types'
 
 export const useUserStore = defineStore('user', () => {
   // 状态
-  const currentUser = ref<any>(null)
+  const currentUser = ref<User | null>(null)
   const isLoggedIn = ref(false)
   const token = ref('')
 
@@ -27,16 +28,17 @@ export const useUserStore = defineStore('user', () => {
   }
 
   // 登录
-  const login = async (loginData: any) => {
+  const login = async (loginData: LoginParams) => {
     try {
-      const response: any = await userAPI.login(loginData)
+      const response = await userAPI.login(loginData)
+      const user = response.user as User | undefined
 
-      if (response.user) {
-        currentUser.value = response.user
+      if (user) {
+        currentUser.value = user
         isLoggedIn.value = true
 
         // 保存到本地存储
-        localStorage.setItem('user', JSON.stringify(response.user))
+        localStorage.setItem('user', JSON.stringify(user))
         if (response.token) {
           token.value = response.token
           localStorage.setItem('token', response.token)
@@ -56,9 +58,9 @@ export const useUserStore = defineStore('user', () => {
   }
 
   // 注册
-  const register = async (registerData: any) => {
+  const register = async (registerData: RegisterParams) => {
     try {
-      const response: any = await userAPI.register(registerData)
+      const response = await userAPI.register(registerData)
       return { success: true, message: response.message || '注册成功', userId: response.user_id }
     } catch (error: any) {
       console.error('Register error:', error)
@@ -81,7 +83,7 @@ export const useUserStore = defineStore('user', () => {
   }
 
   // 更新用户信息
-  const updateUserInfo = async (updateData: any) => {
+  const updateUserInfo = async (updateData: Partial<User>) => {
     if (!currentUser.value) return { success: false, message: '用户未登录' }
 
     try {
@@ -106,8 +108,8 @@ export const useUserStore = defineStore('user', () => {
     if (!currentUser.value) return
 
     try {
-      const response: any = await userAPI.getUser(currentUser.value.user_id)
-      currentUser.value = response.user
+      const response = await userAPI.getUser(currentUser.value.user_id)
+      currentUser.value = response.user as User
       localStorage.setItem('user', JSON.stringify(currentUser.value))
     } catch (error) {
       console.error('Refresh user info error:', error)

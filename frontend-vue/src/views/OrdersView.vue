@@ -30,7 +30,7 @@
         <div class="order-header">
           <div class="order-info">
             <span class="order-number">订单号：{{ order.order_number }}</span>
-            <span class="order-date">{{ formatDate(order.order_date) }}</span>
+            <span class="order-date">{{ formatDate(order.create_time) }}</span>
           </div>
           <div class="order-status">
             <span :class="['status-badge', getStatusClass(order.order_status)]">
@@ -165,16 +165,17 @@ const getPaymentMethodText = (method: string): string => {
   return paymentMethodMap[method] || method
 }
 
-const formatDate = (dateString: string): string => {
+const formatDate = (dateString?: string | null): string => {
+  if (!dateString) return '-'
   return new Date(dateString).toLocaleString('zh-CN')
 }
 
 const canCancel = (order: Order): boolean => {
-  return order.order_status === 'pending'
+  return order.order_status === 'pending_payment'
 }
 
 const canPay = (order: Order): boolean => {
-  return order.order_status === 'pending' && activeTab.value === 'buyer'
+  return order.order_status === 'pending_payment' && activeTab.value === 'buyer'
 }
 
 const canConfirm = (order: Order): boolean => {
@@ -197,7 +198,20 @@ const loadOrders = async (newPage = 1): Promise<void> => {
       limit: limit.value
     })
 
-    orders.value = response.orders || []
+    orders.value = (response.orders || []).map((order) => ({
+      ...order,
+      item_images: Array.isArray(order.item_images)
+        ? order.item_images
+        : order.item_images
+          ? (() => {
+              try {
+                return JSON.parse(order.item_images as unknown as string)
+              } catch {
+                return []
+              }
+            })()
+          : []
+    }))
   } catch (error) {
     console.error('Failed to load orders:', error)
   } finally {
@@ -246,7 +260,7 @@ const payOrder = async (orderId: number): Promise<void> => {
 }
 
 const confirmOrder = async (orderId: number) => {
-  if (!confirm('确定已收到商品吗？')) {
+  if (!confirm('确定已收到商品吗？') || !userStore.currentUser) {
     return
   }
 

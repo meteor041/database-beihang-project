@@ -40,8 +40,8 @@
 
           <div v-if="selectedAddress" class="address-card">
             <div class="address-info">
-              <span class="recipient">{{ selectedAddress.receiver_name }}</span>
-              <span class="phone">{{ selectedAddress.receiver_phone }}</span>
+              <span class="recipient">{{ selectedAddress.recipient_name }}</span>
+              <span class="phone">{{ selectedAddress.phone }}</span>
             </div>
             <div class="address-detail">
               {{ selectedAddress.province }} {{ selectedAddress.city }} {{ selectedAddress.district }} {{ selectedAddress.detailed_address }}
@@ -50,7 +50,7 @@
 
           <div v-else class="no-address">
             <p>暂无收货地址，请先添加地址</p>
-            <button @click="showAddressModal = true" class="btn-primary">
+            <button @click="openAddressModal" class="btn-primary">
               添加地址
             </button>
           </div>
@@ -95,7 +95,7 @@
               <input
                 type="radio"
                 v-model="deliveryMethod"
-                value="pickup"
+                value="meet"
               />
               <span class="delivery-name">自取（{{ item.location }}）</span>
             </label>
@@ -150,11 +150,26 @@
     </div>
 
     <!-- 地址选择弹窗 -->
-    <div v-if="showAddressModal" class="modal-overlay" @click="showAddressModal = false">
+    <div v-if="showAddressModal" class="modal-overlay" @click="closeAddressModal">
       <div class="modal-content" @click.stop>
         <h3>选择收货地址</h3>
 
-        <div v-if="addresses.length === 0" class="no-data">
+        <div class="modal-toolbar">
+          <button @click.stop="toggleAddAddress" class="btn-primary">
+            {{ addingAddress ? '返回地址列表' : '新增地址' }}
+          </button>
+        </div>
+
+        <AddressForm
+          v-if="addingAddress"
+          :show-cancel="true"
+          :loading="addressSaving"
+          submit-text="保存地址"
+          @cancel="cancelAddAddress"
+          @save="handleAddressSave"
+        />
+
+        <div v-else-if="addresses.length === 0" class="no-data">
           <p>暂无收货地址</p>
         </div>
 
@@ -166,8 +181,8 @@
             :class="['address-item', { active: selectedAddress?.address_id === address.address_id }]"
           >
             <div class="address-info">
-              <span class="recipient">{{ address.receiver_name }}</span>
-              <span class="phone">{{ address.receiver_phone }}</span>
+              <span class="recipient">{{ address.recipient_name }}</span>
+              <span class="phone">{{ address.phone }}</span>
               <span v-if="address.is_default" class="default-badge">默认</span>
             </div>
             <div class="address-detail">
@@ -177,7 +192,7 @@
         </div>
 
         <div class="modal-actions">
-          <button @click="showAddressModal = false" class="btn-cancel">
+          <button @click="closeAddressModal" class="btn-cancel">
             关闭
           </button>
         </div>
@@ -191,8 +206,9 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { itemAPI, addressAPI, orderAPI } from '@/api'
-import type { Item, Address, PaymentMethod, DeliveryMethod } from '@/types'
+import type { Item, Address, PaymentMethod, DeliveryMethod, CreateOrderParams, AddressParams } from '@/types'
 import { ElMessage } from 'element-plus'
+import AddressForm from '@/components/AddressForm.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -202,12 +218,16 @@ const item = ref<Item | null>(null)
 const addresses = ref<Address[]>([])
 const selectedAddress = ref<Address | null>(null)
 const paymentMethod = ref<PaymentMethod>('alipay')
-const deliveryMethod = ref<DeliveryMethod>('pickup')
+const deliveryMethod = ref<DeliveryMethod>('meet')
 const remarks = ref('')
 
 const loading = ref(false)
 const submitting = ref(false)
 const showAddressModal = ref(false)
+const addingAddress = ref(false)
+const addressSaving = ref(false)
+
+type AddressFormValue = Omit<AddressParams, 'user_id'>
 
 const canSubmit = computed(() => {
   return selectedAddress.value !== null && paymentMethod.value && deliveryMethod.value
@@ -259,7 +279,50 @@ const loadAddresses = async (): Promise<void> => {
 
 const selectAddress = (address: Address): void => {
   selectedAddress.value = address
+  closeAddressModal()
+}
+
+const openAddressModal = () => {
+  showAddressModal.value = true
+  addingAddress.value = false
+}
+
+const closeAddressModal = () => {
   showAddressModal.value = false
+  addingAddress.value = false
+}
+
+const toggleAddAddress = () => {
+  addingAddress.value = !addingAddress.value
+}
+
+const cancelAddAddress = () => {
+  addingAddress.value = false
+}
+
+const handleAddressSave = async (value: AddressFormValue): Promise<void> => {
+  if (!userStore.currentUser) {
+    router.push('/login')
+    return
+  }
+
+  try {
+    addressSaving.value = true
+    const payload: AddressParams = {
+      ...value,
+      user_id: userStore.currentUser.user_id
+    }
+    await addressAPI.addAddress(payload)
+    ElMessage.success('地址添加成功')
+    addingAddress.value = false
+    await loadAddresses()
+  } catch (error: any) {
+    console.error('Failed to save address:', error)
+    const backendMessage = error?.response?.data?.error
+    ElMessage.error(backendMessage || '保存地址失败，请重试')
+  } finally {
+    addressSaving.value = false
+  }
 }
 
 const submitOrder = async (): Promise<void> => {
@@ -270,17 +333,18 @@ const submitOrder = async (): Promise<void> => {
 
   submitting.value = true
   try {
-    const orderData = {
+    const orderData: CreateOrderParams = {
+      buyer_id: userStore.currentUser.user_id,
       item_id: item.value.item_id,
       address_id: selectedAddress.value.address_id,
       payment_method: paymentMethod.value,
       delivery_method: deliveryMethod.value,
-      remarks: remarks.value.trim() || undefined
+      notes: remarks.value.trim() || undefined
     }
 
     const response = await orderAPI.createOrder(orderData)
 
-    if (response.data?.order_id) {
+    if (response.order_id) {
       ElMessage.success('订单创建成功！')
       setTimeout(() => {
         router.push('/orders')

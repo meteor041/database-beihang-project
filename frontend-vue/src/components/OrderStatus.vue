@@ -56,13 +56,13 @@ const statusSteps = computed(() => {
 
   // 订单已创建
   steps.push({
-    status: 'pending',
+    status: 'pending_payment',
     title: '订单已创建',
     description: '等待买家支付',
     timestamp: props.orderDate,
-    type: props.status === 'pending' ? 'primary' : 'success',
+    type: props.status === 'pending_payment' ? 'primary' : 'success',
     icon: Clock,
-    color: props.status === 'pending' ? '#409eff' : '#67c23a'
+    color: props.status === 'pending_payment' ? '#409eff' : '#67c23a'
   })
 
   // 已取消的订单
@@ -124,7 +124,7 @@ const statusSteps = computed(() => {
 // 获取状态徽章类型
 const getBadgeType = (status: OrderStatus) => {
   const typeMap: Record<OrderStatus, 'success' | 'info' | 'warning' | 'danger' | ''> = {
-    pending: 'warning',
+    pending_payment: 'warning',
     paid: 'info',
     shipped: '',
     completed: 'success',
@@ -136,7 +136,7 @@ const getBadgeType = (status: OrderStatus) => {
 // 获取状态文本
 const getStatusText = (status: OrderStatus): string => {
   const textMap: Record<OrderStatus, string> = {
-    pending: '待支付',
+    pending_payment: '待支付',
     paid: '已支付',
     shipped: '已发货',
     completed: '已完成',

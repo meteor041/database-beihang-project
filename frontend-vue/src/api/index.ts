@@ -17,17 +17,9 @@ import type {
   WishlistParams,
   WishlistStatistics,
   Address,
-  AddressParams
+  AddressParams,
+  ApiResponse
 } from '@/types'
-
-// API响应类型定义
-interface ApiResponse<T = any> {
-  success?: boolean
-  message?: string
-  error?: string
-  data?: T
-  [key: string]: any
-}
 
 interface ItemResponse {
   item: Item
@@ -66,11 +58,17 @@ interface AddressesResponse {
 
 interface WishlistResponse {
   wishlist: Wishlist[]
+  pagination?: {
+    page: number
+    limit: number
+    total: number
+    pages: number
+  }
 }
 
 // 创建axios实例
 const api = axios.create({
-  baseURL: 'http://localhost:5001/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json; charset=utf-8'
@@ -122,13 +120,13 @@ export const userAPI = {
   searchUsers: (params: any): Promise<ApiResponse<{ users: User[] }>> =>
     api.get('/users/search', { params }),
 
-  updateCredit: (userId: number, data: { credit_score: number }): Promise<ApiResponse> =>
+  updateCredit: (userId: number, data: { change: number }): Promise<ApiResponse> =>
     api.put(`/users/${userId}/credit`, data)
 }
 
 // 商品相关API
 export const itemAPI = {
-  createItem: (data: any): Promise<ApiResponse<{ item_id: number }>> =>
+  createItem: (data: Partial<Item> & { user_id: number; category_id: number; title: string; description: string; price: number; condition_level: string; location: string }): Promise<ApiResponse<{ item_id: number }>> =>
     api.post('/items/', data),
 
   getItems: (params: ItemsParams): Promise<ItemsResponse> =>
@@ -155,8 +153,8 @@ export const itemAPI = {
 
 // 订单相关API
 export const orderAPI = {
-  createOrder: (data: CreateOrderParams): Promise<ApiResponse<{ order_id: number }>> =>
-    api.post('/orders', data),
+  createOrder: (data: CreateOrderParams): Promise<{ message: string; order_id: number; order_number: string }> =>
+    api.post('/orders/', data),
 
   getOrder: (orderId: number): Promise<ApiResponse<{ order: Order }>> =>
     api.get(`/orders/${orderId}`),
@@ -173,7 +171,7 @@ export const orderAPI = {
   cancelOrder: (orderId: number, data: any): Promise<ApiResponse> =>
     api.put(`/orders/${orderId}/cancel`, data),
 
-  getOrderStatistics: (params: any): Promise<ApiResponse<OrderStatistics>> =>
+  getOrderStatistics: (params: any): Promise<OrderStatistics> =>
     api.get('/orders/statistics', { params })
 }
 
@@ -185,7 +183,7 @@ export const messageAPI = {
   getConversations: (userId: number): Promise<ConversationsResponse> =>
     api.get(`/messages/conversations/${userId}`),
 
-  getConversationMessages: (params: { user_id: number; other_user_id: number; item_id?: number; page?: number; limit?: number }): Promise<MessagesResponse> =>
+  getConversationMessages: (params: { user_id: number; other_user_id: number; item_id: number; page?: number; limit?: number }): Promise<MessagesResponse> =>
     api.get('/messages/conversation', { params }),
 
   markMessageRead: (messageId: number, data: any): Promise<ApiResponse> =>
@@ -215,26 +213,26 @@ export const wishlistAPI = {
   removeFromWishlist: (data: { user_id: number; item_id: number }): Promise<ApiResponse> =>
     api.delete('/wishlist', { data }),
 
-  checkWishlistStatus: (params: { user_id: number; item_id: number }): Promise<ApiResponse<{ is_favorited: boolean }>> =>
+  checkWishlistStatus: (params: { user_id: number; item_id: number }): Promise<{ is_favorited: boolean; wishlist_info?: any }> =>
     api.get('/wishlist/check', { params }),
 
   batchRemoveFromWishlist: (data: any): Promise<ApiResponse> =>
     api.delete('/wishlist/batch', { data }),
 
-  updateWishlistNotes: (wishlistId: number, data: { notes: string }): Promise<ApiResponse> =>
+  updateWishlistNotes: (wishlistId: number, data: { user_id: number; notes: string }): Promise<ApiResponse> =>
     api.put(`/wishlist/${wishlistId}/notes`, data),
 
-  getWishlistStatistics: (userId: number): Promise<ApiResponse<WishlistStatistics>> =>
+  getWishlistStatistics: (userId: number): Promise<WishlistStatistics> =>
     api.get(`/wishlist/statistics/${userId}`),
 
-  getItemWishlistCount: (itemId: number): Promise<ApiResponse<{ count: number }>> =>
+  getItemWishlistCount: (itemId: number): Promise<ApiResponse<{ wishlist_count: number }>> =>
     api.get(`/wishlist/item/${itemId}/count`)
 }
 
 // 地址相关API
 export const addressAPI = {
   addAddress: (data: AddressParams): Promise<ApiResponse<{ address_id: number }>> =>
-    api.post('/addresses', data),
+    api.post('/addresses/', data),
 
   getUserAddresses: (userId: number): Promise<AddressesResponse> =>
     api.get(`/addresses/user/${userId}`),
@@ -257,7 +255,7 @@ export const addressAPI = {
   getDefaultAddress: (userId: number): Promise<ApiResponse<{ address: Address }>> =>
     api.get(`/addresses/default/${userId}`),
 
-  getAddressStatistics: (userId: number): Promise<ApiResponse> =>
+  getAddressStatistics: (userId: number): Promise<ApiResponse<{ total_count: number }>> =>
     api.get(`/addresses/statistics/${userId}`)
 }
 
