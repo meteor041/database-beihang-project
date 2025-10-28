@@ -106,12 +106,6 @@ const handleLogin = async (): Promise<void> => {
         </el-form-item>
 
         <el-form-item>
-          <div class="form-footer">
-            <el-link type="primary" :underline="false">忘记密码?</el-link>
-          </div>
-        </el-form-item>
-
-        <el-form-item>
           <el-button
             type="primary"
             :loading="loading"
@@ -168,12 +162,6 @@ const handleLogin = async (): Promise<void> => {
   color: #909399;
 }
 
-.form-footer {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  width: 100%;
-}
 
 .register-link {
   text-align: center;
