@@ -111,7 +111,7 @@
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { messageAPI } from '@/api'
+import { messageAPI, userAPI, itemAPI } from '@/api'
 import type { Conversation, Message } from '@/types'
 
 const router = useRouter()
@@ -234,30 +234,88 @@ const scrollToBottom = (): void => {
   }
 }
 
-watch(() => route.query, (newQuery) => {
-  const userId = newQuery.user_id
-  const itemId = newQuery.item_id
+// 处理从商品详情页跳转过来的情况（联系卖家）
+const parseQueryNumber = (value: unknown): number | null => {
+  const raw = Array.isArray(value) ? value[0] : value
+  if (raw === undefined || raw === null) return null
+  const num = Number(raw)
+  return Number.isNaN(num) ? null : num
+}
 
-  if (userId && itemId) {
-    const userIdNum = typeof userId === 'string' ? parseInt(userId) : userId
-    const itemIdNum = typeof itemId === 'string' ? parseInt(itemId) : itemId
+const handleQueryParams = async () => {
+  const userIdNum = parseQueryNumber(route.query.user_id)
+  const itemIdNum = parseQueryNumber(route.query.item_id)
 
-    const conversation = conversations.value.find(conv =>
-      conv.other_user_id === userIdNum && conv.item_id === itemIdNum
-    )
-    if (conversation) {
-      selectConversation(conversation)
+  if (userIdNum === null || itemIdNum === null || !currentUser.value) return
+
+  // 先在现有会话列表中查找
+  const existingConversation = conversations.value.find(conv =>
+    conv.other_user_id === userIdNum && conv.item_id === itemIdNum
+  )
+
+  if (existingConversation) {
+    // 找到已存在的会话，直接选中
+    selectConversation(existingConversation)
+  } else {
+    // 没找到会话，创建临时会话（第一次联系卖家的场景）
+    try {
+      // 并行获取用户信息和商品信息
+      const [userResponse, itemResponse] = await Promise.all([
+        userAPI.getUser(userIdNum),
+        itemAPI.getItem(itemIdNum)
+      ])
+
+      // 创建临时会话对象
+      const tempConversation: Conversation = {
+        other_user_id: userIdNum,
+        other_username: userResponse.user.username,
+        other_avatar: userResponse.user.avatar,
+        item_id: itemIdNum,
+        item_title: itemResponse.item.title,
+        item_images: itemResponse.item.images || [],
+        last_message_time: new Date().toISOString(),
+        last_message: '',
+        unread_count: 0
+      }
+
+      // 自动选中这个临时会话
+      selectedConversation.value = tempConversation
+      messages.value = [] // 清空消息列表（因为是第一次联系）
+
+      console.log('创建临时会话成功，可以开始发送消息')
+    } catch (error) {
+      console.error('Failed to create temporary conversation:', error)
+      alert('无法加载会话信息，请稍后重试')
     }
   }
-}, { immediate: true })
+}
 
-onMounted(() => {
+watch(() => route.query, () => {
+  if (conversations.value.length > 0) {
+    handleQueryParams()
+  }
+}, { immediate: false })
+
+// 会话列表加载完成后，检查URL参数
+watch(conversations, () => {
+  if (route.query.user_id && route.query.item_id) {
+    handleQueryParams()
+  }
+}, { once: true })
+
+onMounted(async () => {
   if (!userStore.isLoggedIn) {
     router.push('/login')
     return
   }
 
-  loadConversations()
+  // 先加载会话列表
+  await loadConversations()
+
+  // 如果URL有参数（从商品详情页跳转过来），处理自动打开会话
+  if (route.query.user_id && route.query.item_id) {
+    await handleQueryParams()
+  }
 })
 </script>
 

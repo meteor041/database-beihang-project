@@ -105,7 +105,7 @@ export const userAPI = {
   register: (data: RegisterParams): Promise<ApiResponse<{ user_id: number }>> =>
     api.post('/users/register', data),
 
-  login: (data: LoginParams): Promise<ApiResponse<{ token: string; user: User }>> =>
+  login: (data: LoginParams): Promise<ApiResponse<{ token?: string; user: User }>> =>
     api.post('/users/login', data),
 
   getUser: (userId: number): Promise<ApiResponse<{ user: User }>> =>

@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
@@ -89,10 +90,16 @@ const router = createRouter({
 
 // 路由守卫
 router.beforeEach((to, from, next) => {
+  const userStore = useUserStore()
+
+  // 如果 userStore 还没初始化，先从 localStorage 恢复状态
+  if (!userStore.isLoggedIn && localStorage.getItem('user')) {
+    userStore.initUser()
+  }
+
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
-  const isLoggedIn = localStorage.getItem('user') !== null
-  
-  if (requiresAuth && !isLoggedIn) {
+
+  if (requiresAuth && !userStore.isLoggedIn) {
     next('/login')
   } else {
     next()

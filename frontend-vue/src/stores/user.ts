@@ -17,13 +17,25 @@ export const useUserStore = defineStore('user', () => {
 
   // 初始化用户状态
   const initUser = () => {
-    const savedToken = localStorage.getItem('token')
-    const savedUser = localStorage.getItem('user')
+    if (typeof window === 'undefined') return
 
-    if (savedToken && savedUser) {
-      token.value = savedToken
-      currentUser.value = JSON.parse(savedUser)
-      isLoggedIn.value = true
+    try {
+      const savedUser = localStorage.getItem('user')
+      const savedToken = localStorage.getItem('token')
+
+      if (savedUser) {
+        currentUser.value = JSON.parse(savedUser)
+        isLoggedIn.value = true
+      }
+
+      token.value = savedToken ?? ''
+    } catch (error) {
+      console.error('Failed to restore user from localStorage:', error)
+      currentUser.value = null
+      isLoggedIn.value = false
+      token.value = ''
+      localStorage.removeItem('user')
+      localStorage.removeItem('token')
     }
   }
 
@@ -42,6 +54,9 @@ export const useUserStore = defineStore('user', () => {
         if (response.token) {
           token.value = response.token
           localStorage.setItem('token', response.token)
+        } else {
+          token.value = ''
+          localStorage.removeItem('token')
         }
 
         return { success: true, message: response.message || '登录成功' }
@@ -114,6 +129,10 @@ export const useUserStore = defineStore('user', () => {
     } catch (error) {
       console.error('Refresh user info error:', error)
     }
+  }
+
+  if (typeof window !== 'undefined' && !isLoggedIn.value && !currentUser.value) {
+    initUser()
   }
 
   return {

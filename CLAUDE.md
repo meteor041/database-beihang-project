@@ -22,17 +22,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```
 .
-├── backend/                 # Main Flask backend (active)
+├── backend/                 # Main Flask backend (active, runs on port 5001)
 │   ├── app.py              # Flask app entry point with blueprint registration
 │   ├── db.py               # Database manager with connection pool & raw SQL execution
-│   └── routes/             # API route blueprints (6 modules)
-│       ├── user_routes.py      # User management (register, login, auth)
-│       ├── item_routes.py      # Item management (publish, browse, search)
-│       ├── order_routes.py     # Transaction management (create, pay, track)
-│       ├── message_routes.py   # Messaging system (send, receive, conversations)
-│       ├── wishlist_routes.py  # Wishlist management (add, remove, list)
-│       └── address_routes.py   # Address management (CRUD, default address)
-├── backend-new/            # Alternative backend structure (not in use)
+│   └── routes/             # API route blueprints (6 modules, 47 total endpoints)
+│       ├── user_routes.py      # User management - 7 endpoints (register, login, get/update user, etc.)
+│       ├── item_routes.py      # Item management - 8 endpoints (publish, browse, search, categories, etc.)
+│       ├── order_routes.py     # Transaction management - 7 endpoints (create, update, cancel, statistics, etc.)
+│       ├── message_routes.py   # Messaging system - 8 endpoints (send, receive, conversations, unread, etc.)
+│       ├── wishlist_routes.py  # Wishlist management - 8 endpoints (add, remove, list, check, statistics, etc.)
+│       └── address_routes.py   # Address management - 9 endpoints (CRUD, default address management, etc.)
+├── backend-new/            # Alternative backend structure (experimental, not currently in use)
 ├── frontend-vue/           # Vue 3 SPA
 │   ├── src/
 │   │   ├── views/          # 16 core pages (Home, ItemDetail, Orders, etc.)
@@ -73,9 +73,13 @@ npm run test:e2e             # Run Playwright E2E tests
 ### Backend Development
 ```bash
 cd backend
-python3 app.py               # Start Flask server (localhost:5000)
+python3 app.py               # Start Flask server (localhost:5001)
 # The backend has no requirements.txt - manually install:
 pip3 install flask flask-cors pymysql
+
+# When started, you'll see:
+# API文档: http://localhost:5001/
+# 健康检查: http://localhost:5001/api/health
 ```
 
 ### Database Setup
@@ -109,9 +113,10 @@ npm run test:e2e -- --debug       # Debug E2E tests
 - SSL connection to GaussDB with certificate validation
 
 **Blueprint-based Routes** ([backend/app.py](backend/app.py)):
-- All routes organized into 6 blueprints with `/api/<resource>` prefix
-- CORS enabled for frontend communication
+- All routes organized into 6 blueprints with `/api/<resource>` prefix (47 total endpoints)
+- CORS enabled for frontend communication (localhost:5173 and localhost:3001)
 - Health check endpoint: `GET /api/health`
+- Server runs on port 5001 (configured in [app.py:81](backend/app.py#L81))
 
 **Raw SQL Enforcement**:
 ```python
@@ -149,7 +154,8 @@ user = User.objects.filter(user_id=user_id)  # NOT ALLOWED
 - `message.ts` - Conversations, unread count, real-time updates
 
 **API Client** ([frontend-vue/src/api/index.ts](docs/前端设计文档.md:703-784)):
-- Axios instance with request/response interceptors
+- Axios instance with base URL: `http://localhost:5001/api`
+- Request/response interceptors for token injection and error handling
 - JWT token auto-injection from localStorage
 - Centralized error handling with Element Plus messages
 - 6 API modules: `userAPI`, `itemAPI`, `orderAPI`, `messageAPI`, `wishlistAPI`, `addressAPI`
@@ -228,12 +234,35 @@ user = User.objects.filter(user_id=user_id)  # NOT ALLOWED
 
 Use the health check as a template:
 ```bash
-curl http://localhost:5000/api/health
+curl http://localhost:5001/api/health
 ```
 
 For authenticated endpoints, include JWT token:
 ```bash
-curl -H "Authorization: Bearer <token>" http://localhost:5000/api/users/1
+curl -H "Authorization: Bearer <token>" http://localhost:5001/api/users/1
+```
+
+Test specific endpoints by category:
+```bash
+# User endpoints (7 endpoints)
+curl -X POST http://localhost:5001/api/users/register -H "Content-Type: application/json" -d '{...}'
+curl -X POST http://localhost:5001/api/users/login -H "Content-Type: application/json" -d '{...}'
+
+# Item endpoints (8 endpoints)
+curl http://localhost:5001/api/items/
+curl http://localhost:5001/api/items/categories
+
+# Order endpoints (7 endpoints)
+curl http://localhost:5001/api/orders/user/1
+
+# Message endpoints (8 endpoints)
+curl http://localhost:5001/api/messages/conversations/1
+
+# Wishlist endpoints (8 endpoints)
+curl http://localhost:5001/api/wishlist/1
+
+# Address endpoints (9 endpoints)
+curl http://localhost:5001/api/addresses/user/1
 ```
 
 ## Academic Requirements Checklist
@@ -282,6 +311,7 @@ This project must fulfill specific course requirements:
 3. **ALWAYS** use parameterized queries, never string concatenation for SQL
 4. **REMEMBER** to update both buyer and seller views when modifying order logic
 5. **CHECK** credit score constraints before updates (0-100 range)
+6. **VERIFY** API base URL - backend runs on port **5001**, not 5000 (common mistake when copying examples)
 
 ### File References in Code
 When discussing code locations, use markdown links:
