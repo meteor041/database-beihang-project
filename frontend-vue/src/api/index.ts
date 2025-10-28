@@ -178,7 +178,7 @@ export const orderAPI = {
 // 消息相关API
 export const messageAPI = {
   sendMessage: (data: SendMessageParams): Promise<ApiResponse<{ message_id: number }>> =>
-    api.post('/messages', data),
+    api.post('/messages/', data),
 
   getConversations: (userId: number): Promise<ConversationsResponse> =>
     api.get(`/messages/conversations/${userId}`),
@@ -205,13 +205,13 @@ export const messageAPI = {
 // 收藏相关API
 export const wishlistAPI = {
   addToWishlist: (data: WishlistParams): Promise<ApiResponse<{ wishlist_id: number }>> =>
-    api.post('/wishlist', data),
+    api.post('/wishlist/', data),
 
   getWishlist: (userId: number, params: any): Promise<WishlistResponse> =>
     api.get(`/wishlist/${userId}`, { params }),
 
   removeFromWishlist: (data: { user_id: number; item_id: number }): Promise<ApiResponse> =>
-    api.delete('/wishlist', { data }),
+    api.delete('/wishlist/', { data }),
 
   checkWishlistStatus: (params: { user_id: number; item_id: number }): Promise<{ is_favorited: boolean; wishlist_info?: any }> =>
     api.get('/wishlist/check', { params }),
