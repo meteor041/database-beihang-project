@@ -10,7 +10,6 @@ const userStore = useUserStore()
 
 const loginFormRef = ref<FormInstance>()
 const loading = ref(false)
-const rememberMe = ref(false)
 
 interface LoginForm {
   loginField: string
@@ -47,10 +46,6 @@ const handleLogin = async (): Promise<void> => {
 
     if (result.success) {
       ElMessage.success('登录成功!')
-
-      if (rememberMe.value) {
-        localStorage.setItem('rememberMe', 'true')
-      }
 
       router.push('/')
     } else {
@@ -112,7 +107,6 @@ const handleLogin = async (): Promise<void> => {
 
         <el-form-item>
           <div class="form-footer">
-            <el-checkbox v-model="rememberMe">记住我</el-checkbox>
             <el-link type="primary" :underline="false">忘记密码?</el-link>
           </div>
         </el-form-item>
@@ -176,7 +170,7 @@ const handleLogin = async (): Promise<void> => {
 
 .form-footer {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   width: 100%;
 }
