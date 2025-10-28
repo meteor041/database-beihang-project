@@ -8,7 +8,7 @@
     <!-- 商品图片 -->
     <div class="item-image">
       <el-image
-        :src="item.images && item.images[0] ? item.images[0] : '/placeholder.jpg'"
+        :src="item.images && item.images[0] ? item.images[0] : '/placeholder.png'"
         :alt="item.title"
         fit="cover"
         lazy

@@ -71,7 +71,7 @@
           <h3>商品信息</h3>
           <div class="item-card">
             <img
-              :src="order.item_images?.[0] || '/placeholder.jpg'"
+              :src="order.item_images?.[0] || '/placeholder.png'"
               :alt="order.item_title"
               class="item-image"
             />

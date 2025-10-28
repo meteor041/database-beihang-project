@@ -22,7 +22,7 @@
             @click="selectConversation(conversation)"
           >
             <img 
-              :src="conversation.other_avatar || '/default-avatar.jpg'"
+              :src="conversation.other_avatar || '/default-avatar.png'"
               :alt="conversation.other_username"
               class="user-avatar"
             />
@@ -50,7 +50,7 @@
           <div class="chat-header">
             <div class="chat-info">
               <img 
-                :src="selectedConversation.other_avatar || '/default-avatar.jpg'"
+                :src="selectedConversation.other_avatar || '/default-avatar.png'"
                 :alt="selectedConversation.other_username"
                 class="user-avatar"
               />

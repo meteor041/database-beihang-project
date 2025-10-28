@@ -6,7 +6,7 @@
       <div class="profile-sidebar">
         <div class="user-card">
           <img 
-            :src="currentUser?.avatar || '/default-avatar.jpg'"
+            :src="currentUser?.avatar || '/default-avatar.png'"
             :alt="currentUser?.username"
             class="user-avatar"
           />
@@ -122,7 +122,7 @@
               class="item-card"
             >
               <img 
-                :src="item.images && item.images[0] ? item.images[0] : '/placeholder.jpg'"
+                :src="item.images && item.images[0] ? item.images[0] : '/placeholder.png'"
                 :alt="item.title"
                 class="item-image"
               />

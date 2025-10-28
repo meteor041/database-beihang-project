@@ -79,7 +79,7 @@
       >
         <div class="item-image">
           <img 
-            :src="item.images && item.images[0] ? item.images[0] : '/placeholder.jpg'" 
+            :src="item.images && item.images[0] ? item.images[0] : '/placeholder.png'" 
             :alt="item.title"
           />
         </div>

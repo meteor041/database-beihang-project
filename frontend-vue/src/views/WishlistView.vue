@@ -75,7 +75,7 @@
 
         <div class="item-image" @click="goToItem(item.item_id)">
           <img
-            :src="item.images && item.images[0] ? item.images[0] : '/placeholder.jpg'"
+            :src="item.images && item.images[0] ? item.images[0] : '/placeholder.png'"
             :alt="item.title"
           />
           <div v-if="item.status && item.status !== 'available'" class="status-overlay">

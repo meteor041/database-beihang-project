@@ -12,7 +12,7 @@
       <div class="item-images">
         <div class="main-image">
           <img 
-            :src="currentImage || '/placeholder.jpg'" 
+            :src="currentImage || '/placeholder.png'" 
             :alt="item.title"
           />
         </div>
@@ -61,7 +61,7 @@
           <h3>卖家信息</h3>
           <div class="seller-card">
             <img 
-              :src="item.avatar || '/default-avatar.jpg'" 
+              :src="item.avatar || '/default-avatar.png'" 
               :alt="item.username"
               class="seller-avatar"
             />

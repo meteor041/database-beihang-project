@@ -17,7 +17,7 @@
           <h2>商品信息</h2>
           <div class="item-card">
             <img
-              :src="item.images && item.images[0] ? item.images[0] : '/placeholder.jpg'"
+              :src="item.images && item.images[0] ? item.images[0] : '/placeholder.png'"
               :alt="item.title"
               class="item-image"
             />
