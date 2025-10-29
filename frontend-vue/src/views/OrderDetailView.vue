@@ -1,385 +1,186 @@
 <template>
-  <div class="order-detail-view">
-    <div class="detail-container">
-      <h1>订单详情</h1>
+  <v-container class="order-detail-view">
+    <h1 class="text-h3 font-weight-bold mb-6">订单详情</h1>
 
-      <div v-if="loading" class="loading">
-        加载中...
-      </div>
+    <v-progress-linear v-if="loading" indeterminate></v-progress-linear>
 
-      <div v-else-if="!order" class="error">
-        订单不存在
-      </div>
+    <EmptyState
+      v-else-if="!order"
+      icon="mdi-package-variant-closed"
+      description="订单不存在"
+      action-text="返回订单列表"
+      @action="router.push('/orders')"
+    />
 
-      <div v-else class="detail-content">
-        <!-- 订单状态 -->
-        <div class="section status-section">
-          <div class="status-card">
-            <div :class="['status-icon', getStatusClass(order.order_status)]">
-              {{ getStatusIcon(order.order_status) }}
-            </div>
-            <div class="status-info">
-              <h2>{{ getStatusText(order.order_status) }}</h2>
-              <p class="status-time">{{ formatDate(order.create_time) }}</p>
-            </div>
-          </div>
-        </div>
+    <div v-else>
+      <v-row>
+        <v-col cols="12" md="8">
+          <!-- 订单状态 -->
+          <v-card class="mb-4">
+            <v-card-title class="bg-grey-lighten-4">
+              <v-icon class="mr-2">mdi-timeline</v-icon>
+              订单状态
+            </v-card-title>
+            <v-card-text>
+              <OrderStatus :status="order.order_status" />
+            </v-card-text>
+          </v-card>
 
-        <!-- 订单进度 -->
-        <div class="section timeline-section">
-          <h3>订单进度</h3>
-          <div class="timeline">
-            <div :class="['timeline-item', { active: isStatusActive('pending_payment') }]">
-              <div class="timeline-dot"></div>
-              <div class="timeline-content">
-                <div class="timeline-title">订单创建</div>
-                <div class="timeline-time">{{ formatDate(order.create_time) }}</div>
+          <!-- 商品信息 -->
+          <v-card class="mb-4">
+            <v-card-title class="bg-grey-lighten-4">商品信息</v-card-title>
+            <v-card-text class="d-flex ga-4">
+              <v-img
+                :src="order.item_images?.[0] || '/placeholder.png'"
+                width="120"
+                height="120"
+                cover
+              ></v-img>
+              <div class="flex-grow-1">
+                <h3 class="text-h6 mb-2">{{ order.item_title }}</h3>
+                <div class="text-h5 text-error font-weight-bold">¥{{ order.total_amount }}</div>
+                <v-chip size="small" color="primary" class="mt-2">
+                  {{ order.payment_method }}
+                </v-chip>
               </div>
-            </div>
-            <div :class="['timeline-item', { active: isStatusActive('paid') }]">
-              <div class="timeline-dot"></div>
-              <div class="timeline-content">
-                <div class="timeline-title">买家付款</div>
-                <div v-if="order.payment_time" class="timeline-time">
-                  {{ formatDate(order.payment_time) }}
-                </div>
-              </div>
-            </div>
-            <div :class="['timeline-item', { active: isStatusActive('shipped') }]">
-              <div class="timeline-dot"></div>
-              <div class="timeline-content">
-                <div class="timeline-title">卖家发货</div>
-                <div v-if="order.ship_time" class="timeline-time">
-                  {{ formatDate(order.ship_time) }}
-                </div>
-              </div>
-            </div>
-            <div :class="['timeline-item', { active: isStatusActive('completed') }]">
-              <div class="timeline-dot"></div>
-              <div class="timeline-content">
-                <div class="timeline-title">交易完成</div>
-                <div v-if="order.complete_time" class="timeline-time">
-                  {{ formatDate(order.complete_time) }}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+            </v-card-text>
+          </v-card>
 
-        <!-- 商品信息 -->
-        <div class="section">
-          <h3>商品信息</h3>
-          <div class="item-card">
-            <img
-              :src="order.item_images?.[0] || '/placeholder.png'"
-              :alt="order.item_title"
-              class="item-image"
-            />
-            <div class="item-info">
-              <h4>{{ order.item_title }}</h4>
-              <p class="item-price">¥{{ order.total_amount }}</p>
-            </div>
-          </div>
-        </div>
+          <!-- 收货信息 -->
+          <v-card>
+            <v-card-title class="bg-grey-lighten-4">收货信息</v-card-title>
+            <v-list>
+              <v-list-item>
+                <template v-slot:prepend>
+                  <v-icon>mdi-map-marker</v-icon>
+                </template>
+                <v-list-item-title>地址</v-list-item-title>
+                <v-list-item-subtitle>{{ order.shipping_address }}</v-list-item-subtitle>
+              </v-list-item>
+              <v-list-item>
+                <template v-slot:prepend>
+                  <v-icon>mdi-phone</v-icon>
+                </template>
+                <v-list-item-title>电话</v-list-item-title>
+                <v-list-item-subtitle>{{ order.receiver_phone }}</v-list-item-subtitle>
+              </v-list-item>
+            </v-list>
+          </v-card>
+        </v-col>
 
-        <!-- 订单信息 -->
-        <div class="section">
-          <h3>订单信息</h3>
-          <div class="info-list">
-            <div class="info-item">
-              <span class="label">订单编号：</span>
-              <span class="value">{{ order.order_number }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label">创建时间：</span>
-              <span class="value">{{ formatDate(order.create_time) }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label">支付方式：</span>
-              <span class="value">{{ getPaymentMethodText(order.payment_method) }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label">配送方式：</span>
-              <span class="value">{{ getDeliveryMethodText(order.delivery_method) }}</span>
-            </div>
-            <div v-if="order.notes" class="info-item">
-              <span class="label">订单备注：</span>
-              <span class="value">{{ order.notes }}</span>
-            </div>
-          </div>
-        </div>
+        <v-col cols="12" md="4">
+          <v-card>
+            <v-card-title class="bg-grey-lighten-4">订单信息</v-card-title>
+            <v-list density="compact">
+              <v-list-item>
+                <v-list-item-title>订单号</v-list-item-title>
+                <v-list-item-subtitle>{{ order.order_number }}</v-list-item-subtitle>
+              </v-list-item>
+              <v-list-item>
+                <v-list-item-title>创建时间</v-list-item-title>
+                <v-list-item-subtitle>{{ formatDate(order.create_time) }}</v-list-item-subtitle>
+              </v-list-item>
+              <v-list-item>
+                <v-list-item-title>订单状态</v-list-item-title>
+                <template v-slot:append>
+                  <v-chip :color="getStatusColor(order.order_status)" size="small">
+                    {{ getStatusText(order.order_status) }}
+                  </v-chip>
+                </template>
+              </v-list-item>
+            </v-list>
+          </v-card>
 
-        <!-- 收货地址 -->
-        <div v-if="order.address" class="section">
-          <h3>收货地址</h3>
-          <div class="address-card">
-            <div class="address-header">
-              <span class="recipient">{{ order.address.recipient_name }}</span>
-              <span class="phone">{{ order.address.phone }}</span>
-            </div>
-            <div class="address-detail">
-              {{ order.address.province }} {{ order.address.city }}
-              {{ order.address.district }} {{ order.address.detailed_address }}
-            </div>
+          <div class="d-flex flex-column ga-2 mt-4">
+            <v-btn
+              v-if="order.order_status === 'pending_payment'"
+              color="success"
+              block
+              @click="payOrder"
+            >
+              立即支付
+            </v-btn>
+            <v-btn
+              v-if="order.order_status === 'shipped'"
+              color="primary"
+              block
+              @click="confirmOrder"
+            >
+              确认收货
+            </v-btn>
+            <v-btn variant="outlined" block @click="router.push('/orders')">
+              返回订单列表
+            </v-btn>
           </div>
-        </div>
-
-        <!-- 交易双方 -->
-        <div class="section">
-          <h3>交易信息</h3>
-          <div class="info-list">
-            <div class="info-item">
-              <span class="label">卖家：</span>
-              <span class="value">{{ order.seller_name }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label">买家：</span>
-              <span class="value">{{ order.buyer_name }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 费用明细 -->
-        <div class="section summary-section">
-          <h3>费用明细</h3>
-          <div class="summary-list">
-            <div class="summary-item">
-              <span>商品金额：</span>
-              <span>¥{{ order.total_amount }}</span>
-            </div>
-            <div class="summary-item total">
-              <span>实付金额：</span>
-              <span class="amount">¥{{ order.total_amount }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 操作按钮 -->
-        <div class="actions">
-          <button @click="router.back()" class="btn-secondary">
-            返回
-          </button>
-          <button
-            v-if="canCancel"
-            @click="handleCancel"
-            class="btn-danger"
-          >
-            取消订单
-          </button>
-          <button
-            v-if="canPay"
-            @click="handlePay"
-            class="btn-primary"
-          >
-            立即支付
-          </button>
-          <button
-            v-if="canConfirm"
-            @click="handleConfirm"
-            class="btn-success"
-          >
-            确认收货
-          </button>
-          <button
-            v-if="canContact"
-            @click="handleContact"
-            class="btn-secondary"
-          >
-            联系{{ isBuyer ? '卖家' : '买家' }}
-          </button>
-        </div>
-      </div>
+        </v-col>
+      </v-row>
     </div>
-  </div>
+  </v-container>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useNotification } from '@/composables/useNotification'
 import { orderAPI } from '@/api'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import type { Order, OrderStatus } from '@/types'
+import OrderStatus from '@/components/OrderStatus.vue'
+import EmptyState from '@/components/EmptyState.vue'
+import type { Order } from '@/types'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const notification = useNotification()
 
-type OrderDetail = Order & {
-  address?: {
-    recipient_name: string
-    phone: string
-    province: string
-    city: string
-    district: string
-    detailed_address: string
-    postal_code?: string | null
-  }
-}
-
-const order = ref<OrderDetail | null>(null)
+const order = ref<Order | null>(null)
 const loading = ref(false)
 
-const isBuyer = computed(() => {
-  return Boolean(order.value && userStore.currentUser && order.value.buyer_id === userStore.currentUser.user_id)
-})
-
-const canCancel = computed(() => order.value?.order_status === 'pending_payment')
-
-const canPay = computed(() => isBuyer.value && order.value?.order_status === 'pending_payment')
-
-const canConfirm = computed(() => isBuyer.value && order.value?.order_status === 'shipped')
-
-const canContact = computed(() => {
-  if (!order.value) return false
-  return ['pending_payment', 'paid', 'shipped'].includes(order.value.order_status)
-})
-
-const statusMap: Record<OrderStatus, string> = {
-  pending_payment: '待支付',
-  paid: '已支付',
-  shipped: '已发货',
-  completed: '已完成',
-  cancelled: '已取消'
+const statusMap: Record<string, string> = {
+  'pending_payment': '待支付',
+  'paid': '已支付',
+  'shipped': '已发货',
+  'completed': '已完成',
+  'cancelled': '已取消'
 }
 
-const paymentMethodMap: Record<string, string> = {
-  alipay: '支付宝',
-  wechat: '微信支付',
-  cash: '线下支付'
+const getStatusText = (status: string): string => {
+  return statusMap[status] || status
 }
 
-const deliveryMethodMap: Record<string, string> = {
-  meet: '当面交易',
-  express: '快递配送'
-}
-
-const getStatusText = (status: OrderStatus): string => statusMap[status] || status
-
-const getPaymentMethodText = (method: string): string => paymentMethodMap[method] || method
-
-const getDeliveryMethodText = (method: string): string => deliveryMethodMap[method] || method
-
-const getStatusClass = (status: OrderStatus): string => {
-  const classMap: Record<OrderStatus, string> = {
-    pending_payment: 'pending',
-    paid: 'paid',
-    shipped: 'shipped',
-    completed: 'completed',
-    cancelled: 'cancelled'
+const getStatusColor = (status: string): string => {
+  const colorMap: Record<string, string> = {
+    'pending_payment': 'warning',
+    'paid': 'info',
+    'shipped': 'primary',
+    'completed': 'success',
+    'cancelled': 'error'
   }
-  return classMap[status] || 'default'
+  return colorMap[status] || 'grey'
 }
 
-const getStatusIcon = (status: OrderStatus): string => {
-  const iconMap: Record<OrderStatus, string> = {
-    pending_payment: '⏰',
-    paid: '💰',
-    shipped: '🚚',
-    completed: '✅',
-    cancelled: '❌'
-  }
-  return iconMap[status] || '📦'
-}
-
-const isStatusActive = (status: OrderStatus): boolean => {
-  if (!order.value) return false
-  const statusOrder: OrderStatus[] = ['pending_payment', 'paid', 'shipped', 'completed']
-  const currentIndex = statusOrder.indexOf(order.value.order_status)
-  const targetIndex = statusOrder.indexOf(status)
-  if (currentIndex === -1 || targetIndex === -1) return false
-  return currentIndex >= targetIndex
-}
-
-const formatDate = (dateString?: string | null): string => {
+const formatDate = (dateString?: string): string => {
   if (!dateString) return '-'
   return new Date(dateString).toLocaleString('zh-CN')
 }
 
-const normaliseImages = (images: unknown): string[] => {
-  if (Array.isArray(images)) return images as string[]
-  if (typeof images === 'string') {
-    try {
-      const parsed = JSON.parse(images)
-      return Array.isArray(parsed) ? parsed : []
-    } catch {
-      return []
-    }
-  }
-  return []
-}
-
 const loadOrder = async (): Promise<void> => {
   const orderId = route.params.id
-  if (!orderId) {
-    ElMessage.error('缺少订单ID')
-    router.back()
-    return
-  }
+  if (!orderId || !userStore.currentUser) return
 
   loading.value = true
   try {
-    const response = await orderAPI.getOrder(Number(orderId))
-    const raw = response.order as any
-
-    if (!raw) {
-      ElMessage.error('订单不存在')
-      setTimeout(() => router.back(), 1500)
-      return
-    }
-
-    const detail: OrderDetail = {
-      ...raw,
-      item_images: normaliseImages(raw.item_images),
-      buyer_name: raw.buyer_name ?? raw.buyer_username ?? raw.buyer_name,
-      seller_name: raw.seller_name ?? raw.seller_username ?? raw.seller_name,
-      address: raw.recipient_name
-        ? {
-            recipient_name: raw.recipient_name,
-            phone: raw.address_phone ?? raw.phone,
-            province: raw.province,
-            city: raw.city,
-            district: raw.district,
-            detailed_address: raw.detailed_address,
-            postal_code: raw.postal_code ?? null
-          }
-        : undefined
-    }
-
-    order.value = detail
+    const response = await orderAPI.getOrderDetail(Number(orderId), userStore.currentUser.user_id)
+    order.value = response.order
   } catch (error) {
     console.error('Failed to load order:', error)
-    ElMessage.error('加载订单失败')
+    notification.error('加载订单失败')
   } finally {
     loading.value = false
   }
 }
 
-const handleCancel = async (): Promise<void> => {
-  if (!order.value || !userStore.currentUser) return
-
-  try {
-    await ElMessageBox.confirm('确定要取消这个订单吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-
-    await orderAPI.cancelOrder(order.value.order_id, {
-      user_id: userStore.currentUser.user_id
-    })
-
-    ElMessage.success('订单已取消')
-    loadOrder()
-  } catch (error: any) {
-    if (error !== 'cancel') {
-      console.error('Failed to cancel order:', error)
-      ElMessage.error('取消订单失败')
-    }
-  }
-}
-
-const handlePay = async (): Promise<void> => {
+const payOrder = async (): Promise<void> => {
   if (!order.value || !userStore.currentUser) return
 
   try {
@@ -388,373 +189,38 @@ const handlePay = async (): Promise<void> => {
       payment_status: 'paid'
     })
 
-    ElMessage.success('支付成功！')
-    loadOrder()
+    notification.success('支付成功！')
+    await loadOrder()
   } catch (error) {
     console.error('Failed to pay order:', error)
-    ElMessage.error('支付失败，请重试')
+    notification.error('支付失败')
   }
 }
 
-const handleConfirm = async (): Promise<void> => {
+const confirmOrder = async (): Promise<void> => {
   if (!order.value || !userStore.currentUser) return
 
   try {
-    await ElMessageBox.confirm('确认已收到货物？', '提示', {
-      confirmButtonText: '确认收货',
-      cancelButtonText: '取消',
-      type: 'info'
-    })
-
     await orderAPI.updateOrderStatus(order.value.order_id, {
       user_id: userStore.currentUser.user_id,
       status: 'completed'
     })
 
-    ElMessage.success('确认收货成功！')
-    loadOrder()
-  } catch (error: any) {
-    if (error !== 'cancel') {
-      console.error('Failed to confirm order:', error)
-      ElMessage.error('确认收货失败')
-    }
+    notification.success('确认收货成功！')
+    await loadOrder()
+  } catch (error) {
+    console.error('Failed to confirm order:', error)
+    notification.error('确认收货失败')
   }
-}
-
-const handleContact = (): void => {
-  if (!order.value) return
-
-  const targetUserId = isBuyer.value ? order.value.seller_id : order.value.buyer_id
-  router.push(`/messages?user_id=${targetUserId}&item_id=${order.value.item_id}`)
 }
 
 onMounted(() => {
-  if (!userStore.isLoggedIn) {
-    router.push('/login')
-    return
-  }
-
   loadOrder()
 })
 </script>
 
 <style scoped>
 .order-detail-view {
-  min-height: calc(100vh - 200px);
-  background-color: #f5f5f5;
-  padding: 20px;
-}
-
-.detail-container {
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.detail-container h1 {
-  color: #303133;
-  margin-bottom: 30px;
-  text-align: center;
-}
-
-.loading,
-.error {
-  text-align: center;
-  padding: 40px;
-  background: white;
-  border-radius: 8px;
-}
-
-.detail-content {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.section {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-.section h3 {
-  color: #303133;
-  font-size: 16px;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-/* 状态卡片 */
-.status-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.status-card {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.status-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.status-info h2 {
-  color: white;
-  margin-bottom: 8px;
-}
-
-.status-time {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 14px;
-}
-
-/* 时间线 */
-.timeline-section {
-  padding: 24px 40px;
-}
-
-.timeline {
-  position: relative;
-  padding-left: 30px;
-}
-
-.timeline::before {
-  content: '';
-  position: absolute;
-  left: 8px;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: #e4e7ed;
-}
-
-.timeline-item {
-  position: relative;
-  padding-bottom: 30px;
-}
-
-.timeline-item:last-child {
-  padding-bottom: 0;
-}
-
-.timeline-dot {
-  position: absolute;
-  left: -26px;
-  top: 4px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #e4e7ed;
-  border: 2px solid white;
-  box-shadow: 0 0 0 2px #e4e7ed;
-}
-
-.timeline-item.active .timeline-dot {
-  background: #409eff;
-  box-shadow: 0 0 0 2px #409eff;
-}
-
-.timeline-title {
-  color: #606266;
-  font-size: 14px;
-  margin-bottom: 4px;
-}
-
-.timeline-item.active .timeline-title {
-  color: #303133;
-  font-weight: 500;
-}
-
-.timeline-time {
-  color: #909399;
-  font-size: 12px;
-}
-
-/* 商品卡片 */
-.item-card {
-  display: flex;
-  gap: 16px;
-  padding: 16px;
-  background: #fafafa;
-  border-radius: 8px;
-}
-
-.item-image {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 8px;
-}
-
-.item-info h4 {
-  color: #303133;
-  margin-bottom: 8px;
-}
-
-.item-price {
-  color: #f56c6c;
-  font-size: 18px;
-  font-weight: bold;
-}
-
-/* 信息列表 */
-.info-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.info-item {
-  display: flex;
-  color: #606266;
-  font-size: 14px;
-}
-
-.info-item .label {
-  width: 100px;
-  color: #909399;
-}
-
-.info-item .value {
-  flex: 1;
-  color: #303133;
-}
-
-/* 地址卡片 */
-.address-card {
-  padding: 16px;
-  background: #fafafa;
-  border-radius: 8px;
-}
-
-.address-header {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 8px;
-  font-weight: 500;
-}
-
-.address-detail {
-  color: #606266;
-  font-size: 14px;
-}
-
-/* 费用明细 */
-.summary-section {
-  background: #fff9e6;
-}
-
-.summary-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.summary-item {
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-}
-
-.summary-item.total {
-  border-top: 2px solid #e6a23c;
-  padding-top: 12px;
-  margin-top: 8px;
-  font-size: 18px;
-  font-weight: bold;
-  color: #f56c6c;
-}
-
-/* 操作按钮 */
-.actions {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  flex-wrap: wrap;
-  padding: 20px 0;
-}
-
-.btn-primary,
-.btn-secondary,
-.btn-success,
-.btn-danger {
-  padding: 10px 24px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.btn-primary {
-  background: #409eff;
-  color: white;
-}
-
-.btn-primary:hover {
-  background: #66b1ff;
-}
-
-.btn-secondary {
-  background: #f5f5f5;
-  color: #606266;
-}
-
-.btn-secondary:hover {
-  background: #e0e0e0;
-}
-
-.btn-success {
-  background: #67c23a;
-  color: white;
-}
-
-.btn-success:hover {
-  background: #85ce61;
-}
-
-.btn-danger {
-  background: #f56c6c;
-  color: white;
-}
-
-.btn-danger:hover {
-  background: #f78989;
-}
-
-@media (max-width: 768px) {
-  .detail-container {
-    padding: 10px;
-  }
-
-  .section {
-    padding: 16px;
-  }
-
-  .timeline-section {
-    padding: 16px 24px;
-  }
-
-  .actions {
-    flex-direction: column;
-  }
-
-  .actions button {
-    width: 100%;
-  }
-
-  .item-card {
-    flex-direction: column;
-  }
+  max-width: 1400px;
 }
 </style>

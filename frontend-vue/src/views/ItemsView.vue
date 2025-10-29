@@ -1,131 +1,155 @@
 <template>
-  <div class="items-view">
-    <div class="items-header">
-      <h1>商品列表</h1>
+  <v-container class="items-view">
+    <!-- 搜索栏 -->
+    <div class="items-header mb-8">
+      <h1 class="text-h3 font-weight-bold">商品列表</h1>
       <div class="search-bar">
-        <input
+        <v-text-field
           v-model="searchKeyword"
-          type="text"
           placeholder="搜索商品..."
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="comfortable"
+          hide-details
+          clearable
           @keyup.enter="handleSearch"
           class="search-input"
-        />
-        <button @click="handleSearch" class="search-btn">搜索</button>
+        ></v-text-field>
+        <v-btn
+          color="primary"
+          size="large"
+          @click="handleSearch"
+        >
+          搜索
+        </v-btn>
       </div>
     </div>
 
-    <div class="items-filters">
-      <div class="filter-group">
-        <label>分类：</label>
-        <select v-model="selectedCategory" @change="loadItems">
-          <option value="">全部分类</option>
-          <option 
-            v-for="category in categories" 
-            :key="category.category_id"
-            :value="category.category_id"
-          >
-            {{ category.category_name }}
-          </option>
-        </select>
-      </div>
+    <!-- 筛选区域 -->
+    <v-card class="filters-card mb-8" elevation="2">
+      <v-card-text>
+        <v-row align="center">
+          <v-col cols="12" sm="6" md="3">
+            <v-select
+              v-model="selectedCategory"
+              :items="categoryOptions"
+              item-title="text"
+              item-value="value"
+              label="分类"
+              prepend-inner-icon="mdi-shape"
+              variant="outlined"
+              density="comfortable"
+              hide-details
+              @update:model-value="loadItems"
+            ></v-select>
+          </v-col>
 
-      <div class="filter-group">
-        <label>价格：</label>
-        <input
-          v-model="minPrice"
-          type="number"
-          placeholder="最低价"
-          class="price-input"
-        />
-        <span>-</span>
-        <input
-          v-model="maxPrice"
-          type="number"
-          placeholder="最高价"
-          class="price-input"
-        />
-      </div>
+          <v-col cols="12" sm="6" md="4">
+            <div class="d-flex align-center ga-2">
+              <v-text-field
+                v-model="minPrice"
+                type="number"
+                label="最低价"
+                prepend-inner-icon="mdi-currency-cny"
+                variant="outlined"
+                density="comfortable"
+                hide-details
+              ></v-text-field>
+              <span class="text-grey">-</span>
+              <v-text-field
+                v-model="maxPrice"
+                type="number"
+                label="最高价"
+                prepend-inner-icon="mdi-currency-cny"
+                variant="outlined"
+                density="comfortable"
+                hide-details
+              ></v-text-field>
+            </div>
+          </v-col>
 
-      <div class="filter-group">
-        <label>排序：</label>
-        <select v-model="sortBy" @change="loadItems">
-          <option value="publish_date">发布时间</option>
-          <option value="price">价格</option>
-          <option value="view_count">浏览量</option>
-        </select>
-        <select v-model="sortOrder" @change="loadItems">
-          <option value="DESC">降序</option>
-          <option value="ASC">升序</option>
-        </select>
-      </div>
+          <v-col cols="6" sm="3" md="2">
+            <v-select
+              v-model="sortBy"
+              :items="sortByOptions"
+              label="排序方式"
+              variant="outlined"
+              density="comfortable"
+              hide-details
+              @update:model-value="loadItems"
+            ></v-select>
+          </v-col>
 
-      <button @click="applyFilters" class="filter-btn">应用筛选</button>
-    </div>
+          <v-col cols="6" sm="3" md="2">
+            <v-select
+              v-model="sortOrder"
+              :items="sortOrderOptions"
+              label="排序"
+              variant="outlined"
+              density="comfortable"
+              hide-details
+              @update:model-value="loadItems"
+            ></v-select>
+          </v-col>
 
-    <div v-if="loading" class="loading">
-      加载中...
-    </div>
+          <v-col cols="12" md="1">
+            <v-btn
+              color="success"
+              block
+              @click="applyFilters"
+            >
+              应用
+            </v-btn>
+          </v-col>
+        </v-row>
+      </v-card-text>
+    </v-card>
 
-    <div v-else-if="items.length === 0" class="no-items">
-      暂无商品
-    </div>
+    <!-- 加载状态 -->
+    <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4"></v-progress-linear>
 
-    <div v-else class="items-grid">
-      <div 
-        v-for="item in items" 
+    <!-- 空状态 -->
+    <EmptyState
+      v-else-if="items.length === 0"
+      description="暂无商品"
+      action-text="浏览其他分类"
+      @action="selectedCategory = ''; loadItems()"
+    />
+
+    <!-- 商品列表 -->
+    <v-row v-else>
+      <v-col
+        v-for="item in items"
         :key="item.item_id"
-        class="item-card"
-        @click="goToItem(item.item_id)"
+        cols="12"
+        sm="6"
+        md="4"
+        lg="3"
       >
-        <div class="item-image">
-          <img 
-            :src="item.images && item.images[0] ? item.images[0] : '/placeholder.png'" 
-            :alt="item.title"
-          />
-        </div>
-        <div class="item-info">
-          <h3>{{ item.title }}</h3>
-          <p class="item-description">{{ item.description }}</p>
-          <div class="item-details">
-            <span class="item-price">¥{{ item.price }}</span>
-            <span class="item-condition">{{ getConditionText(item.condition_level) }}</span>
-          </div>
-          <div class="item-meta">
-            <span class="item-seller">{{ item.username }}</span>
-            <span class="item-views">{{ item.view_count }} 次浏览</span>
-          </div>
-        </div>
-      </div>
-    </div>
+        <ItemCard :item="item" @click="goToItem(item.item_id)" />
+      </v-col>
+    </v-row>
 
-    <div v-if="pagination.pages > 1" class="pagination">
-      <button 
-        @click="changePage(page - 1)"
-        :disabled="page <= 1"
-        class="page-btn"
-      >
-        上一页
-      </button>
-      
-      <span class="page-info">
-        第 {{ page }} 页，共 {{ pagination.pages }} 页
-      </span>
-      
-      <button 
-        @click="changePage(page + 1)"
-        :disabled="page >= pagination.pages"
-        class="page-btn"
-      >
-        下一页
-      </button>
+    <!-- 分页 -->
+    <div v-if="pagination.pages > 1" class="d-flex justify-center mt-8">
+      <v-pagination
+        v-model="page"
+        :length="pagination.pages"
+        :total-visible="7"
+        @update:model-value="changePage"
+        rounded="circle"
+      ></v-pagination>
     </div>
-  </div>
+  </v-container>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useNotification } from '@/composables/useNotification'
 import { itemAPI } from '@/api'
+import ItemCard from '@/components/ItemCard.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import type { Item, Category } from '@/types'
 
 interface Pagination {
@@ -137,6 +161,7 @@ interface Pagination {
 
 const router = useRouter()
 const route = useRoute()
+const notification = useNotification()
 
 const items = ref<Item[]>([])
 const categories = ref<Category[]>([])
@@ -156,17 +181,29 @@ const sortBy = ref('publish_date')
 const sortOrder = ref('DESC')
 const page = ref(1)
 
-const conditionMap: Record<string, string> = {
-  'brand_new': '全新',
-  'like_new': '几乎全新',
-  'very_good': '非常好',
-  'good': '良好',
-  'acceptable': '可接受'
-}
+// 分类选项
+const categoryOptions = computed(() => {
+  return [
+    { text: '全部分类', value: '' },
+    ...categories.value.map(cat => ({
+      text: cat.category_name,
+      value: cat.category_id.toString()
+    }))
+  ]
+})
 
-const getConditionText = (condition: string): string => {
-  return conditionMap[condition] || condition
-}
+// 排序方式选项
+const sortByOptions = [
+  { title: '发布时间', value: 'publish_date' },
+  { title: '价格', value: 'price' },
+  { title: '浏览量', value: 'view_count' }
+]
+
+// 排序顺序选项
+const sortOrderOptions = [
+  { title: '降序', value: 'DESC' },
+  { title: '升序', value: 'ASC' }
+]
 
 const loadCategories = async () => {
   try {
@@ -174,6 +211,7 @@ const loadCategories = async () => {
     categories.value = response.categories || []
   } catch (error) {
     console.error('Failed to load categories:', error)
+    notification.error('加载分类失败')
   }
 }
 
@@ -196,6 +234,7 @@ const loadItems = async () => {
     pagination.value = response.pagination || pagination.value
   } catch (error) {
     console.error('Failed to load items:', error)
+    notification.error('加载商品失败')
   } finally {
     loading.value = false
   }
@@ -232,6 +271,7 @@ const handleSearch = async (): Promise<void> => {
     page.value = 1
   } catch (error) {
     console.error('Failed to search items:', error)
+    notification.error('搜索失败')
   } finally {
     loading.value = false
   }
@@ -243,10 +283,10 @@ const applyFilters = (): void => {
 }
 
 const changePage = (newPage: number): void => {
-  if (newPage >= 1 && newPage <= pagination.value.pages) {
-    page.value = newPage
-    loadItems()
-  }
+  page.value = newPage
+  loadItems()
+  // 滚动到顶部
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 const goToItem = (itemId: number): void => {
@@ -263,265 +303,47 @@ watch(() => route.query, (newQuery) => {
 
 onMounted(() => {
   loadCategories()
-  
+
   // 从路由参数获取分类ID
   if (route.query.category_id) {
     selectedCategory.value = route.query.category_id as string
   }
-  
+
   loadItems()
 })
 </script>
 
 <style scoped>
 .items-view {
-  max-width: 1800px;
-  margin: 0 auto;
-  padding: 30px 40px;
+  max-width: 1400px;
 }
 
 .items-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 40px;
-}
-
-.items-header h1 {
-  color: #2c3e50;
-  margin: 0;
-  font-size: 2.5rem;
+  gap: 20px;
 }
 
 .search-bar {
   display: flex;
-  gap: 15px;
+  gap: 12px;
+  min-width: 400px;
 }
 
 .search-input {
-  padding: 12px 16px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  width: 400px;
-  font-size: 16px;
-}
-
-.search-btn {
-  padding: 12px 24px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 16px;
-}
-
-.search-btn:hover {
-  background-color: #0056b3;
-}
-
-.items-filters {
-  display: flex;
-  gap: 30px;
-  align-items: center;
-  margin-bottom: 40px;
-  padding: 25px 30px;
-  background: #f8f9fa;
-  border-radius: 10px;
-  flex-wrap: wrap;
-}
-
-.filter-group {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.filter-group label {
-  font-weight: 500;
-  color: #2c3e50;
-  font-size: 16px;
-}
-
-.filter-group select,
-.price-input {
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 15px;
-  min-width: 120px;
-}
-
-.price-input {
-  width: 100px;
-}
-
-.filter-btn {
-  padding: 10px 20px;
-  background-color: #28a745;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 15px;
-}
-
-.filter-btn:hover {
-  background-color: #218838;
-}
-
-.loading {
-  text-align: center;
-  padding: 40px;
-  color: #6c757d;
-  font-size: 18px;
-}
-
-.no-items {
-  text-align: center;
-  padding: 40px;
-  color: #6c757d;
-  font-size: 18px;
-}
-
-.items-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 30px;
-  margin-bottom: 40px;
-}
-
-.item-card {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.item-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-}
-
-.item-image {
-  height: 220px;
-  overflow: hidden;
-}
-
-.item-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.item-info {
-  padding: 20px;
-}
-
-.item-info h3 {
-  color: #2c3e50;
-  margin: 0 0 10px 0;
-  font-size: 1.2rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.item-description {
-  color: #6c757d;
-  font-size: 0.95rem;
-  margin: 0 0 12px 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-.item-details {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.item-price {
-  color: #e74c3c;
-  font-weight: 600;
-  font-size: 1.3rem;
-}
-
-.item-condition {
-  background-color: #f8f9fa;
-  color: #6c757d;
-  padding: 4px 10px;
-  border-radius: 15px;
-  font-size: 0.85rem;
-}
-
-.item-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.95rem;
-  color: #6c757d;
-}
-
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 20px;
-  margin-top: 40px;
-}
-
-.page-btn {
-  padding: 8px 16px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.page-btn:hover:not(:disabled) {
-  background-color: #0056b3;
-}
-
-.page-btn:disabled {
-  background-color: #6c757d;
-  cursor: not-allowed;
-}
-
-.page-info {
-  color: #6c757d;
-  font-weight: 500;
+  flex: 1;
 }
 
 @media (max-width: 768px) {
   .items-header {
     flex-direction: column;
-    gap: 20px;
     align-items: stretch;
   }
 
-  .search-input {
+  .search-bar {
+    min-width: auto;
     width: 100%;
-  }
-
-  .items-filters {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .filter-group {
-    justify-content: space-between;
-  }
-
-  .items-grid {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   }
 }
 </style>

@@ -1,136 +1,142 @@
 <template>
-  <div class="orders-view">
-    <h1>我的订单</h1>
-    
-    <div class="order-tabs">
-      <button 
-        v-for="tab in tabs"
-        :key="tab.key"
-        :class="['tab-btn', { active: activeTab === tab.key }]"
-        @click="switchTab(tab.key)"
-      >
-        {{ tab.label }}
-      </button>
-    </div>
+  <v-container class="orders-view">
+    <h1 class="text-h3 font-weight-bold mb-6">我的订单</h1>
 
-    <div v-if="loading" class="loading">
-      加载中...
-    </div>
+    <!-- Tab切换 -->
+    <v-tabs v-model="activeTab" color="primary" class="mb-6">
+      <v-tab value="buyer">
+        <v-icon class="mr-2">mdi-cart</v-icon>
+        我买到的
+      </v-tab>
+      <v-tab value="seller">
+        <v-icon class="mr-2">mdi-store</v-icon>
+        我卖出的
+      </v-tab>
+    </v-tabs>
 
-    <div v-else-if="orders.length === 0" class="no-orders">
-      暂无订单
-    </div>
+    <!-- 加载状态 -->
+    <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4"></v-progress-linear>
 
-    <div v-else class="orders-list">
-      <div 
-        v-for="order in orders"
-        :key="order.order_id"
-        class="order-card"
-      >
-        <div class="order-header">
-          <div class="order-info">
-            <span class="order-number">订单号：{{ order.order_number }}</span>
-            <span class="order-date">{{ formatDate(order.create_time) }}</span>
-          </div>
-          <div class="order-status">
-            <span :class="['status-badge', getStatusClass(order.order_status)]">
-              {{ getStatusText(order.order_status) }}
-            </span>
-          </div>
-        </div>
+    <!-- 空状态 -->
+    <EmptyState
+      v-else-if="orders.length === 0"
+      icon="mdi-package-variant"
+      description="暂无订单"
+      action-text="去逛逛"
+      @action="router.push('/items')"
+    />
 
-        <div class="order-content">
-          <div class="item-info">
-            <img 
-              :src="order.item_images && order.item_images[0] ? order.item_images[0] : '/placeholder.png'"
-              :alt="order.item_title"
-              class="item-image"
-            />
-            <div class="item-details">
-              <h3>{{ order.item_title }}</h3>
-              <p class="item-price">¥{{ order.total_amount }}</p>
-              <p class="payment-method">{{ getPaymentMethodText(order.payment_method) }}</p>
+    <!-- 订单列表 -->
+    <v-row v-else>
+      <v-col v-for="order in orders" :key="order.order_id" cols="12">
+        <v-card elevation="2" class="order-card">
+          <!-- 订单头部 -->
+          <v-card-title class="d-flex justify-space-between align-center bg-grey-lighten-4">
+            <div>
+              <span class="text-body-2">订单号：{{ order.order_number }}</span>
+              <span class="text-caption text-grey ml-4">{{ formatDate(order.create_time) }}</span>
             </div>
-          </div>
+            <v-chip
+              :color="getStatusColor(order.order_status)"
+              size="small"
+            >
+              {{ getStatusText(order.order_status) }}
+            </v-chip>
+          </v-card-title>
 
-          <div class="order-actions">
-            <button 
-              v-if="canCancel(order)"
-              @click="cancelOrder(order.order_id)"
-              class="action-btn cancel-btn"
-            >
-              取消订单
-            </button>
-            
-            <button 
-              v-if="canPay(order)"
-              @click="payOrder(order.order_id)"
-              class="action-btn pay-btn"
-            >
-              立即支付
-            </button>
-            
-            <button 
-              v-if="canConfirm(order)"
-              @click="confirmOrder(order.order_id)"
-              class="action-btn confirm-btn"
-            >
-              确认收货
-            </button>
-            
-            <button 
-              @click="viewOrderDetail(order.order_id)"
-              class="action-btn detail-btn"
-            >
-              查看详情
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+          <v-divider></v-divider>
 
-    <div v-if="orders.length > 0" class="pagination">
-      <button 
-        @click="loadOrders(page - 1)"
-        :disabled="page <= 1"
-        class="page-btn"
-      >
-        上一页
-      </button>
-      
-      <span class="page-info">第 {{ page }} 页</span>
-      
-      <button 
-        @click="loadOrders(page + 1)"
-        :disabled="orders.length < limit"
-        class="page-btn"
-      >
-        下一页
-      </button>
+          <!-- 订单内容 -->
+          <v-card-text>
+            <v-row align="center">
+              <v-col cols="12" md="6">
+                <div class="d-flex ga-4">
+                  <v-img
+                    :src="order.item_images && order.item_images[0] ? order.item_images[0] : '/placeholder.png'"
+                    :alt="order.item_title"
+                    width="100"
+                    height="100"
+                    cover
+                    class="rounded"
+                  ></v-img>
+                  <div>
+                    <h3 class="text-h6 mb-2">{{ order.item_title }}</h3>
+                    <div class="text-h6 text-error font-weight-bold">¥{{ order.total_amount }}</div>
+                    <div class="text-body-2 text-grey">{{ getPaymentMethodText(order.payment_method) }}</div>
+                  </div>
+                </div>
+              </v-col>
+
+              <v-col cols="12" md="6" class="d-flex justify-end ga-2 flex-wrap">
+                <v-btn
+                  v-if="canCancel(order)"
+                  variant="outlined"
+                  color="error"
+                  @click="cancelOrder(order.order_id)"
+                >
+                  取消订单
+                </v-btn>
+
+                <v-btn
+                  v-if="canPay(order)"
+                  color="success"
+                  @click="payOrder(order.order_id)"
+                >
+                  立即支付
+                </v-btn>
+
+                <v-btn
+                  v-if="canConfirm(order)"
+                  color="primary"
+                  @click="confirmOrder(order.order_id)"
+                >
+                  确认收货
+                </v-btn>
+
+                <v-btn
+                  variant="outlined"
+                  @click="viewOrderDetail(order.order_id)"
+                >
+                  查看详情
+                </v-btn>
+              </v-col>
+            </v-row>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- 分页 -->
+    <div v-if="orders.length > 0" class="d-flex justify-center mt-6">
+      <v-pagination
+        v-model="page"
+        :length="totalPages"
+        @update:model-value="loadOrders"
+        rounded="circle"
+      ></v-pagination>
     </div>
-  </div>
+  </v-container>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useNotification } from '@/composables/useNotification'
 import { orderAPI } from '@/api'
+import EmptyState from '@/components/EmptyState.vue'
 import type { Order } from '@/types'
 
 const router = useRouter()
 const userStore = useUserStore()
+const notification = useNotification()
 
 const orders = ref<Order[]>([])
 const loading = ref(false)
 const activeTab = ref<'buyer' | 'seller'>('buyer')
 const page = ref(1)
 const limit = ref(10)
-
-const tabs = [
-  { key: 'buyer' as const, label: '我买到的' },
-  { key: 'seller' as const, label: '我卖出的' }
-]
+const totalPages = ref(1)
 
 const statusMap: Record<string, string> = {
   'pending_payment': '待支付',
@@ -150,15 +156,15 @@ const getStatusText = (status: string): string => {
   return statusMap[status] || status
 }
 
-const getStatusClass = (status: string): string => {
-  const classMap: Record<string, string> = {
-    'pending_payment': 'pending',
-    'paid': 'paid',
-    'shipped': 'shipped',
-    'completed': 'completed',
-    'cancelled': 'cancelled'
+const getStatusColor = (status: string): string => {
+  const colorMap: Record<string, string> = {
+    'pending_payment': 'warning',
+    'paid': 'info',
+    'shipped': 'primary',
+    'completed': 'success',
+    'cancelled': 'error'
   }
-  return classMap[status] || 'default'
+  return colorMap[status] || 'grey'
 }
 
 const getPaymentMethodText = (method: string): string => {
@@ -212,33 +218,29 @@ const loadOrders = async (newPage = 1): Promise<void> => {
             })()
           : []
     }))
+
+    totalPages.value = response.pagination?.pages || 1
   } catch (error) {
     console.error('Failed to load orders:', error)
+    notification.error('加载订单失败')
   } finally {
     loading.value = false
   }
 }
 
-const switchTab = (tab: 'buyer' | 'seller'): void => {
-  activeTab.value = tab
-  page.value = 1
-  loadOrders()
-}
-
 const cancelOrder = async (orderId: number): Promise<void> => {
-  if (!confirm('确定要取消这个订单吗?') || !userStore.currentUser) {
-    return
-  }
+  if (!userStore.currentUser) return
 
   try {
     await orderAPI.cancelOrder(orderId, {
       user_id: userStore.currentUser.user_id
     })
 
+    notification.success('订单已取消')
     loadOrders(page.value)
   } catch (error) {
     console.error('Failed to cancel order:', error)
-    alert('取消订单失败，请重试')
+    notification.error('取消订单失败')
   }
 }
 
@@ -251,37 +253,40 @@ const payOrder = async (orderId: number): Promise<void> => {
       payment_status: 'paid'
     })
 
+    notification.success('支付成功！')
     loadOrders(page.value)
-    alert('支付成功！')
   } catch (error) {
     console.error('Failed to pay order:', error)
-    alert('支付失败，请重试')
+    notification.error('支付失败')
   }
 }
 
-const confirmOrder = async (orderId: number) => {
-  if (!confirm('确定已收到商品吗？') || !userStore.currentUser) {
-    return
-  }
+const confirmOrder = async (orderId: number): Promise<void> => {
+  if (!userStore.currentUser) return
 
   try {
     await orderAPI.updateOrderStatus(orderId, {
       user_id: userStore.currentUser.user_id,
       status: 'completed'
     })
-    
-    // 重新加载订单列表
+
+    notification.success('确认收货成功！')
     loadOrders(page.value)
-    alert('确认收货成功！')
   } catch (error) {
     console.error('Failed to confirm order:', error)
-    alert('确认收货失败，请重试')
+    notification.error('确认收货失败')
   }
 }
 
-const viewOrderDetail = (orderId: number) => {
+const viewOrderDetail = (orderId: number): void => {
   router.push(`/orders/${orderId}`)
 }
+
+// 监听tab切换
+watch(activeTab, () => {
+  page.value = 1
+  loadOrders()
+})
 
 onMounted(() => {
   loadOrders()
@@ -290,274 +295,15 @@ onMounted(() => {
 
 <style scoped>
 .orders-view {
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 30px 40px;
-}
-
-.orders-view h1 {
-  color: #2c3e50;
-  margin-bottom: 30px;
-  text-align: center;
-}
-
-.order-tabs {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 30px;
-  justify-content: center;
-}
-
-.tab-btn {
-  padding: 10px 20px;
-  border: 1px solid #ddd;
-  background: white;
-  color: #6c757d;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.tab-btn:hover {
-  background: #f8f9fa;
-}
-
-.tab-btn.active {
-  background: #007bff;
-  color: white;
-  border-color: #007bff;
-}
-
-.loading {
-  text-align: center;
-  padding: 40px;
-  color: #6c757d;
-  font-size: 18px;
-}
-
-.no-orders {
-  text-align: center;
-  padding: 40px;
-  color: #6c757d;
-  font-size: 18px;
-}
-
-.orders-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  max-width: 1400px;
 }
 
 .order-card {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  overflow: hidden;
-}
-
-.order-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 20px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #eee;
-}
-
-.order-info {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.order-number {
-  font-weight: 500;
-  color: #2c3e50;
-}
-
-.order-date {
-  font-size: 0.9rem;
-  color: #6c757d;
-}
-
-.status-badge {
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.status-badge.pending {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.status-badge.paid {
-  background: #d1ecf1;
-  color: #0c5460;
-}
-
-.status-badge.shipped {
-  background: #d4edda;
-  color: #155724;
-}
-
-.status-badge.completed {
-  background: #d1ecf1;
-  color: #0c5460;
-}
-
-.status-badge.cancelled {
-  background: #f8d7da;
-  color: #721c24;
-}
-
-.order-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-}
-
-.item-info {
-  display: flex;
-  gap: 15px;
-  flex: 1;
-}
-
-.item-image {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 6px;
-}
-
-.item-details h3 {
-  color: #2c3e50;
-  margin: 0 0 8px 0;
-  font-size: 1.1rem;
-}
-
-.item-price {
-  color: #e74c3c;
-  font-weight: 600;
-  font-size: 1.2rem;
-  margin: 0 0 5px 0;
-}
-
-.payment-method {
-  color: #6c757d;
-  font-size: 0.9rem;
-  margin: 0;
-}
-
-.order-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.action-btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  font-size: 14px;
-  cursor: pointer;
   transition: all 0.3s;
 }
 
-.cancel-btn {
-  background: #6c757d;
-  color: white;
-}
-
-.cancel-btn:hover {
-  background: #5a6268;
-}
-
-.pay-btn {
-  background: #e74c3c;
-  color: white;
-}
-
-.pay-btn:hover {
-  background: #c82333;
-}
-
-.confirm-btn {
-  background: #28a745;
-  color: white;
-}
-
-.confirm-btn:hover {
-  background: #218838;
-}
-
-.detail-btn {
-  background: #007bff;
-  color: white;
-}
-
-.detail-btn:hover {
-  background: #0056b3;
-}
-
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 20px;
-  margin-top: 40px;
-}
-
-.page-btn {
-  padding: 8px 16px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.page-btn:hover:not(:disabled) {
-  background-color: #0056b3;
-}
-
-.page-btn:disabled {
-  background-color: #6c757d;
-  cursor: not-allowed;
-}
-
-.page-info {
-  color: #6c757d;
-  font-weight: 500;
-}
-
-@media (max-width: 768px) {
-  .order-header {
-    flex-direction: column;
-    gap: 10px;
-    align-items: flex-start;
-  }
-
-  .order-content {
-    flex-direction: column;
-    gap: 20px;
-    align-items: stretch;
-  }
-
-  .item-info {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .order-actions {
-    justify-content: center;
-  }
-
-  .action-btn {
-    flex: 1;
-    min-width: 80px;
-  }
+.order-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
 }
 </style>

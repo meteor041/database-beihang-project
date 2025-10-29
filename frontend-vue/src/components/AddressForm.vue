@@ -1,95 +1,150 @@
 <template>
-  <form class="address-form" @submit.prevent="handleSubmit">
-    <div class="form-row">
-      <input
-        v-model="form.recipient_name"
-        type="text"
-        placeholder="收件人姓名 *"
-        maxlength="50"
-      />
-      <input
-        v-model="form.phone"
-        type="tel"
-        placeholder="手机号 *"
-        maxlength="11"
-      />
-    </div>
+  <v-form class="address-form" @submit.prevent="handleSubmit">
+    <v-row>
+      <v-col cols="12" sm="6">
+        <v-text-field
+          v-model="form.recipient_name"
+          label="收件人姓名"
+          placeholder="请输入收件人姓名"
+          variant="outlined"
+          density="comfortable"
+          counter="50"
+          maxlength="50"
+          required
+          prepend-inner-icon="mdi-account"
+        ></v-text-field>
+      </v-col>
+      <v-col cols="12" sm="6">
+        <v-text-field
+          v-model="form.phone"
+          label="手机号"
+          placeholder="请输入手机号"
+          type="tel"
+          variant="outlined"
+          density="comfortable"
+          counter="11"
+          maxlength="11"
+          required
+          prepend-inner-icon="mdi-phone"
+        ></v-text-field>
+      </v-col>
+    </v-row>
 
-    <div class="form-row">
-      <input
-        v-model="form.province"
-        type="text"
-        placeholder="省份 *"
-        maxlength="20"
-      />
-      <input
-        v-model="form.city"
-        type="text"
-        placeholder="城市 *"
-        maxlength="20"
-      />
-      <input
-        v-model="form.district"
-        type="text"
-        placeholder="区县 *"
-        maxlength="20"
-      />
-    </div>
+    <v-row>
+      <v-col cols="12" sm="4">
+        <v-text-field
+          v-model="form.province"
+          label="省份"
+          placeholder="请输入省份"
+          variant="outlined"
+          density="comfortable"
+          counter="20"
+          maxlength="20"
+          required
+          prepend-inner-icon="mdi-map-marker"
+        ></v-text-field>
+      </v-col>
+      <v-col cols="12" sm="4">
+        <v-text-field
+          v-model="form.city"
+          label="城市"
+          placeholder="请输入城市"
+          variant="outlined"
+          density="comfortable"
+          counter="20"
+          maxlength="20"
+          required
+          prepend-inner-icon="mdi-city"
+        ></v-text-field>
+      </v-col>
+      <v-col cols="12" sm="4">
+        <v-text-field
+          v-model="form.district"
+          label="区县"
+          placeholder="请输入区县"
+          variant="outlined"
+          density="comfortable"
+          counter="20"
+          maxlength="20"
+          required
+          prepend-inner-icon="mdi-map"
+        ></v-text-field>
+      </v-col>
+    </v-row>
 
-    <input
+    <v-text-field
       v-model="form.detailed_address"
-      type="text"
-      class="full-width"
-      placeholder="详细地址 *"
+      label="详细地址"
+      placeholder="请输入详细地址"
+      variant="outlined"
+      density="comfortable"
+      counter="200"
       maxlength="200"
-    />
+      required
+      prepend-inner-icon="mdi-home-city"
+      class="mb-4"
+    ></v-text-field>
 
-    <div class="form-row">
-      <input
-        v-model="form.postal_code"
-        type="text"
-        placeholder="邮政编码（可选）"
-        maxlength="6"
-      />
-      <select v-model="form.address_type" class="address-type">
-        <option value="dormitory">宿舍</option>
-        <option value="home">家庭</option>
-        <option value="other">其他</option>
-      </select>
-    </div>
+    <v-row>
+      <v-col cols="12" sm="6">
+        <v-text-field
+          v-model="form.postal_code"
+          label="邮政编码"
+          placeholder="选填"
+          variant="outlined"
+          density="comfortable"
+          counter="6"
+          maxlength="6"
+          prepend-inner-icon="mdi-email-outline"
+        ></v-text-field>
+      </v-col>
+      <v-col cols="12" sm="6">
+        <v-select
+          v-model="form.address_type"
+          :items="addressTypeOptions"
+          label="地址类型"
+          variant="outlined"
+          density="comfortable"
+          prepend-inner-icon="mdi-tag"
+        ></v-select>
+      </v-col>
+    </v-row>
 
-    <label class="checkbox">
-      <input v-model="form.is_default" type="checkbox" />
-      设为默认地址
-    </label>
+    <v-checkbox
+      v-model="form.is_default"
+      label="设为默认地址"
+      color="primary"
+      density="comfortable"
+    ></v-checkbox>
 
-    <div class="form-actions">
-      <button
+    <div class="d-flex justify-end ga-3 mt-4">
+      <v-btn
         v-if="showCancel"
-        type="button"
-        class="btn-cancel"
+        variant="outlined"
         @click="emit('cancel')"
       >
         取消
-      </button>
-      <button
+      </v-btn>
+      <v-btn
         type="submit"
-        class="btn-primary"
-        :disabled="loading"
+        color="primary"
+        :loading="loading"
       >
-        {{ loading ? '提交中...' : submitText }}
-      </button>
+        {{ submitText }}
+      </v-btn>
     </div>
-  </form>
+  </v-form>
 </template>
 
 <script setup lang="ts">
 import { reactive, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { useNotification } from '@/composables/useNotification'
 import type { AddressParams } from '@/types'
 
 type AddressFormValue = Omit<AddressParams, 'user_id'>
 type AddressType = AddressFormValue['address_type']
+
+const notification = useNotification()
 
 const props = withDefaults(defineProps<{
   address?: Partial<AddressFormValue> | null
@@ -107,6 +162,12 @@ const emit = defineEmits<{
   (e: 'save', value: AddressFormValue): void
   (e: 'cancel'): void
 }>()
+
+const addressTypeOptions = [
+  { title: '宿舍', value: 'dormitory' },
+  { title: '家庭', value: 'home' },
+  { title: '其他', value: 'other' }
+]
 
 const form = reactive<AddressFormValue>({
   recipient_name: '',
@@ -183,7 +244,7 @@ const sanitize = (): AddressFormValue => ({
 const handleSubmit = () => {
   const validationError = validate()
   if (validationError) {
-    ElMessage.warning(validationError)
+    notification.warning(validationError)
     return
   }
 
@@ -193,87 +254,6 @@ const handleSubmit = () => {
 
 <style scoped>
 .address-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
-}
-
-.address-form input,
-.address-form select {
-  padding: 10px 12px;
-  border: 1px solid #dcdfe6;
-  border-radius: 6px;
-  font-size: 14px;
   width: 100%;
-  box-sizing: border-box;
-  transition: border-color 0.2s;
-}
-
-.address-form input:focus,
-.address-form select:focus {
-  outline: none;
-  border-color: #409eff;
-  box-shadow: 0 0 0 1px rgba(64, 158, 255, 0.15);
-}
-
-.full-width {
-  width: 100%;
-}
-
-.address-type {
-  max-width: 180px;
-}
-
-.checkbox {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #606266;
-  font-size: 14px;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
-.btn-primary,
-.btn-cancel {
-  padding: 10px 18px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.3s;
-}
-
-.btn-primary {
-  background: #409eff;
-  color: #fff;
-}
-
-.btn-primary:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.btn-primary:not(:disabled):hover {
-  background: #66b1ff;
-}
-
-.btn-cancel {
-  background: #f5f5f5;
-  color: #606266;
-}
-
-.btn-cancel:hover {
-  background: #ebeef5;
 }
 </style>

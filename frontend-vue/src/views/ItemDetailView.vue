@@ -1,128 +1,243 @@
 <template>
-  <div class="item-detail">
-    <div v-if="loading" class="loading">
-      加载中...
+  <v-container class="item-detail">
+    <!-- 加载状态 -->
+    <div v-if="loading" class="d-flex justify-center align-center" style="min-height: 400px;">
+      <v-progress-circular indeterminate color="primary" size="64"></v-progress-circular>
     </div>
 
-    <div v-else-if="!item" class="not-found">
-      商品不存在
-    </div>
+    <!-- 未找到商品 -->
+    <EmptyState
+      v-else-if="!item"
+      icon="mdi-package-variant-closed"
+      description="商品不存在"
+      action-text="浏览其他商品"
+      @action="router.push('/items')"
+    />
 
-    <div v-else class="item-content">
-      <div class="item-images">
-        <div class="main-image">
-          <img 
-            :src="currentImage || '/placeholder.png'" 
-            :alt="item.title"
-          />
-        </div>
-        <div v-if="item.images && item.images.length > 1" class="image-thumbnails">
-          <img 
-            v-for="(image, index) in item.images"
-            :key="index"
-            :src="image"
-            :alt="`${item.title} ${index + 1}`"
-            :class="{ active: currentImage === image }"
-            @click="currentImage = image"
-          />
-        </div>
-      </div>
+    <!-- 商品详情 -->
+    <div v-else>
+      <v-row>
+        <!-- 左侧：图片区域 -->
+        <v-col cols="12" md="6">
+          <v-card elevation="2">
+            <v-carousel
+              v-if="item.images && item.images.length > 0"
+              v-model="currentImageIndex"
+              height="500"
+              hide-delimiter-background
+              show-arrows="hover"
+            >
+              <v-carousel-item
+                v-for="(image, index) in item.images"
+                :key="index"
+                :src="image"
+                cover
+              >
+                <template v-slot:placeholder>
+                  <div class="d-flex align-center justify-center fill-height">
+                    <v-progress-circular indeterminate color="grey-lighten-5"></v-progress-circular>
+                  </div>
+                </template>
+              </v-carousel-item>
+            </v-carousel>
+            <v-img
+              v-else
+              src="/placeholder.png"
+              height="500"
+              cover
+            ></v-img>
 
-      <div class="item-info">
-        <h1>{{ item.title }}</h1>
-        
-        <div class="item-price">
-          <span class="current-price">¥{{ item.price }}</span>
-          <span v-if="item.original_price" class="original-price">
-            原价：¥{{ item.original_price }}
-          </span>
-        </div>
-
-        <div class="item-meta">
-          <div class="meta-item">
-            <span class="label">成色：</span>
-            <span class="value">{{ getConditionText(item.condition_level) }}</span>
-          </div>
-          <div class="meta-item">
-            <span class="label">分类：</span>
-            <span class="value">{{ item.category_name }}</span>
-          </div>
-          <div class="meta-item">
-            <span class="label">交易地点：</span>
-            <span class="value">{{ item.location }}</span>
-          </div>
-          <div class="meta-item">
-            <span class="label">浏览次数：</span>
-            <span class="value">{{ item.view_count }}</span>
-          </div>
-        </div>
-
-        <div class="seller-info">
-          <h3>卖家信息</h3>
-          <div class="seller-card">
-            <img 
-              :src="item.avatar || '/default-avatar.png'" 
-              :alt="item.username"
-              class="seller-avatar"
-            />
-            <div class="seller-details">
-              <div class="seller-name">{{ item.username }}</div>
-              <div class="seller-credit">
-                信用分：{{ item.credit_score }}
+            <!-- 缩略图 -->
+            <v-card-text v-if="item.images && item.images.length > 1" class="pa-2">
+              <div class="d-flex ga-2" style="overflow-x: auto;">
+                <v-img
+                  v-for="(image, index) in item.images"
+                  :key="index"
+                  :src="image"
+                  width="80"
+                  height="80"
+                  cover
+                  class="thumbnail"
+                  :class="{ 'thumbnail-active': currentImageIndex === index }"
+                  @click="currentImageIndex = index"
+                ></v-img>
               </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+
+        <!-- 右侧：商品信息 -->
+        <v-col cols="12" md="6">
+          <v-card elevation="2" class="pa-6">
+            <!-- 商品标题 -->
+            <h1 class="text-h4 font-weight-bold mb-4">{{ item.title }}</h1>
+
+            <!-- 价格 -->
+            <div class="mb-6">
+              <span class="text-h4 font-weight-bold text-error">¥{{ item.price }}</span>
+              <span v-if="item.original_price" class="text-body-1 text-grey text-decoration-line-through ml-4">
+                原价：¥{{ item.original_price }}
+              </span>
             </div>
-          </div>
-        </div>
 
-        <div v-if="isLoggedIn && currentUser?.user_id !== item.user_id" class="actions">
-          <button 
-            @click="toggleWishlist"
-            :class="['wishlist-btn', { active: isWishlisted }]"
-            :disabled="wishlistLoading"
-          >
-            {{ isWishlisted ? '已收藏' : '收藏' }}
-          </button>
-          
-          <button @click="contactSeller" class="contact-btn">
-            联系卖家
-          </button>
-          
-          <button @click="buyNow" class="buy-btn">
-            立即购买
-          </button>
-        </div>
+            <!-- 商品元数据 -->
+            <v-card variant="tonal" class="mb-6">
+              <v-list density="comfortable">
+                <v-list-item>
+                  <template v-slot:prepend>
+                    <v-icon color="primary">mdi-star-circle</v-icon>
+                  </template>
+                  <v-list-item-title>成色</v-list-item-title>
+                  <template v-slot:append>
+                    <v-chip
+                      :color="getConditionColor(item.condition_level)"
+                      size="small"
+                    >
+                      {{ getConditionText(item.condition_level) }}
+                    </v-chip>
+                  </template>
+                </v-list-item>
 
-        <div v-else-if="!isLoggedIn" class="login-prompt">
-          <router-link to="/login" class="login-link">
-            登录后可收藏、联系卖家和购买
-          </router-link>
-        </div>
-      </div>
+                <v-list-item>
+                  <template v-slot:prepend>
+                    <v-icon color="primary">mdi-shape</v-icon>
+                  </template>
+                  <v-list-item-title>分类</v-list-item-title>
+                  <template v-slot:append>
+                    <span>{{ item.category_name }}</span>
+                  </template>
+                </v-list-item>
+
+                <v-list-item>
+                  <template v-slot:prepend>
+                    <v-icon color="primary">mdi-map-marker</v-icon>
+                  </template>
+                  <v-list-item-title>交易地点</v-list-item-title>
+                  <template v-slot:append>
+                    <span>{{ item.location }}</span>
+                  </template>
+                </v-list-item>
+
+                <v-list-item>
+                  <template v-slot:prepend>
+                    <v-icon color="primary">mdi-eye</v-icon>
+                  </template>
+                  <v-list-item-title>浏览次数</v-list-item-title>
+                  <template v-slot:append>
+                    <span>{{ item.view_count }}</span>
+                  </template>
+                </v-list-item>
+              </v-list>
+            </v-card>
+
+            <!-- 卖家信息 -->
+            <div class="mb-6">
+              <h3 class="text-h6 font-weight-bold mb-3">卖家信息</h3>
+              <v-card variant="tonal">
+                <v-card-text class="d-flex align-center ga-4">
+                  <v-avatar size="60" color="primary">
+                    <v-img v-if="item.avatar" :src="item.avatar"></v-img>
+                    <span v-else class="text-h6">{{ item.username?.charAt(0) }}</span>
+                  </v-avatar>
+                  <div>
+                    <div class="text-h6 font-weight-medium">{{ item.username }}</div>
+                    <div class="text-body-2 text-grey">
+                      <v-icon size="small" color="warning">mdi-star</v-icon>
+                      信用分：{{ item.credit_score }}
+                    </div>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div v-if="isLoggedIn && currentUser?.user_id !== item.user_id" class="d-flex flex-column ga-3">
+              <v-btn
+                :color="isWishlisted ? 'error' : 'grey'"
+                :variant="isWishlisted ? 'flat' : 'outlined'"
+                size="large"
+                :prepend-icon="isWishlisted ? 'mdi-heart' : 'mdi-heart-outline'"
+                :loading="wishlistLoading"
+                @click="toggleWishlist"
+              >
+                {{ isWishlisted ? '已收藏' : '收藏' }}
+              </v-btn>
+
+              <v-btn
+                color="success"
+                size="large"
+                prepend-icon="mdi-message-text"
+                @click="contactSeller"
+              >
+                联系卖家
+              </v-btn>
+
+              <v-btn
+                color="primary"
+                size="large"
+                prepend-icon="mdi-cart"
+                @click="buyNow"
+              >
+                立即购买
+              </v-btn>
+            </div>
+
+            <!-- 未登录提示 -->
+            <v-alert
+              v-else-if="!isLoggedIn"
+              type="info"
+              variant="tonal"
+              class="mb-0"
+            >
+              <template v-slot:title>
+                需要登录
+              </template>
+              <template v-slot:text>
+                <router-link to="/login" class="text-primary text-decoration-none font-weight-medium">
+                  登录后可收藏、联系卖家和购买
+                </router-link>
+              </template>
+            </v-alert>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <!-- 商品描述 -->
+      <v-row class="mt-6">
+        <v-col cols="12">
+          <v-card elevation="2">
+            <v-card-title class="text-h5 font-weight-bold">
+              <v-icon class="mr-2">mdi-text-box</v-icon>
+              商品描述
+            </v-card-title>
+            <v-divider></v-divider>
+            <v-card-text class="text-body-1" style="white-space: pre-wrap; line-height: 1.8;">
+              {{ item.description }}
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
     </div>
-
-    <div v-if="item" class="item-description">
-      <h2>商品描述</h2>
-      <div class="description-content">
-        {{ item.description }}
-      </div>
-    </div>
-  </div>
+  </v-container>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useNotification } from '@/composables/useNotification'
 import { itemAPI, wishlistAPI } from '@/api'
-import type { Item } from '@/types'
+import EmptyState from '@/components/EmptyState.vue'
+import type { Item, ConditionLevel } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const notification = useNotification()
 
 const item = ref<Item | null>(null)
 const loading = ref(false)
-const currentImage = ref('')
+const currentImageIndex = ref(0)
 const isWishlisted = ref(false)
 const wishlistLoading = ref(false)
 
@@ -132,13 +247,24 @@ const currentUser = computed(() => userStore.currentUser)
 const conditionMap: Record<string, string> = {
   'brand_new': '全新',
   'like_new': '几乎全新',
-  'very_good': '非常好',
-  'good': '良好',
-  'acceptable': '可接受'
+  'very_good': '轻微使用',
+  'good': '明显使用',
+  'acceptable': '磨损较重'
 }
 
 const getConditionText = (condition: string): string => {
   return conditionMap[condition] || condition
+}
+
+const getConditionColor = (level: ConditionLevel): string => {
+  const colorMap: Record<ConditionLevel, string> = {
+    brand_new: 'success',
+    like_new: 'success',
+    very_good: 'info',
+    good: 'warning',
+    acceptable: 'grey'
+  }
+  return colorMap[level] || 'grey'
 }
 
 const loadItem = async (): Promise<void> => {
@@ -150,15 +276,12 @@ const loadItem = async (): Promise<void> => {
     const response = await itemAPI.getItem(Number(itemId))
     item.value = response.item
 
-    if (item.value?.images && item.value.images.length > 0) {
-      currentImage.value = item.value.images[0] || ''
-    }
-
     if (isLoggedIn.value && item.value) {
       checkWishlistStatus()
     }
   } catch (error) {
     console.error('Failed to load item:', error)
+    notification.error('加载商品失败')
   } finally {
     loading.value = false
   }
@@ -189,15 +312,18 @@ const toggleWishlist = async (): Promise<void> => {
         item_id: item.value.item_id
       })
       isWishlisted.value = false
+      notification.success('已取消收藏')
     } else {
       await wishlistAPI.addToWishlist({
         user_id: currentUser.value.user_id,
         item_id: item.value.item_id
       })
       isWishlisted.value = true
+      notification.success('收藏成功')
     }
   } catch (error) {
     console.error('Failed to toggle wishlist:', error)
+    notification.error('操作失败')
   } finally {
     wishlistLoading.value = false
   }
@@ -230,270 +356,23 @@ onMounted(() => {
 
 <style scoped>
 .item-detail {
-  max-width: 1800px;
-  margin: 0 auto;
-  padding: 30px 40px;
+  max-width: 1400px;
 }
 
-.loading {
-  text-align: center;
-  padding: 40px;
-  color: #6c757d;
-  font-size: 18px;
-}
-
-.not-found {
-  text-align: center;
-  padding: 40px;
-  color: #6c757d;
-  font-size: 18px;
-}
-
-.item-content {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 40px;
-  margin-bottom: 40px;
-}
-
-.item-images {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.main-image {
-  width: 100%;
-  height: 500px;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-.main-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.image-thumbnails {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-}
-
-.image-thumbnails img {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 4px;
+.thumbnail {
   cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.3s;
-}
-
-.image-thumbnails img:hover,
-.image-thumbnails img.active {
-  opacity: 1;
-}
-
-.item-info h1 {
-  color: #2c3e50;
-  margin: 0 0 20px 0;
-  font-size: 2rem;
-}
-
-.item-price {
-  margin-bottom: 20px;
-}
-
-.current-price {
-  color: #e74c3c;
-  font-size: 2rem;
-  font-weight: 600;
-}
-
-.original-price {
-  color: #6c757d;
-  font-size: 1rem;
-  text-decoration: line-through;
-  margin-left: 15px;
-}
-
-.item-meta {
-  background: #f8f9fa;
-  padding: 20px;
-  border-radius: 8px;
-  margin-bottom: 30px;
-}
-
-.meta-item {
-  display: flex;
-  margin-bottom: 10px;
-}
-
-.meta-item:last-child {
-  margin-bottom: 0;
-}
-
-.meta-item .label {
-  font-weight: 500;
-  color: #2c3e50;
-  width: 100px;
-}
-
-.meta-item .value {
-  color: #6c757d;
-}
-
-.seller-info {
-  margin-bottom: 30px;
-}
-
-.seller-info h3 {
-  color: #2c3e50;
-  margin-bottom: 15px;
-}
-
-.seller-card {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 8px;
-}
-
-.seller-avatar {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.seller-name {
-  font-weight: 500;
-  color: #2c3e50;
-  margin-bottom: 5px;
-}
-
-.seller-credit {
-  color: #6c757d;
-  font-size: 0.9rem;
-}
-
-.actions {
-  display: flex;
-  gap: 15px;
-  flex-wrap: wrap;
-}
-
-.actions button {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 6px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
+  opacity: 0.6;
   transition: all 0.3s;
+  border-radius: 4px;
+  flex-shrink: 0;
 }
 
-.wishlist-btn {
-  background: #f8f9fa;
-  color: #6c757d;
-  border: 1px solid #ddd;
+.thumbnail:hover {
+  opacity: 0.9;
 }
 
-.wishlist-btn.active {
-  background: #e74c3c;
-  color: white;
-}
-
-.wishlist-btn:hover {
-  background: #e9ecef;
-}
-
-.wishlist-btn.active:hover {
-  background: #c82333;
-}
-
-.contact-btn {
-  background: #28a745;
-  color: white;
-}
-
-.contact-btn:hover {
-  background: #218838;
-}
-
-.buy-btn {
-  background: #007bff;
-  color: white;
-}
-
-.buy-btn:hover {
-  background: #0056b3;
-}
-
-.login-prompt {
-  text-align: center;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
-}
-
-.login-link {
-  color: #007bff;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.login-link:hover {
-  text-decoration: underline;
-}
-
-.item-description {
-  background: white;
-  padding: 30px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.item-description h2 {
-  color: #2c3e50;
-  margin-bottom: 20px;
-}
-
-.description-content {
-  color: #6c757d;
-  line-height: 1.6;
-  white-space: pre-wrap;
-}
-
-@media (max-width: 768px) {
-  .item-content {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-
-  .main-image {
-    height: 300px;
-  }
-
-  .item-info h1 {
-    font-size: 1.5rem;
-  }
-
-  .current-price {
-    font-size: 1.5rem;
-  }
-
-  .actions {
-    flex-direction: column;
-  }
-
-  .actions button {
-    width: 100%;
-  }
+.thumbnail-active {
+  opacity: 1;
+  border: 2px solid rgb(var(--v-theme-primary));
 }
 </style>

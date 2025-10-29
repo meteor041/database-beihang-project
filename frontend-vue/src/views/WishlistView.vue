@@ -1,175 +1,232 @@
 <template>
-  <div class="wishlist-view">
-    <h1>我的收藏</h1>
-    
-    <div class="wishlist-filters">
-      <div class="filter-group">
-        <label>分类：</label>
-        <select v-model="selectedCategory" @change="loadWishlist">
-          <option value="">全部分类</option>
-          <option 
-            v-for="category in categories" 
-            :key="category.category_id"
-            :value="category.category_id"
-          >
-            {{ category.category_name }}
-          </option>
-        </select>
-      </div>
+  <v-container class="wishlist-view">
+    <h1 class="text-h3 font-weight-bold mb-6">我的收藏</h1>
 
-      <div class="filter-group">
-        <label>排序：</label>
-        <select v-model="sortBy" @change="loadWishlist">
-          <option value="add_time">收藏时间</option>
-          <option value="price">价格</option>
-        </select>
-        <select v-model="sortOrder" @change="loadWishlist">
-          <option value="DESC">降序</option>
-          <option value="ASC">升序</option>
-        </select>
-      </div>
+    <!-- 筛选和批量操作 -->
+    <v-card elevation="2" class="mb-6">
+      <v-card-text>
+        <v-row align="center">
+          <v-col cols="12" sm="4" md="3">
+            <v-select
+              v-model="selectedCategory"
+              :items="categoryOptions"
+              item-title="text"
+              item-value="value"
+              label="分类"
+              variant="outlined"
+              density="comfortable"
+              hide-details
+              @update:model-value="loadWishlist"
+            ></v-select>
+          </v-col>
 
-      <div class="filter-actions">
-        <button @click="toggleSelectAll" class="select-all-btn">
-          {{ isAllSelected ? '取消全选' : '全选' }}
-        </button>
-        <button 
-          @click="batchRemove"
-          :disabled="selectedItems.length === 0"
-          class="batch-remove-btn"
-        >
-          批量删除 ({{ selectedItems.length }})
-        </button>
-      </div>
-    </div>
+          <v-col cols="6" sm="4" md="2">
+            <v-select
+              v-model="sortBy"
+              :items="sortByOptions"
+              label="排序"
+              variant="outlined"
+              density="comfortable"
+              hide-details
+              @update:model-value="loadWishlist"
+            ></v-select>
+          </v-col>
 
-    <div v-if="loading" class="loading">
-      加载中...
-    </div>
+          <v-col cols="6" sm="4" md="2">
+            <v-select
+              v-model="sortOrder"
+              :items="sortOrderOptions"
+              label="顺序"
+              variant="outlined"
+              density="comfortable"
+              hide-details
+              @update:model-value="loadWishlist"
+            ></v-select>
+          </v-col>
 
-    <div v-else-if="wishlistItems.length === 0" class="no-items">
-      暂无收藏商品
-    </div>
+          <v-col cols="12" md="5" class="d-flex ga-2 justify-end">
+            <v-btn
+              variant="outlined"
+              @click="toggleSelectAll"
+            >
+              {{ isAllSelected ? '取消全选' : '全选' }}
+            </v-btn>
+            <v-btn
+              color="error"
+              :disabled="selectedItems.length === 0"
+              @click="batchRemove"
+            >
+              批量删除 ({{ selectedItems.length }})
+            </v-btn>
+          </v-col>
+        </v-row>
+      </v-card-text>
+    </v-card>
 
-    <div v-else class="wishlist-grid">
-      <div 
-        v-for="item in wishlistItems" 
+    <!-- 加载状态 -->
+    <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4"></v-progress-linear>
+
+    <!-- 空状态 -->
+    <EmptyState
+      v-else-if="wishlistItems.length === 0"
+      icon="mdi-heart-outline"
+      description="暂无收藏商品"
+      action-text="去逛逛"
+      @action="router.push('/items')"
+    />
+
+    <!-- 收藏列表 -->
+    <v-row v-else>
+      <v-col
+        v-for="item in wishlistItems"
         :key="item.wishlist_id"
-        class="wishlist-card"
+        cols="12"
+        sm="6"
+        md="4"
+        lg="3"
       >
-        <div class="card-header">
-          <input
-            type="checkbox"
-            :value="item.wishlist_id"
-            v-model="selectedItems"
-            class="item-checkbox"
-          />
-          <button 
-            @click="removeFromWishlist(item.wishlist_id)"
-            class="remove-btn"
-            title="取消收藏"
-          >
-            ❤️
-          </button>
-        </div>
+        <v-card elevation="2" class="wishlist-card h-100">
+          <!-- 卡片头部 -->
+          <div class="card-header pa-2 d-flex justify-space-between">
+            <v-checkbox
+              :model-value="selectedItems.includes(item.wishlist_id)"
+              @update:model-value="toggleItem(item.wishlist_id)"
+              hide-details
+              density="compact"
+            ></v-checkbox>
+            <v-btn
+              icon="mdi-heart"
+              size="small"
+              color="error"
+              variant="text"
+              @click="removeFromWishlist(item.wishlist_id)"
+            ></v-btn>
+          </div>
 
-        <div class="item-image" @click="goToItem(item.item_id)">
-          <img
+          <!-- 商品图片 -->
+          <v-img
             :src="item.images && item.images[0] ? item.images[0] : '/placeholder.png'"
             :alt="item.title"
-          />
-          <div v-if="item.status && item.status !== 'available'" class="status-overlay">
-            {{ getStatusText(item.status) }}
-          </div>
-        </div>
+            height="200"
+            cover
+            class="cursor-pointer"
+            @click="goToItem(item.item_id)"
+          >
+            <v-chip
+              v-if="item.status && item.status !== 'available'"
+              class="ma-2"
+              :color="item.status === 'sold' ? 'error' : 'grey'"
+              size="small"
+            >
+              {{ getStatusText(item.status) }}
+            </v-chip>
+          </v-img>
 
-        <div class="item-info">
-          <h3 @click="goToItem(item.item_id)">{{ item.title }}</h3>
-          <div class="item-details">
-            <span class="item-price">¥{{ item.price }}</span>
-            <span class="item-condition">{{ item.condition_level && getConditionText(item.condition_level) }}</span>
-          </div>
-          <div class="item-meta">
-            <span class="item-seller">{{ item.seller_name }}</span>
-            <span class="item-category">{{ item.category_name }}</span>
-          </div>
-          <div class="wishlist-info">
-            <span class="add-time">收藏于 {{ formatDate(item.add_time) }}</span>
-            <div v-if="item.notes" class="notes">
-              备注：{{ item.notes }}
+          <v-card-text>
+            <h3
+              class="text-h6 mb-2 cursor-pointer text-truncate"
+              @click="goToItem(item.item_id)"
+            >
+              {{ item.title }}
+            </h3>
+
+            <div class="d-flex justify-space-between align-center mb-2">
+              <span class="text-h6 text-error font-weight-bold">¥{{ item.price }}</span>
+              <v-chip size="small" color="primary" variant="tonal">
+                {{ item.condition_level && getConditionText(item.condition_level) }}
+              </v-chip>
             </div>
-          </div>
-        </div>
 
-        <div class="item-actions">
-          <button
-            v-if="item.status === 'available'"
-            @click="contactSeller(item)"
-            class="contact-btn"
-          >
-            联系卖家
-          </button>
-          <button 
-            @click="editNotes(item)"
-            class="edit-notes-btn"
-          >
-            编辑备注
-          </button>
-        </div>
-      </div>
+            <div class="d-flex justify-space-between text-body-2 text-grey mb-2">
+              <span>{{ item.seller_name }}</span>
+              <span>{{ item.category_name }}</span>
+            </div>
+
+            <div class="text-caption text-grey mb-2">
+              收藏于 {{ formatDate(item.add_time) }}
+            </div>
+
+            <v-alert
+              v-if="item.notes"
+              density="compact"
+              type="info"
+              variant="tonal"
+              class="text-caption"
+            >
+              备注：{{ item.notes }}
+            </v-alert>
+          </v-card-text>
+
+          <v-card-actions>
+            <v-btn
+              v-if="item.status === 'available'"
+              variant="outlined"
+              size="small"
+              block
+              @click="contactSeller(item)"
+            >
+              联系卖家
+            </v-btn>
+            <v-btn
+              variant="outlined"
+              size="small"
+              block
+              @click="editNotes(item)"
+            >
+              编辑备注
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- 分页 -->
+    <div v-if="pagination.pages > 1" class="d-flex justify-center mt-6">
+      <v-pagination
+        v-model="page"
+        :length="pagination.pages"
+        @update:model-value="changePage"
+        rounded="circle"
+      ></v-pagination>
     </div>
 
-    <div v-if="pagination.pages > 1" class="pagination">
-      <button 
-        @click="changePage(page - 1)"
-        :disabled="page <= 1"
-        class="page-btn"
-      >
-        上一页
-      </button>
-      
-      <span class="page-info">
-        第 {{ page }} 页，共 {{ pagination.pages }} 页
-      </span>
-      
-      <button 
-        @click="changePage(page + 1)"
-        :disabled="page >= pagination.pages"
-        class="page-btn"
-      >
-        下一页
-      </button>
-    </div>
-
-    <!-- 编辑备注弹窗 -->
-    <div v-if="showNotesModal" class="modal-overlay" @click="closeNotesModal">
-      <div class="modal-content" @click.stop>
-        <h3>编辑收藏备注</h3>
-        <textarea
-          v-model="editingNotes"
-          placeholder="添加备注..."
-          maxlength="200"
-          rows="4"
-        ></textarea>
-        <div class="char-count">{{ editingNotes.length }}/200</div>
-        <div class="modal-actions">
-          <button @click="closeNotesModal" class="cancel-btn">取消</button>
-          <button @click="saveNotes" class="save-btn">保存</button>
-        </div>
-      </div>
-    </div>
-  </div>
+    <!-- 编辑备注对话框 -->
+    <v-dialog v-model="showNotesModal" max-width="500">
+      <v-card>
+        <v-card-title>编辑收藏备注</v-card-title>
+        <v-card-text>
+          <v-textarea
+            v-model="editingNotes"
+            label="备注"
+            placeholder="添加备注..."
+            counter="200"
+            maxlength="200"
+            rows="4"
+            variant="outlined"
+          ></v-textarea>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn variant="text" @click="closeNotesModal">取消</v-btn>
+          <v-btn color="primary" @click="saveNotes">保存</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </v-container>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useNotification } from '@/composables/useNotification'
 import { wishlistAPI, itemAPI } from '@/api'
+import EmptyState from '@/components/EmptyState.vue'
 import type { Wishlist, Category } from '@/types'
 
 const router = useRouter()
 const userStore = useUserStore()
+const notification = useNotification()
 
 const wishlistItems = ref<Wishlist[]>([])
 const categories = ref<Category[]>([])
@@ -194,6 +251,26 @@ const editingNotes = ref('')
 const isAllSelected = computed(() => {
   return wishlistItems.value.length > 0 && selectedItems.value.length === wishlistItems.value.length
 })
+
+const categoryOptions = computed(() => {
+  return [
+    { text: '全部分类', value: '' },
+    ...categories.value.map(cat => ({
+      text: cat.category_name,
+      value: cat.category_id.toString()
+    }))
+  ]
+})
+
+const sortByOptions = [
+  { title: '收藏时间', value: 'add_time' },
+  { title: '价格', value: 'price' }
+]
+
+const sortOrderOptions = [
+  { title: '降序', value: 'DESC' },
+  { title: '升序', value: 'ASC' }
+]
 
 const conditionMap: Record<string, string> = {
   'brand_new': '全新',
@@ -269,19 +346,27 @@ const loadWishlist = async (): Promise<void> => {
     selectedItems.value = []
   } catch (error) {
     console.error('Failed to load wishlist:', error)
+    notification.error('加载收藏列表失败')
   } finally {
     loading.value = false
   }
 }
 
 const changePage = (newPage: number): void => {
-  if (newPage >= 1 && newPage <= pagination.value.pages) {
-    page.value = newPage
-    loadWishlist()
+  page.value = newPage
+  loadWishlist()
+}
+
+const toggleItem = (wishlistId: number): void => {
+  const index = selectedItems.value.indexOf(wishlistId)
+  if (index > -1) {
+    selectedItems.value.splice(index, 1)
+  } else {
+    selectedItems.value.push(wishlistId)
   }
 }
 
-const toggleSelectAll = () => {
+const toggleSelectAll = (): void => {
   if (isAllSelected.value) {
     selectedItems.value = []
   } else {
@@ -289,18 +374,13 @@ const toggleSelectAll = () => {
   }
 }
 
-const removeFromWishlist = async (wishlistId: number) => {
+const removeFromWishlist = async (wishlistId: number): Promise<void> => {
   if (!userStore.currentUser) {
     router.push('/login')
     return
   }
 
-  if (!confirm('确定要取消收藏这个商品吗？')) {
-    return
-  }
-
   try {
-    // 找到对应的商品
     const item = wishlistItems.value.find(item => item.wishlist_id === wishlistId)
     if (!item) return
 
@@ -309,28 +389,18 @@ const removeFromWishlist = async (wishlistId: number) => {
       item_id: item.item_id
     })
 
-    // 重新加载收藏列表
+    notification.success('已取消收藏')
     loadWishlist()
   } catch (error) {
     console.error('Failed to remove from wishlist:', error)
-    alert('取消收藏失败，请重试')
+    notification.error('取消收藏失败')
   }
 }
 
-const batchRemove = async () => {
-  if (selectedItems.value.length === 0) return
-
-  if (!userStore.currentUser) {
-    router.push('/login')
-    return
-  }
-
-  if (!confirm(`确定要取消收藏这 ${selectedItems.value.length} 个商品吗？`)) {
-    return
-  }
+const batchRemove = async (): Promise<void> => {
+  if (selectedItems.value.length === 0 || !userStore.currentUser) return
 
   try {
-    // 获取对应的商品ID
     const itemIds = selectedItems.value
       .map((wishlistId) => wishlistItems.value.find(item => item.wishlist_id === wishlistId)?.item_id)
       .filter((id): id is number => typeof id === 'number')
@@ -345,36 +415,20 @@ const batchRemove = async () => {
       item_ids: itemIds
     })
 
-    // 重新加载收藏列表
+    notification.success(`已取消 ${itemIds.length} 个商品的收藏`)
     loadWishlist()
   } catch (error) {
-    console.error('Failed to batch remove from wishlist:', error)
-    alert('批量取消收藏失败，请重试')
+    console.error('Failed to batch remove:', error)
+    notification.error('批量删除失败')
   }
 }
 
-const goToItem = (itemId: number) => {
+const goToItem = (itemId: number): void => {
   router.push(`/items/${itemId}`)
 }
 
-const contactSeller = async (item: Wishlist): Promise<void> => {
-  if (!userStore.isLoggedIn) {
-    router.push('/login')
-    return
-  }
-
-  try {
-    const response = await itemAPI.getItem(item.item_id)
-    const detail = response.item
-    if (detail?.user_id) {
-      router.push(`/messages?user_id=${detail.user_id}&item_id=${detail.item_id}`)
-    } else {
-      router.push(`/items/${item.item_id}`)
-    }
-  } catch (error) {
-    console.error('Failed to load item for messaging:', error)
-    router.push(`/items/${item.item_id}`)
-  }
+const contactSeller = (item: Wishlist): void => {
+  router.push(`/messages?user_id=${item.seller_id}&item_id=${item.item_id}`)
 }
 
 const editNotes = (item: Wishlist): void => {
@@ -393,29 +447,22 @@ const saveNotes = async (): Promise<void> => {
   if (!editingItem.value || !userStore.currentUser) return
 
   try {
-    await wishlistAPI.updateWishlistNotes(editingItem.value.wishlist_id, {
+    await wishlistAPI.updateWishlistNotes({
       user_id: userStore.currentUser.user_id,
+      item_id: editingItem.value.item_id,
       notes: editingNotes.value
     })
 
-    const index = wishlistItems.value.findIndex(item => item.wishlist_id === editingItem.value?.wishlist_id)
-    if (index !== -1 && editingItem.value && wishlistItems.value[index]) {
-      wishlistItems.value[index].notes = editingNotes.value
-    }
-
+    notification.success('备注已保存')
     closeNotesModal()
+    loadWishlist()
   } catch (error) {
     console.error('Failed to update notes:', error)
-    alert('保存备注失败，请重试')
+    notification.error('保存备注失败')
   }
 }
 
 onMounted(() => {
-  if (!userStore.isLoggedIn) {
-    router.push('/login')
-    return
-  }
-  
   loadCategories()
   loadWishlist()
 })
@@ -423,399 +470,23 @@ onMounted(() => {
 
 <style scoped>
 .wishlist-view {
-  max-width: 1800px;
-  margin: 0 auto;
-  padding: 30px 40px;
-}
-
-.wishlist-view h1 {
-  color: #2c3e50;
-  margin-bottom: 30px;
-  text-align: center;
-}
-
-.wishlist-filters {
-  display: flex;
-  gap: 20px;
-  align-items: center;
-  margin-bottom: 30px;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  flex-wrap: wrap;
-}
-
-.filter-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.filter-group label {
-  font-weight: 500;
-  color: #2c3e50;
-}
-
-.filter-group select {
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.filter-actions {
-  display: flex;
-  gap: 10px;
-  margin-left: auto;
-}
-
-.select-all-btn,
-.batch-remove-btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.select-all-btn {
-  background: #007bff;
-  color: white;
-}
-
-.select-all-btn:hover {
-  background: #0056b3;
-}
-
-.batch-remove-btn {
-  background: #dc3545;
-  color: white;
-}
-
-.batch-remove-btn:hover:not(:disabled) {
-  background: #c82333;
-}
-
-.batch-remove-btn:disabled {
-  background: #6c757d;
-  cursor: not-allowed;
-}
-
-.loading {
-  text-align: center;
-  padding: 40px;
-  color: #6c757d;
-  font-size: 18px;
-}
-
-.no-items {
-  text-align: center;
-  padding: 40px;
-  color: #6c757d;
-  font-size: 18px;
-}
-
-.wishlist-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 30px;
-  margin-bottom: 40px;
+  max-width: 1400px;
 }
 
 .wishlist-card {
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   transition: all 0.3s;
 }
 
 .wishlist-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15) !important;
 }
 
 .card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 15px;
-  background: #f8f9fa;
-}
-
-.item-checkbox {
-  width: 18px;
-  height: 18px;
-}
-
-.remove-btn {
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-  cursor: pointer;
-  transition: transform 0.3s;
-}
-
-.remove-btn:hover {
-  transform: scale(1.1);
-}
-
-.item-image {
-  height: 200px;
-  overflow: hidden;
-  cursor: pointer;
   position: relative;
 }
 
-.item-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s;
-}
-
-.item-image:hover img {
-  transform: scale(1.05);
-}
-
-.status-overlay {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: rgba(0,0,0,0.7);
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.8rem;
-}
-
-.item-info {
-  padding: 15px;
-}
-
-.item-info h3 {
-  color: #2c3e50;
-  margin: 0 0 10px 0;
-  font-size: 1.1rem;
+.cursor-pointer {
   cursor: pointer;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.item-info h3:hover {
-  color: #007bff;
-}
-
-.item-details {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.item-price {
-  color: #e74c3c;
-  font-weight: 600;
-  font-size: 1.2rem;
-}
-
-.item-condition {
-  background-color: #f8f9fa;
-  color: #6c757d;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-}
-
-.item-meta {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-  font-size: 0.9rem;
-  color: #6c757d;
-}
-
-.wishlist-info {
-  font-size: 0.8rem;
-  color: #6c757d;
-}
-
-.add-time {
-  display: block;
-  margin-bottom: 5px;
-}
-
-.notes {
-  background: #f8f9fa;
-  padding: 8px;
-  border-radius: 4px;
-  font-style: italic;
-}
-
-.item-actions {
-  display: flex;
-  gap: 10px;
-  padding: 15px;
-  border-top: 1px solid #f8f9fa;
-}
-
-.contact-btn,
-.edit-notes-btn {
-  flex: 1;
-  padding: 8px 12px;
-  border: none;
-  border-radius: 4px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.contact-btn {
-  background: #28a745;
-  color: white;
-}
-
-.contact-btn:hover {
-  background: #218838;
-}
-
-.edit-notes-btn {
-  background: #6c757d;
-  color: white;
-}
-
-.edit-notes-btn:hover {
-  background: #5a6268;
-}
-
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 20px;
-  margin-top: 40px;
-}
-
-.page-btn {
-  padding: 8px 16px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.page-btn:hover:not(:disabled) {
-  background-color: #0056b3;
-}
-
-.page-btn:disabled {
-  background-color: #6c757d;
-  cursor: not-allowed;
-}
-
-.page-info {
-  color: #6c757d;
-  font-weight: 500;
-}
-
-/* 弹窗样式 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 8px;
-  padding: 30px;
-  width: 90%;
-  max-width: 500px;
-  position: relative;
-}
-
-.modal-content h3 {
-  color: #2c3e50;
-  margin-bottom: 20px;
-}
-
-.modal-content textarea {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  resize: vertical;
-  font-family: inherit;
-  font-size: 14px;
-}
-
-.char-count {
-  text-align: right;
-  font-size: 12px;
-  color: #6c757d;
-  margin: 5px 0 20px 0;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 15px;
-  justify-content: flex-end;
-}
-
-.cancel-btn,
-.save-btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.cancel-btn {
-  background: #6c757d;
-  color: white;
-}
-
-.save-btn {
-  background: #007bff;
-  color: white;
-}
-
-.cancel-btn:hover {
-  background: #5a6268;
-}
-
-.save-btn:hover {
-  background: #0056b3;
-}
-
-@media (max-width: 768px) {
-  .wishlist-filters {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .filter-group {
-    justify-content: space-between;
-  }
-
-  .filter-actions {
-    margin-left: 0;
-    justify-content: center;
-  }
-
-  .wishlist-grid {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  }
 }
 </style>

@@ -1,16 +1,32 @@
 <template>
   <div class="empty-state">
-    <el-empty
-      :image="image"
-      :image-size="imageSize"
-      :description="description"
-    >
-      <template v-if="actionText" #default>
-        <el-button :type="actionType" @click="handleAction">
-          {{ actionText }}
-        </el-button>
-      </template>
-    </el-empty>
+    <v-container>
+      <v-row justify="center">
+        <v-col cols="12" class="text-center">
+          <v-img
+            v-if="image"
+            :src="image"
+            :max-width="imageSize"
+            class="mx-auto mb-4"
+            alt="Empty state"
+          ></v-img>
+          <v-icon v-else :size="imageSize" color="grey-lighten-1" class="mb-4">
+            mdi-inbox-outline
+          </v-icon>
+
+          <p class="text-h6 text-grey-darken-1 mb-4">{{ description }}</p>
+
+          <v-btn
+            v-if="actionText"
+            :color="getColor(actionType)"
+            size="large"
+            @click="handleAction"
+          >
+            {{ actionText }}
+          </v-btn>
+        </v-col>
+      </v-row>
+    </v-container>
   </div>
 </template>
 
@@ -20,10 +36,10 @@ interface Props {
   imageSize?: number
   description?: string
   actionText?: string
-  actionType?: 'primary' | 'success' | 'warning' | 'danger' | 'info'
+  actionType?: 'primary' | 'success' | 'warning' | 'error' | 'info'
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   image: '',
   imageSize: 200,
   description: '暂无数据',
@@ -34,6 +50,17 @@ withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   action: []
 }>()
+
+const getColor = (type: string) => {
+  const colorMap: Record<string, string> = {
+    primary: 'primary',
+    success: 'success',
+    warning: 'warning',
+    error: 'error',
+    info: 'info'
+  }
+  return colorMap[type] || 'primary'
+}
 
 const handleAction = () => {
   emit('action')

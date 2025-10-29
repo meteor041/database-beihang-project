@@ -1,23 +1,26 @@
 <template>
   <div class="user-avatar-wrapper">
-    <el-avatar
-      :size="size"
-      :src="avatar"
+    <v-avatar
+      :size="avatarSize"
+      :color="avatar ? undefined : 'primary'"
       :class="{ clickable: clickable }"
       @click="handleClick"
     >
-      {{ fallbackText }}
-    </el-avatar>
+      <v-img v-if="avatar" :src="avatar" alt="Avatar" cover></v-img>
+      <span v-else class="text-h6">{{ fallbackText }}</span>
+    </v-avatar>
 
     <!-- 信用分星级显示 -->
     <div v-if="showCreditScore && creditScore !== undefined" class="credit-score">
-      <el-rate
-        v-model="creditStars"
-        disabled
-        show-score
-        text-color="#ff9900"
-        :score-template="`${creditScore}分`"
-      />
+      <v-rating
+        :model-value="creditStars"
+        readonly
+        density="compact"
+        color="amber"
+        half-increments
+        size="small"
+      ></v-rating>
+      <span class="credit-text">{{ creditScore }}分</span>
     </div>
 
     <!-- 在线状态指示器 -->
@@ -35,7 +38,7 @@ interface Props {
   showCreditScore?: boolean
   showOnlineStatus?: boolean
   isOnline?: boolean
-  size?: number | 'large' | 'default' | 'small'
+  size?: number
   clickable?: boolean
 }
 
@@ -46,13 +49,16 @@ const props = withDefaults(defineProps<Props>(), {
   showCreditScore: false,
   showOnlineStatus: false,
   isOnline: false,
-  size: 'default',
+  size: 40,
   clickable: false
 })
 
 const emit = defineEmits<{
   click: []
 }>()
+
+// 计算头像尺寸
+const avatarSize = computed(() => props.size)
 
 // 头像备用文字（用户名首字母）
 const fallbackText = computed(() => {
@@ -92,16 +98,16 @@ const handleClick = () => {
 }
 
 .credit-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
   font-size: 12px;
 }
 
-.credit-score :deep(.el-rate) {
-  height: 16px;
-}
-
-.credit-score :deep(.el-rate__text) {
+.credit-text {
   font-size: 12px;
-  margin-left: 4px;
+  color: #666;
 }
 
 .online-indicator {
@@ -117,5 +123,6 @@ const handleClick = () => {
 
 .online-indicator.online {
   background-color: #67c23a;
+  box-shadow: 0 0 4px rgba(103, 194, 58, 0.5);
 }
 </style>

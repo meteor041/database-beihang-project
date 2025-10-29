@@ -1,15 +1,84 @@
+<template>
+  <div class="login-container">
+    <v-card class="login-card" elevation="8">
+      <v-card-title class="text-center card-header">
+        <div class="d-flex flex-column align-center">
+          <v-icon size="48" color="primary">mdi-account-circle</v-icon>
+          <h2 class="text-h4 mt-4 mb-2">用户登录</h2>
+          <p class="text-body-2 text-grey">欢迎回到校内二手交易平台</p>
+        </div>
+      </v-card-title>
+
+      <v-card-text class="px-8 py-6">
+        <v-form ref="loginFormRef" @submit.prevent="handleLogin">
+          <v-text-field
+            v-model="loginForm.loginField"
+            label="用户名/学号/手机号"
+            placeholder="请输入用户名、学号或手机号"
+            prepend-inner-icon="mdi-account"
+            :rules="[rules.required, rules.minLength]"
+            :error-messages="errors.loginField"
+            clearable
+            variant="outlined"
+            class="mb-2"
+          ></v-text-field>
+
+          <v-text-field
+            v-model="loginForm.password"
+            label="密码"
+            placeholder="请输入密码"
+            prepend-inner-icon="mdi-lock"
+            :type="showPassword ? 'text' : 'password'"
+            :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
+            @click:append-inner="showPassword = !showPassword"
+            :rules="[rules.required, rules.passwordMinLength]"
+            :error-messages="errors.password"
+            clearable
+            variant="outlined"
+            class="mb-4"
+            @keyup.enter="handleLogin"
+          ></v-text-field>
+
+          <v-btn
+            type="submit"
+            color="primary"
+            size="large"
+            block
+            :loading="loading"
+            class="mb-4"
+          >
+            {{ loading ? '登录中...' : '登录' }}
+          </v-btn>
+        </v-form>
+
+        <v-divider class="my-4">
+          <span class="text-grey px-2">或</span>
+        </v-divider>
+
+        <div class="text-center">
+          <span class="text-body-2">还没有账号？</span>
+          <v-btn variant="text" color="primary" @click="router.push('/register')">
+            立即注册
+          </v-btn>
+        </div>
+      </v-card-text>
+    </v-card>
+  </div>
+</template>
+
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { User, Lock, UserFilled } from '@element-plus/icons-vue'
+import { useNotification } from '@/composables/useNotification'
 
 const router = useRouter()
 const userStore = useUserStore()
+const notification = useNotification()
 
-const loginFormRef = ref<FormInstance>()
+const loginFormRef = ref()
 const loading = ref(false)
+const showPassword = ref(false)
 
 interface LoginForm {
   loginField: string
@@ -21,22 +90,40 @@ const loginForm = ref<LoginForm>({
   password: ''
 })
 
-const rules: FormRules<LoginForm> = {
-  loginField: [
-    { required: true, message: '请输入用户名、学号或手机号', trigger: 'blur' },
-    { min: 2, message: '长度至少为 2 个字符', trigger: 'blur' }
-  ],
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度至少为 6 位', trigger: 'blur' }
-  ]
+const errors = ref({
+  loginField: '',
+  password: ''
+})
+
+// 验证规则
+const rules = {
+  required: (value: string) => !!value || '此字段为必填项',
+  minLength: (value: string) => value.length >= 2 || '长度至少为 2 个字符',
+  passwordMinLength: (value: string) => value.length >= 6 || '密码长度至少为 6 位'
 }
 
 const handleLogin = async (): Promise<void> => {
-  if (!loginFormRef.value) return
+  errors.value = { loginField: '', password: '' }
+
+  // 手动验证
+  if (!loginForm.value.loginField) {
+    errors.value.loginField = '请输入用户名、学号或手机号'
+    return
+  }
+  if (loginForm.value.loginField.length < 2) {
+    errors.value.loginField = '长度至少为 2 个字符'
+    return
+  }
+  if (!loginForm.value.password) {
+    errors.value.password = '请输入密码'
+    return
+  }
+  if (loginForm.value.password.length < 6) {
+    errors.value.password = '密码长度至少为 6 位'
+    return
+  }
 
   try {
-    await loginFormRef.value.validate()
     loading.value = true
 
     const result = await userStore.login({
@@ -45,90 +132,19 @@ const handleLogin = async (): Promise<void> => {
     })
 
     if (result.success) {
-      ElMessage.success('登录成功!')
-
+      notification.success('登录成功!')
       router.push('/')
     } else {
-      ElMessage.error(result.message || '登录失败')
+      notification.error(result.message || '登录失败')
     }
   } catch (error) {
-    console.error('Login validation failed:', error)
+    console.error('Login failed:', error)
+    notification.error('登录失败，请稍后重试')
   } finally {
     loading.value = false
   }
 }
 </script>
-
-<template>
-  <div class="login-container">
-    <el-card class="login-card" shadow="always">
-      <template #header>
-        <div class="card-header">
-          <el-icon :size="48" color="#409eff"><UserFilled /></el-icon>
-          <h2>用户登录</h2>
-          <p>欢迎回到校内二手交易平台</p>
-        </div>
-      </template>
-
-      <el-form
-        ref="loginFormRef"
-        :model="loginForm"
-        :rules="rules"
-        label-position="top"
-        size="large"
-        @submit.prevent="handleLogin"
-      >
-        <el-form-item label="用户名/学号/手机号" prop="loginField">
-          <el-input
-            v-model="loginForm.loginField"
-            placeholder="请输入用户名、学号或手机号"
-            clearable
-          >
-            <template #prefix>
-              <el-icon><User /></el-icon>
-            </template>
-          </el-input>
-        </el-form-item>
-
-        <el-form-item label="密码" prop="password">
-          <el-input
-            v-model="loginForm.password"
-            type="password"
-            placeholder="请输入密码"
-            show-password
-            clearable
-            @keyup.enter="handleLogin"
-          >
-            <template #prefix>
-              <el-icon><Lock /></el-icon>
-            </template>
-          </el-input>
-        </el-form-item>
-
-        <el-form-item>
-          <el-button
-            type="primary"
-            :loading="loading"
-            native-type="submit"
-            style="width: 100%"
-            size="large"
-          >
-            {{ loading ? '登录中...' : '登录' }}
-          </el-button>
-        </el-form-item>
-      </el-form>
-
-      <el-divider>或</el-divider>
-
-      <div class="register-link">
-        <span>还没有账号？</span>
-        <el-link type="primary" @click="router.push('/register')">
-          立即注册
-        </el-link>
-      </div>
-    </el-card>
-  </div>
-</template>
 
 <style scoped>
 .login-container {
@@ -145,45 +161,16 @@ const handleLogin = async (): Promise<void> => {
 }
 
 .card-header {
-  text-align: center;
-  padding: 20px 0;
+  padding: 32px 20px 20px;
 }
 
 .card-header h2 {
-  margin: 20px 0 10px 0;
-  font-size: 28px;
   font-weight: 600;
   color: #303133;
 }
 
 .card-header p {
-  margin: 0;
-  font-size: 14px;
   color: #909399;
-}
-
-
-.register-link {
-  text-align: center;
-  font-size: 14px;
-  color: #606266;
-}
-
-.register-link span {
-  margin-right: 8px;
-}
-
-:deep(.el-form-item__label) {
-  font-weight: 500;
-  color: #303133;
-}
-
-:deep(.el-input__wrapper) {
-  transition: all 0.3s;
-}
-
-:deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px var(--el-color-primary) inset;
 }
 
 @media (max-width: 768px) {

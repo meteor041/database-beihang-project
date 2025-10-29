@@ -1,171 +1,234 @@
 <template>
-  <div class="publish-view">
-    <div class="publish-container">
-      <h1>发布商品</h1>
-      
-      <form @submit.prevent="handlePublish" class="publish-form">
-        <div class="form-section">
-          <h2>基本信息</h2>
-          
-          <div class="form-group">
-            <label for="title">商品标题 *</label>
-            <input
-              id="title"
+  <v-container class="publish-view">
+    <v-card elevation="4" class="mx-auto" max-width="1000">
+      <v-card-title class="text-h4 font-weight-bold text-center pa-6 bg-primary">
+        <v-icon class="mr-2" size="large">mdi-package-variant-plus</v-icon>
+        发布商品
+      </v-card-title>
+
+      <v-card-text class="pa-8">
+        <v-form ref="formRef" @submit.prevent="handlePublish">
+          <!-- 基本信息 -->
+          <div class="mb-8">
+            <h2 class="text-h5 font-weight-bold mb-4 d-flex align-center">
+              <v-icon class="mr-2" color="primary">mdi-information</v-icon>
+              基本信息
+            </h2>
+
+            <v-text-field
               v-model="form.title"
-              type="text"
-              placeholder="请输入商品标题（最多100字符）"
+              label="商品标题"
+              placeholder="请输入商品标题"
+              prepend-inner-icon="mdi-tag"
+              variant="outlined"
+              counter="100"
               maxlength="100"
+              :rules="[rules.required]"
               required
-            />
-            <div class="char-count">{{ form.title.length }}/100</div>
-          </div>
+              class="mb-4"
+            ></v-text-field>
 
-          <div class="form-group">
-            <label for="category">商品分类 *</label>
-            <select id="category" v-model="form.category_id" required>
-              <option value="">请选择分类</option>
-              <option 
-                v-for="category in categories" 
-                :key="category.category_id"
-                :value="category.category_id"
-              >
-                {{ category.category_name }}
-              </option>
-            </select>
-          </div>
+            <v-select
+              v-model="form.category_id"
+              :items="categoryOptions"
+              item-title="text"
+              item-value="value"
+              label="商品分类"
+              prepend-inner-icon="mdi-shape"
+              variant="outlined"
+              :rules="[rules.required]"
+              required
+              class="mb-4"
+            ></v-select>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label for="price">售价 *</label>
-              <input
-                id="price"
-                v-model="form.price"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0.00"
-                required
-              />
-            </div>
+            <v-row>
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  v-model="form.price"
+                  type="number"
+                  label="售价"
+                  prepend-inner-icon="mdi-currency-cny"
+                  variant="outlined"
+                  step="0.01"
+                  min="0"
+                  :rules="[rules.required, rules.positiveNumber]"
+                  required
+                ></v-text-field>
+              </v-col>
 
-            <div class="form-group">
-              <label for="originalPrice">原价</label>
-              <input
-                id="originalPrice"
-                v-model="form.original_price"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0.00"
-              />
-            </div>
-          </div>
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  v-model="form.original_price"
+                  type="number"
+                  label="原价（选填）"
+                  prepend-inner-icon="mdi-currency-cny"
+                  variant="outlined"
+                  step="0.01"
+                  min="0"
+                  :rules="[rules.originalPriceValid]"
+                ></v-text-field>
+              </v-col>
+            </v-row>
 
-          <div class="form-group">
-            <label for="condition">成色 *</label>
-            <select id="condition" v-model="form.condition_level" required>
-              <option value="">请选择成色</option>
-              <option value="brand_new">全新</option>
-              <option value="like_new">几乎全新</option>
-              <option value="very_good">非常好</option>
-              <option value="good">良好</option>
-              <option value="acceptable">可接受</option>
-            </select>
-          </div>
+            <v-select
+              v-model="form.condition_level"
+              :items="conditionOptions"
+              item-title="text"
+              item-value="value"
+              label="成色"
+              prepend-inner-icon="mdi-star-circle"
+              variant="outlined"
+              :rules="[rules.required]"
+              required
+              class="mb-4"
+            ></v-select>
 
-          <div class="form-group">
-            <label for="location">交易地点 *</label>
-            <input
-              id="location"
+            <v-text-field
               v-model="form.location"
-              type="text"
+              label="交易地点"
               placeholder="请输入交易地点"
+              prepend-inner-icon="mdi-map-marker"
+              variant="outlined"
+              :rules="[rules.required]"
               required
-            />
+            ></v-text-field>
           </div>
-        </div>
 
-        <div class="form-section">
-          <h2>商品描述</h2>
-          
-          <div class="form-group">
-            <label for="description">详细描述 *</label>
-            <textarea
-              id="description"
+          <v-divider class="my-8"></v-divider>
+
+          <!-- 商品描述 -->
+          <div class="mb-8">
+            <h2 class="text-h5 font-weight-bold mb-4 d-flex align-center">
+              <v-icon class="mr-2" color="primary">mdi-text-box</v-icon>
+              商品描述
+            </h2>
+
+            <v-textarea
               v-model="form.description"
-              placeholder="请详细描述商品的特点、使用情况等（最多1000字符）"
+              label="详细描述"
+              placeholder="请详细描述商品的特点、使用情况等"
+              prepend-inner-icon="mdi-text"
+              variant="outlined"
+              counter="1000"
               maxlength="1000"
               rows="6"
+              :rules="[rules.required]"
               required
-            ></textarea>
-            <div class="char-count">{{ form.description.length }}/1000</div>
+            ></v-textarea>
           </div>
-        </div>
 
-        <div class="form-section">
-          <h2>商品图片</h2>
-          
-          <div class="image-upload">
-            <div class="upload-area" @click="triggerFileInput">
-              <input
-                ref="fileInput"
-                type="file"
-                multiple
-                accept="image/*"
-                @change="handleImageUpload"
-                style="display: none"
-              />
-              <div class="upload-placeholder">
-                <div class="upload-icon">📷</div>
-                <div class="upload-text">点击上传图片</div>
-                <div class="upload-hint">最多9张，每张不超过5MB</div>
-              </div>
-            </div>
+          <v-divider class="my-8"></v-divider>
 
-            <div v-if="form.images.length > 0" class="image-preview">
-              <div 
+          <!-- 商品图片 -->
+          <div class="mb-8">
+            <h2 class="text-h5 font-weight-bold mb-4 d-flex align-center">
+              <v-icon class="mr-2" color="primary">mdi-image-multiple</v-icon>
+              商品图片
+            </h2>
+
+            <v-card
+              variant="outlined"
+              class="upload-area mb-4"
+              :class="{ 'upload-area-hover': form.images.length < 9 }"
+              @click="form.images.length < 9 && triggerFileInput()"
+            >
+              <v-card-text class="text-center pa-8">
+                <input
+                  ref="fileInput"
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  @change="handleImageUpload"
+                  style="display: none"
+                />
+                <v-icon size="80" color="grey-lighten-1" class="mb-4">mdi-camera-plus</v-icon>
+                <div class="text-h6 mb-2">点击上传图片</div>
+                <div class="text-body-2 text-grey">最多9张，每张不超过5MB</div>
+                <div class="text-caption text-grey mt-2">已上传 {{ form.images.length }}/9</div>
+              </v-card-text>
+            </v-card>
+
+            <!-- 图片预览 -->
+            <v-row v-if="form.images.length > 0">
+              <v-col
                 v-for="(image, index) in form.images"
                 :key="index"
-                class="image-item"
+                cols="6"
+                sm="4"
+                md="3"
               >
-                <img :src="image" :alt="`商品图片 ${index + 1}`" />
-                <button 
-                  type="button"
-                  @click="removeImage(index)"
-                  class="remove-btn"
-                >
-                  ×
-                </button>
-              </div>
-            </div>
+                <v-card class="image-item">
+                  <v-img
+                    :src="image"
+                    aspect-ratio="1"
+                    cover
+                  ></v-img>
+                  <v-btn
+                    icon="mdi-close"
+                    size="small"
+                    color="error"
+                    class="remove-btn"
+                    @click="removeImage(index)"
+                  ></v-btn>
+                </v-card>
+              </v-col>
+            </v-row>
           </div>
-        </div>
 
-        <div v-if="errorMessage" class="error-message">
-          {{ errorMessage }}
-        </div>
+          <!-- 错误和成功消息 -->
+          <v-alert
+            v-if="errorMessage"
+            type="error"
+            variant="tonal"
+            class="mb-4"
+            closable
+            @click:close="errorMessage = ''"
+          >
+            {{ errorMessage }}
+          </v-alert>
 
-        <div v-if="successMessage" class="success-message">
-          {{ successMessage }}
-        </div>
+          <v-alert
+            v-if="successMessage"
+            type="success"
+            variant="tonal"
+            class="mb-4"
+          >
+            {{ successMessage }}
+          </v-alert>
 
-        <div class="form-actions">
-          <button type="button" @click="resetForm" class="reset-btn">
-            重置
-          </button>
-          <button type="submit" :disabled="loading" class="submit-btn">
-            {{ loading ? '发布中...' : '发布商品' }}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
+          <!-- 操作按钮 -->
+          <div class="d-flex justify-center ga-4">
+            <v-btn
+              variant="outlined"
+              size="large"
+              prepend-icon="mdi-refresh"
+              @click="resetForm"
+              :disabled="loading"
+            >
+              重置
+            </v-btn>
+
+            <v-btn
+              type="submit"
+              color="primary"
+              size="large"
+              prepend-icon="mdi-upload"
+              :loading="loading"
+            >
+              发布商品
+            </v-btn>
+          </div>
+        </v-form>
+      </v-card-text>
+    </v-card>
+  </v-container>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useNotification } from '@/composables/useNotification'
 import { itemAPI } from '@/api'
 import type { ConditionLevel } from '@/types'
 
@@ -187,6 +250,10 @@ interface PublishForm {
 
 const router = useRouter()
 const userStore = useUserStore()
+const notification = useNotification()
+
+const formRef = ref()
+const fileInput = ref<HTMLInputElement | null>(null)
 
 const form = ref<PublishForm>({
   title: '',
@@ -203,7 +270,38 @@ const categories = ref<Category[]>([])
 const loading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
-const fileInput = ref<HTMLInputElement | null>(null)
+
+// 分类选项
+const categoryOptions = computed(() => {
+  return categories.value.map(cat => ({
+    text: cat.category_name,
+    value: cat.category_id.toString()
+  }))
+})
+
+// 成色选项
+const conditionOptions = [
+  { text: '全新', value: 'brand_new' },
+  { text: '几乎全新', value: 'like_new' },
+  { text: '轻微使用', value: 'very_good' },
+  { text: '明显使用', value: 'good' },
+  { text: '磨损较重', value: 'acceptable' }
+]
+
+// 验证规则
+const rules = {
+  required: (value: string) => !!value || '此字段为必填项',
+  positiveNumber: (value: string) => {
+    const num = parseFloat(value)
+    return (num > 0) || '请输入有效的价格'
+  },
+  originalPriceValid: (value: string) => {
+    if (!value) return true
+    const originalPrice = parseFloat(value)
+    const price = parseFloat(form.value.price)
+    return originalPrice >= price || '原价不能低于售价'
+  }
+}
 
 const loadCategories = async (): Promise<void> => {
   try {
@@ -211,6 +309,7 @@ const loadCategories = async (): Promise<void> => {
     categories.value = response.categories || []
   } catch (error) {
     console.error('Failed to load categories:', error)
+    notification.error('加载分类失败')
   }
 }
 
@@ -224,12 +323,14 @@ const handleImageUpload = (event: Event): void => {
 
   if (form.value.images.length + files.length > 9) {
     errorMessage.value = '最多只能上传9张图片'
+    setTimeout(() => errorMessage.value = '', 3000)
     return
   }
 
   files.forEach(file => {
     if (file.size > 5 * 1024 * 1024) {
       errorMessage.value = '图片大小不能超过5MB'
+      setTimeout(() => errorMessage.value = '', 3000)
       return
     }
 
@@ -314,6 +415,7 @@ const handlePublish = async (): Promise<void> => {
 
     if (response.item_id) {
       successMessage.value = '商品发布成功！即将跳转到商品详情页...'
+      notification.success('商品发布成功！')
       setTimeout(() => {
         router.push(`/items/${response.item_id}`)
       }, 2000)
@@ -321,7 +423,9 @@ const handlePublish = async (): Promise<void> => {
   } catch (error: unknown) {
     console.error('Failed to publish item:', error)
     const err = error as { response?: { data?: { error?: string } } }
-    errorMessage.value = err.response?.data?.error || '发布失败，请重试'
+    const message = err.response?.data?.error || '发布失败，请重试'
+    errorMessage.value = message
+    notification.error(message)
   } finally {
     loading.value = false
   }
@@ -340,14 +444,16 @@ const resetForm = (): void => {
   }
   errorMessage.value = ''
   successMessage.value = ''
+  formRef.value?.resetValidation()
 }
 
 onMounted(() => {
   if (!userStore.isLoggedIn) {
+    notification.warning('请先登录')
     router.push('/login')
     return
   }
-  
+
   loadCategories()
 })
 </script>
@@ -355,240 +461,28 @@ onMounted(() => {
 <style scoped>
 .publish-view {
   max-width: 1000px;
-  margin: 0 auto;
-  padding: 30px 40px;
-}
-
-.publish-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  padding: 30px;
-}
-
-.publish-container h1 {
-  color: #2c3e50;
-  margin-bottom: 30px;
-  text-align: center;
-}
-
-.publish-form {
-  display: flex;
-  flex-direction: column;
-  gap: 30px;
-}
-
-.form-section {
-  border-bottom: 1px solid #eee;
-  padding-bottom: 30px;
-}
-
-.form-section:last-of-type {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.form-section h2 {
-  color: #2c3e50;
-  margin-bottom: 20px;
-  font-size: 1.3rem;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  position: relative;
-}
-
-.form-group label {
-  font-weight: 500;
-  color: #2c3e50;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 16px;
-  transition: border-color 0.3s;
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: #007bff;
-}
-
-.char-count {
-  position: absolute;
-  bottom: 8px;
-  right: 12px;
-  font-size: 12px;
-  color: #6c757d;
-  background: white;
-  padding: 2px 4px;
-}
-
-.image-upload {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  padding: 40px 20px;
 }
 
 .upload-area {
-  border: 2px dashed #ddd;
-  border-radius: 8px;
-  padding: 40px;
-  text-align: center;
   cursor: pointer;
-  transition: border-color 0.3s;
+  transition: all 0.3s;
+  border: 2px dashed rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
-.upload-area:hover {
-  border-color: #007bff;
-}
-
-.upload-icon {
-  font-size: 3rem;
-  margin-bottom: 10px;
-}
-
-.upload-text {
-  font-size: 1.1rem;
-  color: #2c3e50;
-  margin-bottom: 5px;
-}
-
-.upload-hint {
-  font-size: 0.9rem;
-  color: #6c757d;
-}
-
-.image-preview {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 15px;
+.upload-area-hover:hover {
+  border-color: rgb(var(--v-theme-primary));
+  background-color: rgba(var(--v-theme-primary), 0.05);
 }
 
 .image-item {
   position: relative;
-  aspect-ratio: 1;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.image-item img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
 .remove-btn {
   position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.7);
-  color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  line-height: 1;
-}
-
-.remove-btn:hover {
-  background: rgba(0,0,0,0.9);
-}
-
-.error-message {
-  color: #dc3545;
-  font-size: 14px;
-  text-align: center;
-  padding: 10px;
-  background-color: #f8d7da;
-  border: 1px solid #f5c6cb;
-  border-radius: 4px;
-}
-
-.success-message {
-  color: #155724;
-  font-size: 14px;
-  text-align: center;
-  padding: 10px;
-  background-color: #d4edda;
-  border: 1px solid #c3e6cb;
-  border-radius: 4px;
-}
-
-.form-actions {
-  display: flex;
-  gap: 20px;
-  justify-content: center;
-  padding-top: 20px;
-}
-
-.reset-btn,
-.submit-btn {
-  padding: 12px 30px;
-  border: none;
-  border-radius: 6px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.reset-btn {
-  background: #6c757d;
-  color: white;
-}
-
-.reset-btn:hover {
-  background: #5a6268;
-}
-
-.submit-btn {
-  background: #007bff;
-  color: white;
-}
-
-.submit-btn:hover:not(:disabled) {
-  background: #0056b3;
-}
-
-.submit-btn:disabled {
-  background: #6c757d;
-  cursor: not-allowed;
-}
-
-@media (max-width: 768px) {
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-
-  .form-actions {
-    flex-direction: column;
-  }
-
-  .reset-btn,
-  .submit-btn {
-    width: 100%;
-  }
+  top: 8px;
+  right: 8px;
+  z-index: 1;
 }
 </style>

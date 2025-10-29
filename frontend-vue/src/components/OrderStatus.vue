@@ -1,27 +1,36 @@
 <template>
   <div class="order-status-timeline">
-    <el-timeline>
-      <el-timeline-item
+    <v-timeline side="end" density="compact">
+      <v-timeline-item
         v-for="step in statusSteps"
         :key="step.status"
-        :timestamp="step.timestamp"
-        :type="step.type"
-        :icon="step.icon"
-        :color="step.color"
-        placement="top"
+        :dot-color="step.color"
+        size="small"
       >
+        <template v-slot:icon>
+          <v-icon :color="step.iconColor">{{ step.icon }}</v-icon>
+        </template>
+
+        <template v-slot:opposite>
+          <span class="text-caption">{{ step.timestamp }}</span>
+        </template>
+
         <div class="step-content">
-          <h4>{{ step.title }}</h4>
-          <p v-if="step.description">{{ step.description }}</p>
+          <h4 class="text-subtitle-1 font-weight-bold">{{ step.title }}</h4>
+          <p v-if="step.description" class="text-body-2 text-grey">{{ step.description }}</p>
         </div>
-      </el-timeline-item>
-    </el-timeline>
+      </v-timeline-item>
+    </v-timeline>
 
     <!-- 状态徽章展示 -->
-    <div v-if="showBadge" class="status-badge">
-      <el-tag :type="getBadgeType(status)" size="large">
+    <div v-if="showBadge" class="status-badge mt-4 text-center">
+      <v-chip
+        :color="getChipColor(status)"
+        size="large"
+        label
+      >
         {{ getStatusText(status) }}
-      </el-tag>
+      </v-chip>
     </div>
   </div>
 </template>
@@ -29,7 +38,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { OrderStatus } from '@/types'
-import { Check, Clock, Van, CircleCheck, Close } from '@element-plus/icons-vue'
 
 interface Props {
   status: OrderStatus
@@ -60,9 +68,9 @@ const statusSteps = computed(() => {
     title: '订单已创建',
     description: '等待买家支付',
     timestamp: props.orderDate,
-    type: props.status === 'pending_payment' ? 'primary' : 'success',
-    icon: Clock,
-    color: props.status === 'pending_payment' ? '#409eff' : '#67c23a'
+    color: props.status === 'pending_payment' ? 'warning' : 'success',
+    icon: 'mdi-clock-outline',
+    iconColor: 'white'
   })
 
   // 已取消的订单
@@ -72,9 +80,9 @@ const statusSteps = computed(() => {
       title: '订单已取消',
       description: '订单已被取消',
       timestamp: props.cancellationDate,
-      type: 'danger',
-      icon: Close,
-      color: '#f56c6c'
+      color: 'error',
+      icon: 'mdi-close',
+      iconColor: 'white'
     })
     return steps
   }
@@ -86,9 +94,9 @@ const statusSteps = computed(() => {
       title: '支付成功',
       description: '等待卖家发货',
       timestamp: props.paymentDate,
-      type: props.status === 'paid' ? 'primary' : 'success',
-      icon: Check,
-      color: props.status === 'paid' ? '#409eff' : '#67c23a'
+      color: props.status === 'paid' ? 'info' : 'success',
+      icon: 'mdi-check',
+      iconColor: 'white'
     })
   }
 
@@ -99,9 +107,9 @@ const statusSteps = computed(() => {
       title: '已发货',
       description: '商品正在配送中',
       timestamp: props.deliveryDate,
-      type: props.status === 'shipped' ? 'primary' : 'success',
-      icon: Van,
-      color: props.status === 'shipped' ? '#409eff' : '#67c23a'
+      color: props.status === 'shipped' ? 'info' : 'success',
+      icon: 'mdi-truck-delivery',
+      iconColor: 'white'
     })
   }
 
@@ -112,25 +120,25 @@ const statusSteps = computed(() => {
       title: '交易完成',
       description: '订单已完成，感谢您的购买',
       timestamp: props.completionDate,
-      type: 'success',
-      icon: CircleCheck,
-      color: '#67c23a'
+      color: 'success',
+      icon: 'mdi-check-circle',
+      iconColor: 'white'
     })
   }
 
   return steps
 })
 
-// 获取状态徽章类型
-const getBadgeType = (status: OrderStatus) => {
-  const typeMap: Record<OrderStatus, 'success' | 'info' | 'warning' | 'danger' | ''> = {
+// 获取状态芯片颜色
+const getChipColor = (status: OrderStatus) => {
+  const colorMap: Record<OrderStatus, string> = {
     pending_payment: 'warning',
     paid: 'info',
-    shipped: '',
+    shipped: 'primary',
     completed: 'success',
-    cancelled: 'danger'
+    cancelled: 'error'
   }
-  return typeMap[status] || 'info'
+  return colorMap[status] || 'info'
 }
 
 // 获取状态文本
@@ -152,32 +160,11 @@ const getStatusText = (status: OrderStatus): string => {
 }
 
 .step-content h4 {
-  margin: 0 0 5px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
+  margin-bottom: 4px;
 }
 
 .step-content p {
   margin: 0;
-  font-size: 14px;
-  color: #909399;
-}
-
-.status-badge {
-  margin-top: 20px;
-  text-align: center;
-}
-
-:deep(.el-timeline-item__timestamp) {
-  font-size: 13px;
-  color: #909399;
-}
-
-:deep(.el-timeline-item__node) {
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 @media (max-width: 768px) {

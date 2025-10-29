@@ -1,122 +1,179 @@
 <template>
-  <div class="messages-view">
-    <h1>消息中心</h1>
-    
-    <div class="messages-container">
-      <div class="conversations-list">
-        <h2>会话列表</h2>
-        
-        <div v-if="conversationsLoading" class="loading">
-          加载中...
-        </div>
-        
-        <div v-else-if="conversations.length === 0" class="no-conversations">
-          暂无会话
-        </div>
-        
-        <div v-else class="conversation-items">
-          <div 
-            v-for="conversation in conversations"
-            :key="`${conversation.other_user_id}-${conversation.item_id}`"
-            :class="['conversation-item', { active: isActiveConversation(conversation) }]"
-            @click="selectConversation(conversation)"
-          >
-            <img 
-              :src="conversation.other_avatar || '/default-avatar.png'"
-              :alt="conversation.other_username"
-              class="user-avatar"
+  <v-container fluid class="messages-view pa-0" style="height: calc(100vh - 64px);">
+    <h1 class="text-h3 font-weight-bold pa-4">消息中心</h1>
+
+    <v-row no-gutters style="height: calc(100% - 80px);">
+      <!-- 会话列表 -->
+      <v-col cols="12" md="4" lg="3" class="conversation-panel">
+        <v-card flat class="h-100">
+          <v-card-title class="bg-grey-lighten-4">会话列表</v-card-title>
+          <v-divider></v-divider>
+
+          <v-progress-linear v-if="conversationsLoading" indeterminate></v-progress-linear>
+
+          <EmptyState
+            v-else-if="conversations.length === 0"
+            icon="mdi-message-outline"
+            description="暂无会话"
+            class="mt-8"
+          />
+
+          <v-list v-else density="compact" class="conversation-list">
+            <v-list-item
+              v-for="conversation in conversations"
+              :key="`${conversation.other_user_id}-${conversation.item_id}`"
+              :active="isActiveConversation(conversation)"
+              @click="selectConversation(conversation)"
+            >
+              <template v-slot:prepend>
+                <v-avatar>
+                  <v-img
+                    v-if="conversation.other_avatar"
+                    :src="conversation.other_avatar"
+                  ></v-img>
+                  <span v-else>{{ conversation.other_username?.charAt(0) }}</span>
+                </v-avatar>
+              </template>
+
+              <v-list-item-title>
+                {{ conversation.other_username }}
+                <v-chip
+                  v-if="conversation.unread_count > 0"
+                  color="error"
+                  size="x-small"
+                  class="ml-2"
+                >
+                  {{ conversation.unread_count }}
+                </v-chip>
+              </v-list-item-title>
+              <v-list-item-subtitle>{{ conversation.item_title }}</v-list-item-subtitle>
+              <v-list-item-subtitle class="text-caption">
+                {{ conversation.last_message }}
+              </v-list-item-subtitle>
+
+              <template v-slot:append>
+                <span class="text-caption text-grey">
+                  {{ formatTime(conversation.last_message_time) }}
+                </span>
+              </template>
+            </v-list-item>
+          </v-list>
+        </v-card>
+      </v-col>
+
+      <!-- 聊天区域 -->
+      <v-col cols="12" md="8" lg="9" class="chat-panel">
+        <v-card flat class="h-100 d-flex flex-column">
+          <div v-if="!selectedConversation" class="flex-grow-1 d-flex align-center justify-center">
+            <EmptyState
+              icon="mdi-message-text-outline"
+              description="请选择一个会话开始聊天"
             />
-            <div class="conversation-info">
-              <div class="conversation-header">
-                <span class="username">{{ conversation.other_username }}</span>
-                <span class="time">{{ formatTime(conversation.last_message_time) }}</span>
-              </div>
-              <div class="item-title">{{ conversation.item_title }}</div>
-              <div class="last-message">{{ conversation.last_message }}</div>
-            </div>
-            <div v-if="conversation.unread_count > 0" class="unread-badge">
-              {{ conversation.unread_count }}
-            </div>
           </div>
-        </div>
-      </div>
 
-      <div class="chat-area">
-        <div v-if="!selectedConversation" class="no-selection">
-          请选择一个会话开始聊天
-        </div>
-        
-        <div v-else class="chat-container">
-          <div class="chat-header">
-            <div class="chat-info">
-              <img 
-                :src="selectedConversation.other_avatar || '/default-avatar.png'"
-                :alt="selectedConversation.other_username"
-                class="user-avatar"
-              />
+          <template v-else>
+            <!-- 聊天头部 -->
+            <v-card-title class="bg-grey-lighten-4 d-flex align-center">
+              <v-avatar size="40" class="mr-3">
+                <v-img
+                  v-if="selectedConversation.other_avatar"
+                  :src="selectedConversation.other_avatar"
+                ></v-img>
+                <span v-else>{{ selectedConversation.other_username?.charAt(0) }}</span>
+              </v-avatar>
               <div>
-                <div class="username">{{ selectedConversation.other_username }}</div>
-                <div class="item-title">{{ selectedConversation.item_title }}</div>
+                <div class="text-body-1">{{ selectedConversation.other_username }}</div>
+                <div class="text-caption text-grey">{{ selectedConversation.item_title }}</div>
               </div>
-            </div>
-          </div>
+            </v-card-title>
+            <v-divider></v-divider>
 
-          <div class="messages-area" ref="messagesArea">
-            <div v-if="messagesLoading" class="loading">
-              加载消息中...
-            </div>
-            
-            <div v-else class="message-list">
-              <div 
-                v-for="message in messages"
-                :key="message.message_id"
-                :class="['message-item', { 'own-message': message.sender_id === currentUser?.user_id }]"
-              >
-                <div class="message-content">
-                  <div class="message-text">{{ message.content }}</div>
-                  <div class="message-time">{{ formatTime(message.send_time) }}</div>
+            <!-- 消息列表 -->
+            <v-card-text
+              ref="messagesArea"
+              class="flex-grow-1 overflow-y-auto messages-area pa-4"
+              style="max-height: calc(100vh - 340px);"
+            >
+              <v-progress-circular
+                v-if="messagesLoading"
+                indeterminate
+                class="d-block mx-auto"
+              ></v-progress-circular>
+
+              <div v-else>
+                <div
+                  v-for="message in messages"
+                  :key="message.message_id"
+                  :class="[
+                    'd-flex mb-4',
+                    message.sender_id === currentUser?.user_id ? 'justify-end' : 'justify-start'
+                  ]"
+                >
+                  <v-card
+                    :color="message.sender_id === currentUser?.user_id ? 'primary' : 'grey-lighten-3'"
+                    :class="message.sender_id === currentUser?.user_id ? 'text-white' : ''"
+                    max-width="70%"
+                    elevation="1"
+                  >
+                    <v-card-text class="pa-3">
+                      <div style="white-space: pre-wrap; word-break: break-word;">
+                        {{ message.content }}
+                      </div>
+                      <div class="text-caption mt-1" :class="message.sender_id === currentUser?.user_id ? 'text-white' : 'text-grey'">
+                        {{ formatTime(message.send_time) }}
+                      </div>
+                    </v-card-text>
+                  </v-card>
                 </div>
               </div>
-            </div>
-          </div>
+            </v-card-text>
 
-          <div class="message-input">
-            <div class="input-container">
-              <textarea
-                v-model="newMessage"
-                placeholder="输入消息..."
-                @keydown.enter.exact.prevent="sendMessage"
-                @keydown.shift.enter="newMessage += '\n'"
-                rows="3"
-              ></textarea>
-              <button 
-                @click="sendMessage"
-                :disabled="!newMessage.trim() || sendingMessage"
-                class="send-btn"
-              >
-                {{ sendingMessage ? '发送中...' : '发送' }}
-              </button>
-            </div>
-            <div class="input-hint">
-              按 Enter 发送，Shift + Enter 换行
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+            <!-- 消息输入 -->
+            <v-divider></v-divider>
+            <v-card-actions class="pa-4">
+              <v-row no-gutters>
+                <v-col cols="12">
+                  <v-textarea
+                    v-model="newMessage"
+                    placeholder="输入消息... (Enter发送, Shift+Enter换行)"
+                    variant="outlined"
+                    rows="3"
+                    hide-details
+                    @keydown.enter.exact.prevent="sendMessage"
+                  ></v-textarea>
+                </v-col>
+                <v-col cols="12" class="d-flex justify-end mt-2">
+                  <v-btn
+                    color="primary"
+                    :disabled="!newMessage.trim() || sendingMessage"
+                    :loading="sendingMessage"
+                    @click="sendMessage"
+                  >
+                    发送
+                  </v-btn>
+                </v-col>
+              </v-row>
+            </v-card-actions>
+          </template>
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, nextTick, watch } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { messageAPI, userAPI, itemAPI } from '@/api'
+import { useNotification } from '@/composables/useNotification'
+import { messageAPI } from '@/api'
+import EmptyState from '@/components/EmptyState.vue'
 import type { Conversation, Message } from '@/types'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const notification = useNotification()
 
 const conversations = ref<Conversation[]>([])
 const messages = ref<Message[]>([])
@@ -165,6 +222,7 @@ const loadConversations = async (): Promise<void> => {
     conversations.value = response.conversations || []
   } catch (error) {
     console.error('Failed to load conversations:', error)
+    notification.error('加载会话列表失败')
   } finally {
     conversationsLoading.value = false
   }
@@ -182,7 +240,7 @@ const loadMessages = async (): Promise<void> => {
       page: 1,
       limit: 50
     })
-    
+
     messages.value = (response.messages || []).reverse()
 
     nextTick(() => {
@@ -190,6 +248,7 @@ const loadMessages = async (): Promise<void> => {
     })
   } catch (error) {
     console.error('Failed to load messages:', error)
+    notification.error('加载消息失败')
   } finally {
     messagesLoading.value = false
   }
@@ -200,415 +259,71 @@ const selectConversation = (conversation: Conversation): void => {
   loadMessages()
 }
 
-const sendMessage = async (): Promise<void> => {
-  if (!newMessage.value.trim() || !selectedConversation.value || sendingMessage.value || !currentUser.value) {
-    return
-  }
-
-  const messageContent = newMessage.value.trim()
-  newMessage.value = ''
-  sendingMessage.value = true
-
-  try {
-    await messageAPI.sendMessage({
-      sender_id: currentUser.value.user_id,
-      receiver_id: selectedConversation.value.other_user_id,
-      item_id: selectedConversation.value.item_id,
-      content: messageContent,
-      message_type: 'text'
-    })
-
-    loadMessages()
-    loadConversations()
-  } catch (error) {
-    console.error('Failed to send message:', error)
-    alert('发送失败，请重试')
-  } finally {
-    sendingMessage.value = false
-  }
-}
-
 const scrollToBottom = (): void => {
   if (messagesArea.value) {
     messagesArea.value.scrollTop = messagesArea.value.scrollHeight
   }
 }
 
-// 处理从商品详情页跳转过来的情况（联系卖家）
-const parseQueryNumber = (value: unknown): number | null => {
-  const raw = Array.isArray(value) ? value[0] : value
-  if (raw === undefined || raw === null) return null
-  const num = Number(raw)
-  return Number.isNaN(num) ? null : num
-}
-
-const handleQueryParams = async () => {
-  const userIdNum = parseQueryNumber(route.query.user_id)
-  const itemIdNum = parseQueryNumber(route.query.item_id)
-
-  if (userIdNum === null || itemIdNum === null || !currentUser.value) return
-
-  // 先在现有会话列表中查找
-  const existingConversation = conversations.value.find(conv =>
-    conv.other_user_id === userIdNum && conv.item_id === itemIdNum
-  )
-
-  if (existingConversation) {
-    // 找到已存在的会话，直接选中
-    selectConversation(existingConversation)
-  } else {
-    // 没找到会话，创建临时会话（第一次联系卖家的场景）
-    try {
-      // 并行获取用户信息和商品信息
-      const [userResponse, itemResponse] = await Promise.all([
-        userAPI.getUser(userIdNum),
-        itemAPI.getItem(itemIdNum)
-      ])
-
-      // 创建临时会话对象
-      const tempConversation: Conversation = {
-        other_user_id: userIdNum,
-        other_username: userResponse.user.username,
-        other_avatar: userResponse.user.avatar,
-        item_id: itemIdNum,
-        item_title: itemResponse.item.title,
-        item_images: itemResponse.item.images || [],
-        last_message_time: new Date().toISOString(),
-        last_message: '',
-        unread_count: 0
-      }
-
-      // 自动选中这个临时会话
-      selectedConversation.value = tempConversation
-      messages.value = [] // 清空消息列表（因为是第一次联系）
-
-      console.log('创建临时会话成功，可以开始发送消息')
-    } catch (error) {
-      console.error('Failed to create temporary conversation:', error)
-      alert('无法加载会话信息，请稍后重试')
-    }
-  }
-}
-
-watch(() => route.query, () => {
-  if (conversations.value.length > 0) {
-    handleQueryParams()
-  }
-}, { immediate: false })
-
-// 会话列表加载完成后，检查URL参数
-watch(conversations, () => {
-  if (route.query.user_id && route.query.item_id) {
-    handleQueryParams()
-  }
-}, { once: true })
-
-onMounted(async () => {
-  if (!userStore.isLoggedIn) {
-    router.push('/login')
+const sendMessage = async (): Promise<void> => {
+  if (!newMessage.value.trim() || !selectedConversation.value || !currentUser.value) {
     return
   }
 
-  // 先加载会话列表
+  sendingMessage.value = true
+  try {
+    await messageAPI.sendMessage({
+      sender_id: currentUser.value.user_id,
+      receiver_id: selectedConversation.value.other_user_id,
+      item_id: selectedConversation.value.item_id,
+      content: newMessage.value.trim()
+    })
+
+    newMessage.value = ''
+    await loadMessages()
+    await loadConversations()
+  } catch (error) {
+    console.error('Failed to send message:', error)
+    notification.error('发送失败')
+  } finally {
+    sendingMessage.value = false
+  }
+}
+
+onMounted(async () => {
   await loadConversations()
 
-  // 如果URL有参数（从商品详情页跳转过来），处理自动打开会话
+  // 从路由参数获取要打开的会话
   if (route.query.user_id && route.query.item_id) {
-    await handleQueryParams()
+    const userId = parseInt(route.query.user_id as string)
+    const itemId = parseInt(route.query.item_id as string)
+
+    const conversation = conversations.value.find(
+      c => c.other_user_id === userId && c.item_id === itemId
+    )
+
+    if (conversation) {
+      selectConversation(conversation)
+    }
   }
 })
 </script>
 
 <style scoped>
 .messages-view {
-  max-width: 1800px;
-  margin: 0 auto;
-  padding: 30px 40px;
+  background-color: #f5f5f5;
 }
 
-.messages-view h1 {
-  color: #2c3e50;
-  margin-bottom: 30px;
-  text-align: center;
+.conversation-panel {
+  border-right: 1px solid #e0e0e0;
 }
 
-.messages-container {
-  display: grid;
-  grid-template-columns: 400px 1fr;
-  gap: 30px;
-  height: 700px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  overflow: hidden;
-}
-
-.conversations-list {
-  border-right: 1px solid #eee;
-  display: flex;
-  flex-direction: column;
-}
-
-.conversations-list h2 {
-  color: #2c3e50;
-  padding: 20px;
-  margin: 0;
-  border-bottom: 1px solid #eee;
-  font-size: 1.2rem;
-}
-
-.loading {
-  text-align: center;
-  padding: 40px 20px;
-  color: #6c757d;
-}
-
-.no-conversations {
-  text-align: center;
-  padding: 40px 20px;
-  color: #6c757d;
-}
-
-.conversation-items {
-  flex: 1;
+.conversation-list {
   overflow-y: auto;
-}
-
-.conversation-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 15px 20px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-  border-bottom: 1px solid #f8f9fa;
-  position: relative;
-}
-
-.conversation-item:hover {
-  background-color: #f8f9fa;
-}
-
-.conversation-item.active {
-  background-color: #e3f2fd;
-}
-
-.user-avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.conversation-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.conversation-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 5px;
-}
-
-.username {
-  font-weight: 500;
-  color: #2c3e50;
-}
-
-.time {
-  font-size: 0.8rem;
-  color: #6c757d;
-}
-
-.item-title {
-  font-size: 0.9rem;
-  color: #007bff;
-  margin-bottom: 3px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.last-message {
-  font-size: 0.9rem;
-  color: #6c757d;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.unread-badge {
-  background: #e74c3c;
-  color: white;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-.chat-area {
-  display: flex;
-  flex-direction: column;
-}
-
-.no-selection {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: #6c757d;
-  font-size: 1.1rem;
-}
-
-.chat-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.chat-header {
-  padding: 20px;
-  border-bottom: 1px solid #eee;
-}
-
-.chat-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.chat-info .username {
-  font-weight: 500;
-  color: #2c3e50;
-  margin-bottom: 3px;
-}
-
-.chat-info .item-title {
-  font-size: 0.9rem;
-  color: #007bff;
+  max-height: calc(100vh - 200px);
 }
 
 .messages-area {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
-}
-
-.message-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.message-item {
-  display: flex;
-}
-
-.message-item.own-message {
-  justify-content: flex-end;
-}
-
-.message-content {
-  max-width: 70%;
-  background: #f8f9fa;
-  padding: 12px 16px;
-  border-radius: 18px;
-  position: relative;
-}
-
-.own-message .message-content {
-  background: #007bff;
-  color: white;
-}
-
-.message-text {
-  word-wrap: break-word;
-  white-space: pre-wrap;
-}
-
-.message-time {
-  font-size: 0.8rem;
-  opacity: 0.7;
-  margin-top: 5px;
-}
-
-.message-input {
-  padding: 20px;
-  border-top: 1px solid #eee;
-}
-
-.input-container {
-  display: flex;
-  gap: 10px;
-  align-items: flex-end;
-}
-
-.input-container textarea {
-  flex: 1;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 20px;
-  resize: none;
-  font-family: inherit;
-  font-size: 14px;
-  outline: none;
-}
-
-.input-container textarea:focus {
-  border-color: #007bff;
-}
-
-.send-btn {
-  padding: 12px 20px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.3s;
-}
-
-.send-btn:hover:not(:disabled) {
-  background: #0056b3;
-}
-
-.send-btn:disabled {
-  background: #6c757d;
-  cursor: not-allowed;
-}
-
-.input-hint {
-  font-size: 0.8rem;
-  color: #6c757d;
-  margin-top: 8px;
-  text-align: center;
-}
-
-@media (max-width: 768px) {
-  .messages-container {
-    grid-template-columns: 1fr;
-    height: auto;
-  }
-
-  .conversations-list {
-    border-right: none;
-    border-bottom: 1px solid #eee;
-    max-height: 300px;
-  }
-
-  .chat-area {
-    min-height: 400px;
-  }
-
-  .message-content {
-    max-width: 85%;
-  }
+  background-color: #fafafa;
 }
 </style>

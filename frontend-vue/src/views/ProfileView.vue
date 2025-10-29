@@ -1,266 +1,263 @@
 <template>
-  <div class="profile-view">
-    <h1>个人中心</h1>
-    
-    <div class="profile-container">
-      <div class="profile-sidebar">
-        <div class="user-card">
-          <img 
-            :src="currentUser?.avatar || '/default-avatar.png'"
-            :alt="currentUser?.username"
-            class="user-avatar"
-          />
-          <div class="user-info">
-            <h2>{{ currentUser?.username }}</h2>
-            <p>{{ currentUser?.real_name }}</p>
-            <div class="credit-score">
-              信用分：{{ currentUser?.credit_score }}
-            </div>
-          </div>
-        </div>
+  <v-container class="profile-view">
+    <h1 class="text-h3 font-weight-bold mb-6">个人中心</h1>
 
-        <nav class="profile-nav">
-          <button 
+    <v-row>
+      <!-- 侧边栏 -->
+      <v-col cols="12" md="3">
+        <v-card elevation="2" class="mb-4">
+          <v-card-text class="text-center">
+            <UserAvatar
+              :src="currentUser?.avatar"
+              :username="currentUser?.username"
+              :size="100"
+              class="mb-4"
+            />
+            <h2 class="text-h5 mb-2">{{ currentUser?.username }}</h2>
+            <p class="text-body-2 text-grey mb-2">{{ currentUser?.real_name }}</p>
+            <v-chip color="warning" prepend-icon="mdi-star">
+              信用分：{{ currentUser?.credit_score }}
+            </v-chip>
+          </v-card-text>
+        </v-card>
+
+        <v-list density="compact" nav>
+          <v-list-item
             v-for="tab in tabs"
             :key="tab.key"
-            :class="['nav-btn', { active: activeTab === tab.key }]"
+            :value="tab.key"
+            :active="activeTab === tab.key"
+            :prepend-icon="tab.icon"
             @click="switchTab(tab.key)"
           >
-            {{ tab.label }}
-          </button>
-        </nav>
-      </div>
+            <v-list-item-title>{{ tab.label }}</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-col>
 
-      <div class="profile-content">
+      <!-- 主内容区 -->
+      <v-col cols="12" md="9">
         <!-- 基本信息 -->
-        <div v-if="activeTab === 'info'" class="tab-content">
-          <h2>基本信息</h2>
-          <form @submit.prevent="updateUserInfo" class="info-form">
-            <div class="form-group">
-              <label>学号</label>
-              <input 
-                v-model="userForm.student_id" 
-                type="text" 
+        <v-card v-if="activeTab === 'info'" elevation="2">
+          <v-card-title>基本信息</v-card-title>
+          <v-card-text>
+            <v-form @submit.prevent="updateUserInfo">
+              <v-text-field
+                v-model="userForm.student_id"
+                label="学号"
+                variant="outlined"
                 disabled
-                class="disabled-input"
-              />
-            </div>
+                class="mb-4"
+              ></v-text-field>
 
-            <div class="form-group">
-              <label>用户名</label>
-              <input 
-                v-model="userForm.username" 
-                type="text" 
+              <v-text-field
+                v-model="userForm.username"
+                label="用户名"
+                variant="outlined"
                 required
-              />
-            </div>
+                class="mb-4"
+              ></v-text-field>
 
-            <div class="form-group">
-              <label>真实姓名</label>
-              <input 
-                v-model="userForm.real_name" 
-                type="text" 
+              <v-text-field
+                v-model="userForm.real_name"
+                label="真实姓名"
+                variant="outlined"
                 required
-              />
-            </div>
+                class="mb-4"
+              ></v-text-field>
 
-            <div class="form-group">
-              <label>手机号</label>
-              <input 
-                v-model="userForm.phone" 
-                type="tel" 
+              <v-text-field
+                v-model="userForm.phone"
+                label="手机号"
+                variant="outlined"
                 required
-              />
-            </div>
+                class="mb-4"
+              ></v-text-field>
 
-            <div class="form-group">
-              <label>邮箱</label>
-              <input 
-                v-model="userForm.email" 
-                type="email" 
+              <v-text-field
+                v-model="userForm.email"
+                label="邮箱"
+                type="email"
+                variant="outlined"
                 required
-              />
-            </div>
+                class="mb-4"
+              ></v-text-field>
 
-            <div v-if="updateMessage" class="message">
-              {{ updateMessage }}
-            </div>
-
-            <button type="submit" :disabled="updating" class="update-btn">
-              {{ updating ? '更新中...' : '更新信息' }}
-            </button>
-          </form>
-        </div>
+              <v-btn
+                type="submit"
+                color="primary"
+                size="large"
+                :loading="updating"
+                block
+              >
+                更新信息
+              </v-btn>
+            </v-form>
+          </v-card-text>
+        </v-card>
 
         <!-- 我的商品 -->
-        <div v-if="activeTab === 'items'" class="tab-content">
-          <div class="section-header">
-            <h2>我的商品</h2>
-            <router-link to="/publish" class="publish-btn">发布新商品</router-link>
-          </div>
+        <v-card v-if="activeTab === 'items'" elevation="2">
+          <v-card-title class="d-flex justify-space-between">
+            <span>我的商品</span>
+            <v-btn color="primary" to="/publish" prepend-icon="mdi-plus">
+              发布新商品
+            </v-btn>
+          </v-card-title>
 
-          <div class="item-filters">
-            <select v-model="itemStatus" @change="loadMyItems">
-              <option value="available">在售</option>
-              <option value="sold">已售出</option>
-              <option value="removed">已下架</option>
-            </select>
-          </div>
+          <v-card-text>
+            <v-select
+              v-model="itemStatus"
+              :items="itemStatusOptions"
+              label="状态筛选"
+              variant="outlined"
+              density="comfortable"
+              @update:model-value="loadMyItems"
+              class="mb-4"
+            ></v-select>
 
-          <div v-if="itemsLoading" class="loading">
-            加载中...
-          </div>
+            <v-progress-linear v-if="itemsLoading" indeterminate color="primary"></v-progress-linear>
 
-          <div v-else-if="myItems.length === 0" class="no-items">
-            暂无商品
-          </div>
+            <EmptyState
+              v-else-if="myItems.length === 0"
+              description="暂无商品"
+              action-text="发布商品"
+              @action="router.push('/publish')"
+            />
 
-          <div v-else class="items-grid">
-            <div 
-              v-for="item in myItems"
-              :key="item.item_id"
-              class="item-card"
-            >
-              <img 
-                :src="item.images && item.images[0] ? item.images[0] : '/placeholder.png'"
-                :alt="item.title"
-                class="item-image"
-              />
-              <div class="item-info">
-                <h3>{{ item.title }}</h3>
-                <p class="item-price">¥{{ item.price }}</p>
-                <p class="item-status">{{ getStatusText(item.status) }}</p>
-                <p class="item-views">{{ item.view_count }} 次浏览</p>
-              </div>
-              <div class="item-actions">
-                <button @click="viewItem(item.item_id)" class="view-btn">
-                  查看
-                </button>
-                <button 
-                  v-if="item.status === 'available'"
-                  @click="editItem(item.item_id)" 
-                  class="edit-btn"
-                >
-                  编辑
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+            <v-row v-else>
+              <v-col
+                v-for="item in myItems"
+                :key="item.item_id"
+                cols="12"
+                sm="6"
+                md="4"
+              >
+                <v-card>
+                  <v-img
+                    :src="item.images && item.images[0] ? item.images[0] : '/placeholder.png'"
+                    :alt="item.title"
+                    height="200"
+                    cover
+                  ></v-img>
+                  <v-card-text>
+                    <h3 class="text-h6 mb-2">{{ item.title }}</h3>
+                    <div class="text-h6 text-error mb-2">¥{{ item.price }}</div>
+                    <v-chip size="small" :color="getStatusColor(item.status)" class="mb-2">
+                      {{ getStatusText(item.status) }}
+                    </v-chip>
+                    <div class="text-caption text-grey">{{ item.view_count }} 次浏览</div>
+                  </v-card-text>
+                  <v-card-actions>
+                    <v-btn variant="text" @click="viewItem(item.item_id)">查看</v-btn>
+                    <v-btn
+                      v-if="item.status === 'available'"
+                      variant="text"
+                      color="primary"
+                      @click="editItem(item.item_id)"
+                    >
+                      编辑
+                    </v-btn>
+                  </v-card-actions>
+                </v-card>
+              </v-col>
+            </v-row>
+          </v-card-text>
+        </v-card>
 
-        <!-- 地址管理 -->
-        <div v-if="activeTab === 'addresses'" class="tab-content">
-          <div class="section-header">
-            <h2>收货地址</h2>
-            <button @click="openCreateAddress" class="add-btn">
-              添加地址
-            </button>
-          </div>
+        <!-- 统计数据 -->
+        <v-card v-if="activeTab === 'stats'" elevation="2">
+          <v-card-title>数据统计</v-card-title>
+          <v-card-text>
+            <v-progress-linear v-if="statsLoading" indeterminate color="primary"></v-progress-linear>
+            <v-row v-else>
+              <v-col cols="6" md="3" v-for="stat in stats" :key="stat.label">
+                <v-card variant="tonal" :color="stat.color">
+                  <v-card-text class="text-center">
+                    <v-icon :icon="stat.icon" size="48" class="mb-2"></v-icon>
+                    <div class="text-h4 font-weight-bold">{{ stat.value }}</div>
+                    <div class="text-caption">{{ stat.label }}</div>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+            </v-row>
+          </v-card-text>
+        </v-card>
 
-          <div v-if="addressesLoading" class="loading">
-            加载中...
-          </div>
+        <!-- 修改密码 -->
+        <v-card v-if="activeTab === 'password'" elevation="2">
+          <v-card-title>修改密码</v-card-title>
+          <v-card-text>
+            <v-form @submit.prevent="updatePassword">
+              <v-text-field
+                v-model="passwordForm.oldPassword"
+                label="当前密码"
+                type="password"
+                variant="outlined"
+                required
+                class="mb-4"
+              ></v-text-field>
 
-          <div v-else-if="addresses.length === 0" class="no-items">
-            暂无地址
-          </div>
+              <v-text-field
+                v-model="passwordForm.newPassword"
+                label="新密码"
+                type="password"
+                variant="outlined"
+                required
+                class="mb-4"
+              ></v-text-field>
 
-          <div v-else class="addresses-list">
-            <div 
-              v-for="address in addresses"
-              :key="address.address_id"
-              class="address-card"
-            >
-              <div class="address-info">
-                <div class="address-header">
-                  <span class="recipient">{{ address.recipient_name }}</span>
-                  <span class="phone">{{ address.phone }}</span>
-                  <span v-if="address.is_default" class="default-badge">默认</span>
-                </div>
-                <div class="address-detail">
-                  {{ address.province }} {{ address.city }} {{ address.district }} {{ address.detailed_address }}
-                </div>
-              </div>
-              <div class="address-actions">
-                <button @click="openEditAddress(address)" class="edit-btn">
-                  编辑
-                </button>
-                <button 
-                  v-if="!address.is_default"
-                  @click="setDefaultAddress(address.address_id)"
-                  class="default-btn"
-                >
-                  设为默认
-                </button>
-                <button 
-                  @click="deleteAddress(address.address_id)"
-                  class="delete-btn"
-                >
-                  删除
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+              <v-text-field
+                v-model="passwordForm.confirmPassword"
+                label="确认新密码"
+                type="password"
+                variant="outlined"
+                required
+                class="mb-4"
+              ></v-text-field>
 
-        <!-- 统计信息 -->
-        <div v-if="activeTab === 'stats'" class="tab-content">
-          <h2>统计信息</h2>
-          
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-number">{{ stats.buyer_stats?.total_orders || 0 }}</div>
-              <div class="stat-label">购买订单</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-number">{{ stats.seller_stats?.total_sales || 0 }}</div>
-              <div class="stat-label">销售订单</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-number">¥{{ stats.buyer_stats?.total_spent || 0 }}</div>
-              <div class="stat-label">总消费</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-number">¥{{ stats.seller_stats?.total_earned || 0 }}</div>
-              <div class="stat-label">总收入</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 地址编辑弹窗 -->
-    <div v-if="showAddressModal" class="modal-overlay" @click="closeAddressModal">
-      <div class="modal-content" @click.stop>
-        <h3>{{ addressModalMode === 'edit' ? '编辑地址' : '添加地址' }}</h3>
-        <AddressForm
-          :address="addressInitialValue || undefined"
-          :loading="addressModalLoading"
-          :submit-text="addressModalMode === 'edit' ? '保存修改' : '添加地址'"
-          @save="handleAddressSave"
-          @cancel="closeAddressModal"
-        />
-      </div>
-    </div>
-  </div>
+              <v-btn
+                type="submit"
+                color="primary"
+                size="large"
+                :loading="passwordUpdating"
+                block
+              >
+                修改密码
+              </v-btn>
+            </v-form>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { itemAPI, addressAPI, orderAPI } from '@/api'
-import type { Item, Address, AddressParams, OrderStatistics } from '@/types'
-import AddressForm from '@/components/AddressForm.vue'
-import { ElMessage } from 'element-plus'
+import { useNotification } from '@/composables/useNotification'
+import { userAPI, itemAPI } from '@/api'
+import UserAvatar from '@/components/UserAvatar.vue'
+import EmptyState from '@/components/EmptyState.vue'
+import type { Item } from '@/types'
 
 const router = useRouter()
 const userStore = useUserStore()
+const notification = useNotification()
 
+const currentUser = computed(() => userStore.currentUser)
 const activeTab = ref('info')
-const updating = ref(false)
-const updateMessage = ref('')
 
+const tabs = [
+  { key: 'info', label: '基本信息', icon: 'mdi-account' },
+  { key: 'items', label: '我的商品', icon: 'mdi-package-variant' },
+  { key: 'stats', label: '数据统计', icon: 'mdi-chart-box' },
+  { key: 'password', label: '修改密码', icon: 'mdi-lock' }
+]
+
+// 基本信息
 const userForm = ref({
   student_id: '',
   username: '',
@@ -268,93 +265,74 @@ const userForm = ref({
   phone: '',
   email: ''
 })
+const updating = ref(false)
 
+// 我的商品
 const myItems = ref<Item[]>([])
 const itemsLoading = ref(false)
 const itemStatus = ref('available')
-
-const addresses = ref<Address[]>([])
-const addressesLoading = ref(false)
-const showAddressModal = ref(false)
-const editingAddress = ref<Address | null>(null)
-const addressModalMode = ref<'create' | 'edit'>('create')
-const addressModalLoading = ref(false)
-
-interface Stats {
-  buyer_stats?: {
-    total_orders?: number
-    total_spent?: number
-  }
-  seller_stats?: {
-    total_sales?: number
-    total_earned?: number
-  }
-}
-
-const stats = ref<any>({})
-
-const currentUser = computed(() => userStore.currentUser)
-
-const tabs = [
-  { key: 'info', label: '基本信息' },
-  { key: 'items', label: '我的商品' },
-  { key: 'addresses', label: '地址管理' },
-  { key: 'stats', label: '统计信息' }
+const itemStatusOptions = [
+  { title: '在售', value: 'available' },
+  { title: '已售出', value: 'sold' },
+  { title: '已下架', value: 'removed' }
 ]
 
-const statusMap: Record<string, string> = {
-  'available': '在售',
-  'sold': '已售出',
-  'removed': '已下架'
-}
+// 统计数据
+const stats = ref([
+  { label: '发布商品', value: 0, icon: 'mdi-package-variant', color: 'primary' },
+  { label: '售出商品', value: 0, icon: 'mdi-sale', color: 'success' },
+  { label: '购买商品', value: 0, icon: 'mdi-cart', color: 'info' },
+  { label: '收藏商品', value: 0, icon: 'mdi-heart', color: 'error' }
+])
+const statsLoading = ref(false)
 
-const getStatusText = (status?: string): string => {
-  if (!status) return '未知状态'
-  return statusMap[status] || status
-}
+// 修改密码
+const passwordForm = ref({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+const passwordUpdating = ref(false)
 
-const initUserForm = (): void => {
-  if (currentUser.value) {
-    userForm.value = {
-      student_id: currentUser.value.student_id || '',
-      username: currentUser.value.username || '',
-      real_name: currentUser.value.real_name || '',
-      phone: currentUser.value.phone || '',
-      email: currentUser.value.email || ''
-    }
+const getStatusText = (status: string): string => {
+  const map: Record<string, string> = {
+    available: '在售',
+    sold: '已售出',
+    removed: '已下架'
   }
+  return map[status] || status
+}
+
+const getStatusColor = (status: string): string => {
+  const map: Record<string, string> = {
+    available: 'success',
+    sold: 'error',
+    removed: 'grey'
+  }
+  return map[status] || 'grey'
 }
 
 const switchTab = (tab: string): void => {
   activeTab.value = tab
-
-  switch (tab) {
-    case 'items':
-      loadMyItems()
-      break
-    case 'addresses':
-      loadAddresses()
-      break
-    case 'stats':
-      loadStats()
-      break
-  }
+  if (tab === 'items') loadMyItems()
+  if (tab === 'stats') loadStats()
 }
 
 const updateUserInfo = async (): Promise<void> => {
+  if (!currentUser.value) return
+
   updating.value = true
-  updateMessage.value = ''
-
   try {
-    const result = await userStore.updateUserInfo(userForm.value)
+    await userAPI.updateUserProfile({
+      user_id: currentUser.value.user_id,
+      ...userForm.value
+    })
 
-    if (result.success) {
-      updateMessage.value = '信息更新成功'
-    } else {
-      updateMessage.value = result.message
-    }
-  } catch {
-    updateMessage.value = '更新失败，请重试'
+    await userStore.fetchCurrentUser()
+    notification.success('信息更新成功')
+  } catch (error) {
+    console.error('Failed to update user info:', error)
+    notification.error('更新失败')
   } finally {
     updating.value = false
   }
@@ -366,15 +344,29 @@ const loadMyItems = async (): Promise<void> => {
   itemsLoading.value = true
   try {
     const response = await itemAPI.getUserItems(currentUser.value.user_id, {
-      status: itemStatus.value,
-      page: 1,
-      limit: 20
+      status: itemStatus.value
     })
     myItems.value = response.items || []
   } catch (error) {
-    console.error('Failed to load my items:', error)
+    console.error('Failed to load items:', error)
+    notification.error('加载商品失败')
   } finally {
     itemsLoading.value = false
+  }
+}
+
+const loadStats = async (): Promise<void> => {
+  if (!currentUser.value) return
+
+  statsLoading.value = true
+  try {
+    // 这里应该调用统计API，暂时使用模拟数据
+    stats.value[0].value = myItems.value.length
+    // 可以从API获取更多统计数据
+  } catch (error) {
+    console.error('Failed to load stats:', error)
+  } finally {
+    statsLoading.value = false
   }
 }
 
@@ -386,571 +378,61 @@ const editItem = (itemId: number): void => {
   router.push(`/items/${itemId}/edit`)
 }
 
-const loadAddresses = async (): Promise<void> => {
+const updatePassword = async (): Promise<void> => {
   if (!currentUser.value) return
 
-  addressesLoading.value = true
-  try {
-    const response = await addressAPI.getUserAddresses(currentUser.value.user_id)
-    addresses.value = response.addresses || []
-  } catch (error) {
-    console.error('Failed to load addresses:', error)
-  } finally {
-    addressesLoading.value = false
-  }
-}
-
-type AddressFormValue = Omit<AddressParams, 'user_id'>
-
-const addressInitialValue = computed<AddressFormValue | null>(() => {
-  if (!editingAddress.value) {
-    return null
-  }
-  const address = editingAddress.value
-  return {
-    recipient_name: address.recipient_name,
-    phone: address.phone,
-    province: address.province,
-    city: address.city,
-    district: address.district,
-    detailed_address: address.detailed_address,
-    postal_code: address.postal_code ?? '',
-    address_type: address.address_type,
-    is_default: address.is_default
-  }
-})
-
-const openCreateAddress = (): void => {
-  editingAddress.value = null
-  addressModalMode.value = 'create'
-  showAddressModal.value = true
-}
-
-const openEditAddress = (address: Address): void => {
-  editingAddress.value = address
-  addressModalMode.value = 'edit'
-  showAddressModal.value = true
-}
-
-const closeAddressModal = (): void => {
-  showAddressModal.value = false
-  addressModalLoading.value = false
-  editingAddress.value = null
-  addressModalMode.value = 'create'
-}
-
-const handleAddressSave = async (value: AddressFormValue): Promise<void> => {
-  if (!currentUser.value) return
-
-  const payload: AddressParams = {
-    ...value,
-    user_id: currentUser.value.user_id
-  }
-
-  try {
-    addressModalLoading.value = true
-    if (addressModalMode.value === 'edit' && editingAddress.value) {
-      await addressAPI.updateAddress(editingAddress.value.address_id, payload)
-      ElMessage.success('地址更新成功')
-    } else {
-      await addressAPI.addAddress(payload)
-      ElMessage.success('地址添加成功')
-    }
-    closeAddressModal()
-    loadAddresses()
-  } catch (error: any) {
-    console.error('Failed to save address:', error)
-    const backendMessage = error?.response?.data?.error
-    ElMessage.error(backendMessage || '保存地址失败，请重试')
-  } finally {
-    addressModalLoading.value = false
-  }
-}
-
-const setDefaultAddress = async (addressId: number): Promise<void> => {
-  if (!currentUser.value) return
-
-  try {
-    await addressAPI.setDefaultAddress(addressId, {
-      user_id: currentUser.value.user_id
-    })
-    loadAddresses()
-  } catch (error) {
-    console.error('Failed to set default address:', error)
-    alert('设置默认地址失败，请重试')
-  }
-}
-
-const deleteAddress = async (addressId: number): Promise<void> => {
-  if (!confirm('确定要删除这个地址吗?') || !currentUser.value) {
+  if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
+    notification.error('两次输入的密码不一致')
     return
   }
 
-  try {
-    await addressAPI.deleteAddress(addressId, {
-      user_id: currentUser.value.user_id
-    })
-    loadAddresses()
-  } catch (error) {
-    console.error('Failed to delete address:', error)
-    alert('删除地址失败，请重试')
+  if (passwordForm.value.newPassword.length < 6) {
+    notification.error('密码长度不能少于6位')
+    return
   }
-}
 
-const loadStats = async (): Promise<void> => {
-  if (!currentUser.value) return
-
+  passwordUpdating.value = true
   try {
-    const response = await orderAPI.getOrderStatistics({
-      user_id: currentUser.value.user_id
+    await userAPI.changePassword({
+      user_id: currentUser.value.user_id,
+      old_password: passwordForm.value.oldPassword,
+      new_password: passwordForm.value.newPassword
     })
-    stats.value = response || {}
+
+    notification.success('密码修改成功，请重新登录')
+    setTimeout(() => {
+      userStore.logout()
+      router.push('/login')
+    }, 2000)
   } catch (error) {
-    console.error('Failed to load stats:', error)
+    console.error('Failed to update password:', error)
+    notification.error('密码修改失败')
+  } finally {
+    passwordUpdating.value = false
   }
 }
 
 onMounted(() => {
-  if (!userStore.isLoggedIn) {
+  if (!currentUser.value) {
     router.push('/login')
     return
   }
-  
-  initUserForm()
+
+  // 初始化表单
+  userForm.value = {
+    student_id: currentUser.value.student_id || '',
+    username: currentUser.value.username || '',
+    real_name: currentUser.value.real_name || '',
+    phone: currentUser.value.phone || '',
+    email: currentUser.value.email || ''
+  }
+
+  loadMyItems()
 })
 </script>
 
 <style scoped>
 .profile-view {
-  max-width: 1800px;
-  margin: 0 auto;
-  padding: 30px 40px;
-}
-
-.profile-view h1 {
-  color: #2c3e50;
-  margin-bottom: 30px;
-  text-align: center;
-}
-
-.profile-container {
-  display: grid;
-  grid-template-columns: 350px 1fr;
-  gap: 40px;
-}
-
-.profile-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.user-card {
-  background: white;
-  padding: 30px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  text-align: center;
-}
-
-.user-avatar {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-bottom: 15px;
-}
-
-.user-info h2 {
-  color: #2c3e50;
-  margin: 0 0 5px 0;
-}
-
-.user-info p {
-  color: #6c757d;
-  margin: 0 0 10px 0;
-}
-
-.credit-score {
-  background: #e3f2fd;
-  color: #1976d2;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-weight: 500;
-  display: inline-block;
-}
-
-.profile-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.nav-btn {
-  padding: 15px 20px;
-  background: white;
-  border: none;
-  border-radius: 8px;
-  text-align: left;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.nav-btn:hover {
-  background: #f8f9fa;
-}
-
-.nav-btn.active {
-  background: #007bff;
-  color: white;
-}
-
-.profile-content {
-  background: white;
-  padding: 30px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.tab-content h2 {
-  color: #2c3e50;
-  margin-bottom: 30px;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-}
-
-.publish-btn,
-.add-btn {
-  background: #007bff;
-  color: white;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.publish-btn:hover,
-.add-btn:hover {
-  background: #0056b3;
-}
-
-.info-form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  max-width: 500px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.form-group label {
-  font-weight: 500;
-  color: #2c3e50;
-}
-
-.form-group input {
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 16px;
-}
-
-.disabled-input {
-  background: #f8f9fa;
-  color: #6c757d;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-}
-
-.update-btn {
-  background: #28a745;
-  color: white;
-  padding: 12px 24px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.3s;
-}
-
-.update-btn:hover:not(:disabled) {
-  background: #218838;
-}
-
-.update-btn:disabled {
-  background: #6c757d;
-  cursor: not-allowed;
-}
-
-.message {
-  padding: 10px;
-  border-radius: 4px;
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-}
-
-.item-filters {
-  margin-bottom: 20px;
-}
-
-.item-filters select {
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.loading {
-  text-align: center;
-  padding: 40px;
-  color: #6c757d;
-}
-
-.no-items {
-  text-align: center;
-  padding: 40px;
-  color: #6c757d;
-}
-
-.items-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 20px;
-}
-
-.item-card {
-  border: 1px solid #eee;
-  border-radius: 8px;
-  overflow: hidden;
-  transition: all 0.3s;
-}
-
-.item-card:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-.item-image {
-  width: 100%;
-  height: 150px;
-  object-fit: cover;
-}
-
-.item-info {
-  padding: 15px;
-}
-
-.item-info h3 {
-  color: #2c3e50;
-  margin: 0 0 8px 0;
-  font-size: 1rem;
-}
-
-.item-price {
-  color: #e74c3c;
-  font-weight: 600;
-  margin: 0 0 5px 0;
-}
-
-.item-status,
-.item-views {
-  color: #6c757d;
-  font-size: 0.9rem;
-  margin: 0 0 5px 0;
-}
-
-.item-actions {
-  display: flex;
-  gap: 10px;
-  padding: 15px;
-  border-top: 1px solid #f8f9fa;
-}
-
-.view-btn,
-.edit-btn {
-  flex: 1;
-  padding: 8px 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.view-btn {
-  background: #007bff;
-  color: white;
-}
-
-.edit-btn {
-  background: #28a745;
-  color: white;
-}
-
-.addresses-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.address-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border: 1px solid #eee;
-  border-radius: 8px;
-}
-
-.address-header {
-  display: flex;
-  gap: 15px;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.recipient {
-  font-weight: 500;
-  color: #2c3e50;
-}
-
-.phone {
-  color: #6c757d;
-}
-
-.default-badge {
-  background: #007bff;
-  color: white;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-}
-
-.address-detail {
-  color: #6c757d;
-}
-
-.address-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.address-actions button {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.default-btn {
-  background: #007bff;
-  color: white;
-}
-
-.delete-btn {
-  background: #dc3545;
-  color: white;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-}
-
-.stat-card {
-  text-align: center;
-  padding: 30px;
-  border: 1px solid #eee;
-  border-radius: 8px;
-}
-
-.stat-number {
-  font-size: 2rem;
-  font-weight: 600;
-  color: #007bff;
-  margin-bottom: 10px;
-}
-
-.stat-label {
-  color: #6c757d;
-  font-size: 0.9rem;
-}
-
-/* 弹窗样式 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 8px;
-  padding: 30px;
-  width: 90%;
-  max-width: 600px;
-}
-
-.modal-content h3 {
-  color: #2c3e50;
-  margin-bottom: 20px;
-}
-
-@media (max-width: 768px) {
-  .profile-container {
-    grid-template-columns: 1fr;
-  }
-
-  .profile-nav {
-    flex-direction: row;
-    overflow-x: auto;
-  }
-
-  .nav-btn {
-    white-space: nowrap;
-  }
-
-  .section-header {
-    flex-direction: column;
-    gap: 15px;
-    align-items: stretch;
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-
-  .address-card {
-    flex-direction: column;
-    gap: 15px;
-    align-items: stretch;
-  }
-
-  .address-actions {
-    justify-content: center;
-  }
+  max-width: 1400px;
 }
 </style>
