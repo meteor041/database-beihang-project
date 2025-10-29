@@ -333,12 +333,14 @@ const handleRegister = async (): Promise<void> => {
 </script>
 
 <style scoped>
+/* 使用设计系统变量的卡片式注册页面 */
+
 .register-container {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: calc(100vh - 200px);
-  padding: 40px 20px;
+  padding: var(--spacing-3xl) var(--spacing-lg);
 }
 
 .register-card {
@@ -348,67 +350,67 @@ const handleRegister = async (): Promise<void> => {
 
 .card-header {
   text-align: center;
-  padding: 20px 0;
+  padding: var(--spacing-lg) 0;
 }
 
 .card-header h2 {
-  margin: 20px 0 10px 0;
-  font-size: 28px;
-  font-weight: 600;
-  color: #303133;
+  margin: var(--spacing-lg) 0 var(--spacing-sm) 0;
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
 }
 
 .card-header p {
   margin: 0;
-  font-size: 14px;
-  color: #909399;
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
 }
 
 .password-strength {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 8px;
-  font-size: 12px;
-  color: #606266;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-regular);
 }
 
 .strength-text {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .login-link {
   text-align: center;
-  font-size: 14px;
-  color: #606266;
+  font-size: var(--font-size-base);
+  color: var(--color-text-regular);
 }
 
 .login-link span {
-  margin-right: 8px;
+  margin-right: var(--spacing-sm);
 }
 
 :deep(.el-form-item__label) {
-  font-weight: 500;
-  color: #303133;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
 }
 
 :deep(.el-input__wrapper) {
-  transition: all 0.3s;
+  transition: all var(--transition-base);
 }
 
 :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px var(--el-color-primary) inset;
+  box-shadow: 0 0 0 1px var(--color-primary) inset;
 }
 
 :deep(.el-checkbox) {
   height: auto;
   white-space: normal;
-  line-height: 1.5;
+  line-height: var(--line-height-normal);
 }
 
 @media (max-width: 768px) {
   .register-container {
-    padding: 20px 10px;
+    padding: var(--spacing-lg) var(--spacing-sm);
   }
 
   .register-card {
@@ -416,7 +418,7 @@ const handleRegister = async (): Promise<void> => {
   }
 
   .card-header h2 {
-    font-size: 24px;
+    font-size: var(--font-size-3xl);
   }
 
   :deep(.el-col) {

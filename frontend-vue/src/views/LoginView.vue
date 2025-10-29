@@ -131,12 +131,14 @@ const handleLogin = async (): Promise<void> => {
 </template>
 
 <style scoped>
+/* 使用设计系统变量的卡片式登录页面 */
+
 .login-container {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: calc(100vh - 200px);
-  padding: 40px 20px;
+  padding: var(--spacing-3xl) var(--spacing-lg);
 }
 
 .login-card {
@@ -146,49 +148,48 @@ const handleLogin = async (): Promise<void> => {
 
 .card-header {
   text-align: center;
-  padding: 20px 0;
+  padding: var(--spacing-lg) 0;
 }
 
 .card-header h2 {
-  margin: 20px 0 10px 0;
-  font-size: 28px;
-  font-weight: 600;
-  color: #303133;
+  margin: var(--spacing-lg) 0 var(--spacing-sm) 0;
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
 }
 
 .card-header p {
   margin: 0;
-  font-size: 14px;
-  color: #909399;
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
 }
-
 
 .register-link {
   text-align: center;
-  font-size: 14px;
-  color: #606266;
+  font-size: var(--font-size-base);
+  color: var(--color-text-regular);
 }
 
 .register-link span {
-  margin-right: 8px;
+  margin-right: var(--spacing-sm);
 }
 
 :deep(.el-form-item__label) {
-  font-weight: 500;
-  color: #303133;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
 }
 
 :deep(.el-input__wrapper) {
-  transition: all 0.3s;
+  transition: all var(--transition-base);
 }
 
 :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px var(--el-color-primary) inset;
+  box-shadow: 0 0 0 1px var(--color-primary) inset;
 }
 
 @media (max-width: 768px) {
   .login-container {
-    padding: 20px 10px;
+    padding: var(--spacing-lg) var(--spacing-sm);
   }
 
   .login-card {
@@ -196,7 +197,7 @@ const handleLogin = async (): Promise<void> => {
   }
 
   .card-header h2 {
-    font-size: 24px;
+    font-size: var(--font-size-3xl);
   }
 }
 </style>

@@ -274,81 +274,83 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 使用设计系统变量 */
 .items-view {
   max-width: 1800px;
   margin: 0 auto;
-  padding: 30px 40px;
+  padding: var(--spacing-2xl) var(--spacing-3xl);
 }
 
 .items-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 40px;
+  margin-bottom: var(--spacing-3xl);
 }
 
 .items-header h1 {
-  color: #2c3e50;
+  color: var(--color-text-primary);
   margin: 0;
-  font-size: 2.5rem;
+  font-size: var(--font-size-5xl);
 }
 
 .search-bar {
   display: flex;
-  gap: 15px;
+  gap: var(--spacing-lg);
 }
 
 .search-input {
-  padding: 12px 16px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  padding: var(--spacing-md) var(--spacing-base);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-base);
   width: 400px;
-  font-size: 16px;
+  font-size: var(--font-size-lg);
 }
 
 .search-btn {
-  padding: 12px 24px;
-  background-color: #007bff;
+  padding: var(--spacing-md) var(--spacing-xl);
+  background-color: var(--color-primary);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-base);
   cursor: pointer;
-  font-size: 16px;
+  font-size: var(--font-size-lg);
+  transition: background-color var(--transition-fast);
 }
 
 .search-btn:hover {
-  background-color: #0056b3;
+  background-color: var(--color-primary-dark);
 }
 
 .items-filters {
   display: flex;
-  gap: 30px;
+  gap: var(--spacing-2xl);
   align-items: center;
-  margin-bottom: 40px;
-  padding: 25px 30px;
-  background: #f8f9fa;
-  border-radius: 10px;
+  margin-bottom: var(--spacing-3xl);
+  padding: var(--spacing-xl) var(--spacing-2xl);
+  background: var(--color-bg-page);
+  border-radius: var(--radius-lg);
   flex-wrap: wrap;
 }
 
 .filter-group {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--spacing-md);
 }
 
 .filter-group label {
-  font-weight: 500;
-  color: #2c3e50;
-  font-size: 16px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-lg);
 }
 
 .filter-group select,
 .price-input {
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 15px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-base);
+  font-size: var(--font-size-md);
   min-width: 120px;
 }
 
@@ -357,13 +359,14 @@ onMounted(() => {
 }
 
 .filter-btn {
-  padding: 10px 20px;
-  background-color: #28a745;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background-color: var(--color-success);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-base);
   cursor: pointer;
-  font-size: 15px;
+  font-size: var(--font-size-md);
+  transition: background-color var(--transition-fast);
 }
 
 .filter-btn:hover {
@@ -372,37 +375,37 @@ onMounted(() => {
 
 .loading {
   text-align: center;
-  padding: 40px;
-  color: #6c757d;
-  font-size: 18px;
+  padding: var(--spacing-3xl);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xl);
 }
 
 .no-items {
   text-align: center;
-  padding: 40px;
-  color: #6c757d;
-  font-size: 18px;
+  padding: var(--spacing-3xl);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xl);
 }
 
 .items-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 30px;
-  margin-bottom: 40px;
+  gap: var(--spacing-2xl);
+  margin-bottom: var(--spacing-3xl);
 }
 
 .item-card {
-  background: white;
-  border-radius: 12px;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow-card);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all var(--transition-base);
 }
 
 .item-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .item-image {
@@ -417,22 +420,22 @@ onMounted(() => {
 }
 
 .item-info {
-  padding: 20px;
+  padding: var(--spacing-lg);
 }
 
 .item-info h3 {
-  color: #2c3e50;
-  margin: 0 0 10px 0;
-  font-size: 1.2rem;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-sm) 0;
+  font-size: var(--font-size-2xl);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .item-description {
-  color: #6c757d;
-  font-size: 0.95rem;
-  margin: 0 0 12px 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+  margin: 0 0 var(--spacing-md) 0;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -444,66 +447,67 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: var(--spacing-md);
 }
 
 .item-price {
-  color: #e74c3c;
-  font-weight: 600;
-  font-size: 1.3rem;
+  color: var(--color-price);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-3xl);
 }
 
 .item-condition {
-  background-color: #f8f9fa;
-  color: #6c757d;
-  padding: 4px 10px;
-  border-radius: 15px;
-  font-size: 0.85rem;
+  background-color: var(--color-bg-page);
+  color: var(--color-text-secondary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
 }
 
 .item-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.95rem;
-  color: #6c757d;
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
 }
 
 .pagination {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 20px;
-  margin-top: 40px;
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-3xl);
 }
 
 .page-btn {
-  padding: 8px 16px;
-  background-color: #007bff;
+  padding: var(--spacing-sm) var(--spacing-base);
+  background-color: var(--color-primary);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
+  transition: background-color var(--transition-fast);
 }
 
 .page-btn:hover:not(:disabled) {
-  background-color: #0056b3;
+  background-color: var(--color-primary-dark);
 }
 
 .page-btn:disabled {
-  background-color: #6c757d;
+  background-color: var(--color-info);
   cursor: not-allowed;
 }
 
 .page-info {
-  color: #6c757d;
-  font-weight: 500;
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
 }
 
 @media (max-width: 768px) {
   .items-header {
     flex-direction: column;
-    gap: 20px;
+    gap: var(--spacing-lg);
     align-items: stretch;
   }
 

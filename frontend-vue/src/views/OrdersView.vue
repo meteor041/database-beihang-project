@@ -289,69 +289,70 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 使用设计系统变量 */
 .orders-view {
   max-width: 1600px;
   margin: 0 auto;
-  padding: 30px 40px;
+  padding: var(--spacing-2xl) var(--spacing-3xl);
 }
 
 .orders-view h1 {
-  color: #2c3e50;
-  margin-bottom: 30px;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-2xl);
   text-align: center;
 }
 
 .order-tabs {
   display: flex;
-  gap: 10px;
-  margin-bottom: 30px;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-2xl);
   justify-content: center;
 }
 
 .tab-btn {
-  padding: 10px 20px;
-  border: 1px solid #ddd;
-  background: white;
-  color: #6c757d;
-  border-radius: 6px;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border: 1px solid var(--color-border-base);
+  background: var(--color-bg-card);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-base);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all var(--transition-base);
 }
 
 .tab-btn:hover {
-  background: #f8f9fa;
+  background: var(--color-bg-page);
 }
 
 .tab-btn.active {
-  background: #007bff;
+  background: var(--color-primary);
   color: white;
-  border-color: #007bff;
+  border-color: var(--color-primary);
 }
 
 .loading {
   text-align: center;
-  padding: 40px;
-  color: #6c757d;
-  font-size: 18px;
+  padding: var(--spacing-3xl);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xl);
 }
 
 .no-orders {
   text-align: center;
-  padding: 40px;
-  color: #6c757d;
-  font-size: 18px;
+  padding: var(--spacing-3xl);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xl);
 }
 
 .orders-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--spacing-lg);
 }
 
 .order-card {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-base);
   overflow: hidden;
 }
 
@@ -359,56 +360,56 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 20px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #eee;
+  padding: var(--spacing-lg) var(--spacing-lg);
+  background: var(--color-bg-page);
+  border-bottom: 1px solid var(--color-border-lighter);
 }
 
 .order-info {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: var(--spacing-xs);
 }
 
 .order-number {
-  font-weight: 500;
-  color: #2c3e50;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
 }
 
 .order-date {
-  font-size: 0.9rem;
-  color: #6c757d;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
 }
 
 .status-badge {
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 0.9rem;
-  font-weight: 500;
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
 }
 
 .status-badge.pending {
-  background: #fff3cd;
+  background: var(--color-warning-light);
   color: #856404;
 }
 
 .status-badge.paid {
-  background: #d1ecf1;
+  background: var(--color-info-light);
   color: #0c5460;
 }
 
 .status-badge.shipped {
-  background: #d4edda;
+  background: var(--color-success-light);
   color: #155724;
 }
 
 .status-badge.completed {
-  background: #d1ecf1;
+  background: var(--color-info-light);
   color: #0c5460;
 }
 
 .status-badge.cancelled {
-  background: #f8d7da;
+  background: var(--color-danger-light);
   color: #721c24;
 }
 
@@ -416,12 +417,12 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
+  padding: var(--spacing-lg);
 }
 
 .item-info {
   display: flex;
-  gap: 15px;
+  gap: var(--spacing-lg);
   flex: 1;
 }
 
@@ -429,45 +430,45 @@ onMounted(() => {
   width: 80px;
   height: 80px;
   object-fit: cover;
-  border-radius: 6px;
+  border-radius: var(--radius-base);
 }
 
 .item-details h3 {
-  color: #2c3e50;
-  margin: 0 0 8px 0;
-  font-size: 1.1rem;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-sm) 0;
+  font-size: var(--font-size-xl);
 }
 
 .item-price {
-  color: #e74c3c;
-  font-weight: 600;
-  font-size: 1.2rem;
-  margin: 0 0 5px 0;
+  color: var(--color-price);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-2xl);
+  margin: 0 0 var(--spacing-xs) 0;
 }
 
 .payment-method {
-  color: #6c757d;
-  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
   margin: 0;
 }
 
 .order-actions {
   display: flex;
-  gap: 10px;
+  gap: var(--spacing-sm);
   flex-wrap: wrap;
 }
 
 .action-btn {
-  padding: 8px 16px;
+  padding: var(--spacing-sm) var(--spacing-base);
   border: none;
-  border-radius: 4px;
-  font-size: 14px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-base);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all var(--transition-base);
 }
 
 .cancel-btn {
-  background: #6c757d;
+  background: var(--color-info);
   color: white;
 }
 
@@ -476,7 +477,7 @@ onMounted(() => {
 }
 
 .pay-btn {
-  background: #e74c3c;
+  background: var(--color-price);
   color: white;
 }
 
@@ -485,7 +486,7 @@ onMounted(() => {
 }
 
 .confirm-btn {
-  background: #28a745;
+  background: var(--color-success);
   color: white;
 }
 
@@ -494,55 +495,56 @@ onMounted(() => {
 }
 
 .detail-btn {
-  background: #007bff;
+  background: var(--color-primary);
   color: white;
 }
 
 .detail-btn:hover {
-  background: #0056b3;
+  background: var(--color-primary-dark);
 }
 
 .pagination {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 20px;
-  margin-top: 40px;
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-3xl);
 }
 
 .page-btn {
-  padding: 8px 16px;
-  background-color: #007bff;
+  padding: var(--spacing-sm) var(--spacing-base);
+  background-color: var(--color-primary);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
+  transition: background-color var(--transition-fast);
 }
 
 .page-btn:hover:not(:disabled) {
-  background-color: #0056b3;
+  background-color: var(--color-primary-dark);
 }
 
 .page-btn:disabled {
-  background-color: #6c757d;
+  background-color: var(--color-info);
   cursor: not-allowed;
 }
 
 .page-info {
-  color: #6c757d;
-  font-weight: 500;
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
 }
 
 @media (max-width: 768px) {
   .order-header {
     flex-direction: column;
-    gap: 10px;
+    gap: var(--spacing-sm);
     align-items: flex-start;
   }
 
   .order-content {
     flex-direction: column;
-    gap: 20px;
+    gap: var(--spacing-lg);
     align-items: stretch;
   }
 

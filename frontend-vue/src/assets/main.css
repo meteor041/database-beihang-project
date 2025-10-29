@@ -1,29 +1,34 @@
 @import './base.css';
 
+/**
+ * 全局样式 - 覆盖和补充
+ * 使用设计系统变量保持一致性
+ */
+
 /* 移除Vue模板的默认样式,使用我们自己的布局 */
 #app {
   min-height: 100vh;
-  /* Element Plus会自动处理全局样式 */
 }
 
 /* 全局链接样式 */
 a {
   text-decoration: none;
   color: inherit;
-  transition: color 0.3s;
+  transition: color var(--transition-base);
 }
 
 a:hover {
-  color: #409eff;
+  color: var(--color-primary);
 }
 
-/* 全局平滑滚动 */
+/* 全局平滑滚动和盒模型 */
 * {
   box-sizing: border-box;
 }
 
 html {
   scroll-behavior: smooth;
+  font-size: 14px; /* 基准字体大小 */
 }
 
 /* 移除默认的body样式 */
@@ -33,4 +38,91 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
     'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
     'Noto Color Emoji';
+  font-size: var(--font-size-base);
+  color: var(--color-text-regular);
+  background-color: var(--color-bg-page);
+  line-height: var(--line-height-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Element Plus 组件样式微调 */
+
+/* 统一按钮圆角 */
+.el-button {
+  border-radius: var(--radius-base);
+}
+
+/* 统一卡片圆角和阴影 */
+.el-card {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.el-card:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* 统一输入框圆角 */
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select .el-input__wrapper {
+  border-radius: var(--radius-base);
+}
+
+/* 统一对话框圆角 */
+.el-dialog,
+.el-drawer {
+  border-radius: var(--radius-lg);
+}
+
+/* 统一消息提示圆角 */
+.el-message,
+.el-notification {
+  border-radius: var(--radius-md);
+}
+
+/* 表格卡片化 */
+.el-table {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/* 图片加载占位符 */
+.el-image__placeholder {
+  background-color: var(--color-bg-hover);
+}
+
+/* 滚动条样式优化 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-page);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-base);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-placeholder);
+}
+
+/* 加载状态 */
+.el-loading-spinner {
+  color: var(--color-primary);
+}
+
+/* 空状态统一样式 */
+.el-empty {
+  padding: var(--spacing-5xl) var(--spacing-xl);
+}
+
+.el-empty__description {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
 }

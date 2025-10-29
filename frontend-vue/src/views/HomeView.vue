@@ -223,164 +223,169 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 使用设计系统变量的简洁卡片式布局 */
+
 .home {
-  max-width: 1400px;
+  max-width: var(--container-max-width);
   margin: 0 auto;
 }
 
-/* 首页横幅 */
+/* 首页横幅 - 卡片式设计 */
 .hero {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--gradient-hero);
   color: white;
-  padding: 80px 40px;
+  padding: var(--spacing-5xl) var(--spacing-3xl);
   text-align: center;
-  border-radius: 16px;
-  margin-bottom: 60px;
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+  border-radius: var(--radius-2xl);
+  margin-bottom: var(--section-gap);
+  box-shadow: var(--shadow-xl);
 }
 
 .hero-content h1 {
-  font-size: 3rem;
-  margin: 0 0 20px 0;
-  font-weight: 700;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-size: var(--font-size-6xl);
+  margin: 0 0 var(--spacing-lg) 0;
+  font-weight: var(--font-weight-bold);
+  text-shadow: var(--shadow-sm);
 }
 
 .hero-content p {
-  font-size: 1.2rem;
-  margin: 0 0 40px 0;
+  font-size: var(--font-size-2xl);
+  margin: 0 0 var(--spacing-3xl) 0;
   opacity: 0.95;
 }
 
 .hero-actions {
   display: flex;
-  gap: 16px;
+  gap: var(--spacing-base);
   justify-content: center;
   flex-wrap: wrap;
 }
 
 .hero-actions .el-button {
   min-width: 140px;
-  transition: transform 0.2s;
+  transition: transform var(--transition-fast);
 }
 
 .hero-actions .el-button:hover {
   transform: translateY(-2px);
 }
 
-/* 分类部分 */
+/* 分类部分 - 统一间距 */
 .categories {
-  margin-bottom: 60px;
+  margin-bottom: var(--section-gap);
 }
 
+/* 统一的标题样式 */
 .categories h2,
 .latest-items h2,
 .features h2 {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 30px;
-  font-size: 1.8rem;
-  color: #303133;
-  font-weight: 600;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-2xl);
+  font-size: var(--font-size-4xl);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
 }
 
+/* 分类卡片 */
 .category-card {
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s;
-  margin-bottom: 20px;
+  transition: all var(--transition-base);
+  margin-bottom: var(--spacing-lg);
+  border: none;
 }
 
 .category-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
 }
 
 .category-icon {
-  font-size: 3rem;
-  margin-bottom: 15px;
+  font-size: var(--font-size-6xl);
+  margin-bottom: var(--spacing-base);
 }
 
 .category-card h3 {
-  font-size: 1.1rem;
-  color: #303133;
-  margin: 0 0 8px 0;
+  font-size: var(--font-size-xl);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-sm) 0;
+  font-weight: var(--font-weight-medium);
 }
 
 .category-card p {
-  color: #909399;
-  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
   margin: 0;
 }
 
 /* 最新商品 */
 .latest-items {
-  margin-bottom: 60px;
+  margin-bottom: var(--section-gap);
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: var(--spacing-2xl);
 }
 
 .section-header .el-link {
-  font-size: 16px;
+  font-size: var(--font-size-lg);
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--spacing-xs);
 }
 
 /* 平台特色 */
 .features {
-  margin-bottom: 60px;
+  margin-bottom: var(--section-gap);
 }
 
 .feature-card {
   text-align: center;
   height: 100%;
-  transition: all 0.3s;
+  transition: all var(--transition-base);
+  border: none;
 }
 
 .feature-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
 .feature-icon {
-  font-size: 3.5rem;
-  margin-bottom: 20px;
+  font-size: var(--font-size-6xl);
+  margin-bottom: var(--spacing-lg);
 }
 
 .feature-card h3 {
-  font-size: 1.3rem;
-  color: #303133;
-  margin: 0 0 15px 0;
-  font-weight: 600;
+  font-size: var(--font-size-2xl);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-md) 0;
+  font-weight: var(--font-weight-semibold);
 }
 
 .feature-card p {
-  color: #606266;
-  line-height: 1.6;
-  font-size: 14px;
+  color: var(--color-text-regular);
+  line-height: var(--line-height-relaxed);
+  font-size: var(--font-size-base);
   margin: 0;
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
   .hero {
-    padding: 60px 20px;
-    margin-bottom: 40px;
+    padding: var(--spacing-4xl) var(--spacing-lg);
+    margin-bottom: var(--spacing-4xl);
   }
 
   .hero-content h1 {
-    font-size: 2rem;
+    font-size: var(--font-size-4xl);
   }
 
   .hero-content p {
-    font-size: 1rem;
+    font-size: var(--font-size-lg);
   }
 
   .hero-actions {
@@ -395,12 +400,12 @@ onMounted(() => {
   .categories h2,
   .latest-items h2,
   .features h2 {
-    font-size: 1.5rem;
+    font-size: var(--font-size-3xl);
   }
 
   .section-header {
     flex-direction: column;
-    gap: 16px;
+    gap: var(--spacing-base);
     align-items: flex-start;
   }
 }

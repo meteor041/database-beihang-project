@@ -171,28 +171,30 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 使用设计系统变量重构的样式 */
+
 #app {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #f5f7fa;
+  background-color: var(--color-bg-page);
 }
 
 .app-header {
-  background: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  background: var(--color-bg-card);
+  box-shadow: var(--shadow-header);
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: var(--z-index-sticky);
   padding: 0;
   height: 64px;
   line-height: 64px;
 }
 
 .header-container {
-  max-width: 1400px;
+  max-width: var(--container-max-width);
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 var(--container-padding);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -202,18 +204,18 @@ onMounted(() => {
 .logo {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--spacing-md);
   text-decoration: none;
-  color: #303133;
-  font-size: 18px;
-  font-weight: 600;
-  margin-right: 40px;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  margin-right: var(--spacing-3xl);
   white-space: nowrap;
-  transition: color 0.3s;
+  transition: color var(--transition-base);
 }
 
 .logo:hover {
-  color: #409eff;
+  color: var(--color-primary);
 }
 
 .logo-text {
@@ -227,87 +229,87 @@ onMounted(() => {
 }
 
 .nav-menu :deep(.el-menu-item) {
-  padding: 0 20px;
+  padding: 0 var(--spacing-lg);
 }
 
 .message-badge {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 .user-section {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-left: 20px;
+  gap: var(--spacing-md);
+  margin-left: var(--spacing-lg);
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--spacing-sm);
   cursor: pointer;
-  padding: 6px 12px;
-  border-radius: 20px;
-  transition: background-color 0.3s;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-full);
+  transition: background-color var(--transition-base);
 }
 
 .user-info:hover {
-  background-color: #f5f7fa;
+  background-color: var(--color-bg-hover);
 }
 
 .username {
-  font-size: 14px;
-  font-weight: 500;
-  color: #303133;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
 }
 
 .app-main {
   flex: 1;
-  max-width: 1400px;
+  max-width: var(--container-max-width);
   width: 100%;
   margin: 0 auto;
-  padding: 24px;
+  padding: var(--container-padding);
 }
 
 .app-footer {
-  background: #303133;
-  color: #ffffff;
+  background: var(--color-text-primary);
+  color: var(--color-bg-card);
   text-align: center;
   height: auto;
-  padding: 30px 20px;
+  padding: var(--spacing-3xl) var(--spacing-lg);
 }
 
 .footer-content {
-  max-width: 1400px;
+  max-width: var(--container-max-width);
   margin: 0 auto;
 }
 
 .footer-content p {
-  margin: 8px 0;
-  font-size: 14px;
+  margin: var(--spacing-sm) 0;
+  font-size: var(--font-size-base);
 }
 
 .footer-links a {
-  color: #ffffff;
+  color: var(--color-bg-card);
   text-decoration: none;
-  transition: color 0.3s;
+  transition: color var(--transition-base);
 }
 
 .footer-links a:hover {
-  color: #409eff;
+  color: var(--color-primary-light);
 }
 
 .divider {
-  margin: 0 12px;
-  color: #909399;
+  margin: 0 var(--spacing-md);
+  color: var(--color-text-secondary);
 }
 
 /* 页面切换动画 */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity var(--transition-base);
 }
 
 .fade-enter-from,
@@ -318,11 +320,11 @@ onMounted(() => {
 /* 响应式设计 */
 @media (max-width: 1024px) {
   .header-container {
-    padding: 0 16px;
+    padding: 0 var(--spacing-base);
   }
 
   .logo {
-    margin-right: 20px;
+    margin-right: var(--spacing-lg);
   }
 
   .logo-text {
@@ -330,7 +332,7 @@ onMounted(() => {
   }
 
   .nav-menu :deep(.el-menu-item) {
-    padding: 0 12px;
+    padding: 0 var(--spacing-md);
   }
 
   .nav-menu :deep(.el-menu-item span) {
@@ -350,17 +352,17 @@ onMounted(() => {
 
   .header-container {
     flex-wrap: wrap;
-    padding: 12px;
+    padding: var(--spacing-md);
   }
 
   .nav-menu {
     width: 100%;
     order: 3;
-    margin-top: 12px;
+    margin-top: var(--spacing-md);
   }
 
   .app-main {
-    padding: 16px;
+    padding: var(--spacing-base);
   }
 }
 </style>

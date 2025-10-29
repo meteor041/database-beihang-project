@@ -381,103 +381,104 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 使用设计系统变量 */
 .item-edit-view {
   min-height: calc(100vh - 200px);
-  background-color: #f5f5f5;
-  padding: 20px;
+  background-color: var(--color-bg-page);
+  padding: var(--spacing-lg);
 }
 
 .edit-container {
   max-width: 800px;
   margin: 0 auto;
-  background: white;
-  border-radius: 12px;
-  padding: 30px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-2xl);
+  box-shadow: var(--shadow-md);
 }
 
 .edit-container h1 {
-  color: #303133;
-  margin-bottom: 30px;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-2xl);
   text-align: center;
 }
 
 .loading,
 .error {
   text-align: center;
-  padding: 40px;
-  color: #909399;
+  padding: var(--spacing-3xl);
+  color: var(--color-text-secondary);
 }
 
 .edit-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--spacing-lg);
 }
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 15px;
+  gap: var(--spacing-md);
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 .form-group label {
-  color: #303133;
-  font-weight: 500;
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
 }
 
 .required {
-  color: #f56c6c;
+  color: var(--color-danger);
 }
 
 .tip {
-  color: #909399;
-  font-size: 12px;
-  font-weight: normal;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
-  padding: 12px;
-  border: 1px solid #dcdfe6;
-  border-radius: 8px;
-  font-size: 14px;
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
   font-family: inherit;
-  transition: border-color 0.3s;
+  transition: border-color var(--transition-base);
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #409eff;
+  border-color: var(--color-primary);
 }
 
 .char-count {
   text-align: right;
-  color: #909399;
-  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
 }
 
 /* 图片上传 */
 .image-upload {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 10px;
+  gap: var(--spacing-sm);
 }
 
 .image-item {
   position: relative;
   width: 100%;
   padding-bottom: 100%;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
@@ -492,16 +493,16 @@ onMounted(() => {
 
 .remove-btn {
   position: absolute;
-  top: 5px;
-  right: 5px;
+  top: var(--spacing-xs);
+  right: var(--spacing-xs);
   width: 24px;
   height: 24px;
   background: rgba(0, 0, 0, 0.6);
   color: white;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--radius-round);
   cursor: pointer;
-  font-size: 18px;
+  font-size: var(--font-size-xl);
   line-height: 1;
   display: flex;
   align-items: center;
@@ -516,10 +517,10 @@ onMounted(() => {
   width: 100%;
   padding-bottom: 100%;
   position: relative;
-  border: 2px dashed #dcdfe6;
-  border-radius: 8px;
+  border: 2px dashed var(--color-border-base);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all var(--transition-base);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -534,62 +535,62 @@ onMounted(() => {
 }
 
 .upload-btn span:first-child {
-  font-size: 32px;
-  color: #909399;
+  font-size: var(--font-size-5xl);
+  color: var(--color-text-secondary);
   margin-top: -15px;
 }
 
 .upload-btn span:last-child {
-  font-size: 12px;
-  color: #909399;
-  margin-top: 20px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-lg);
 }
 
 .upload-btn:hover {
-  border-color: #409eff;
+  border-color: var(--color-primary);
   background: #ecf5ff;
 }
 
 /* 消息提示 */
 .message {
-  padding: 12px;
-  border-radius: 8px;
-  font-size: 14px;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
 }
 
 .message.error {
-  background: #fef0f0;
-  color: #f56c6c;
-  border: 1px solid #fde2e2;
+  background: var(--color-danger-light);
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger-light);
 }
 
 .message.success {
   background: #f0f9ff;
-  color: #67c23a;
+  color: var(--color-success);
   border: 1px solid #d9ecff;
 }
 
 /* 按钮 */
 .form-actions {
   display: flex;
-  gap: 15px;
+  gap: var(--spacing-md);
   justify-content: center;
-  margin-top: 20px;
+  margin-top: var(--spacing-lg);
 }
 
 .btn-cancel,
 .btn-submit {
-  padding: 12px 40px;
+  padding: var(--spacing-md) var(--spacing-3xl);
   border: none;
-  border-radius: 8px;
-  font-size: 16px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-lg);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all var(--transition-base);
 }
 
 .btn-cancel {
-  background: #f5f5f5;
-  color: #606266;
+  background: var(--color-bg-page);
+  color: var(--color-text-regular);
 }
 
 .btn-cancel:hover {
@@ -597,7 +598,7 @@ onMounted(() => {
 }
 
 .btn-submit {
-  background: #409eff;
+  background: var(--color-primary);
   color: white;
 }
 
@@ -606,7 +607,7 @@ onMounted(() => {
 }
 
 .btn-submit:disabled {
-  background: #c0c4cc;
+  background: var(--color-text-placeholder);
   cursor: not-allowed;
 }
 
@@ -616,7 +617,7 @@ onMounted(() => {
   }
 
   .edit-container {
-    padding: 20px;
+    padding: var(--spacing-lg);
   }
 
   .form-actions {

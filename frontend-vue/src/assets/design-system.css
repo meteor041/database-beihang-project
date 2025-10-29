@@ -1,0 +1,426 @@
+/**
+ * 设计系统 - 统一的设计规范
+ * Design System - Unified Design Specifications
+ *
+ * 本文件定义了整个项目的设计变量，确保视觉一致性
+ * This file defines design variables for the entire project to ensure visual consistency
+ */
+
+:root {
+  /* ========== 颜色系统 Color System ========== */
+
+  /* 主色调 Primary Colors */
+  --color-primary: #409eff;
+  --color-primary-light: #79bbff;
+  --color-primary-lighter: #a0cfff;
+  --color-primary-dark: #337ecc;
+
+  /* 功能色 Functional Colors */
+  --color-success: #67c23a;
+  --color-warning: #e6a23c;
+  --color-danger: #f56c6c;
+  --color-info: #909399;
+
+  /* 功能色 - 浅色变体 Light Variants */
+  --color-success-light: #e1f3d8;
+  --color-warning-light: #faecd8;
+  --color-danger-light: #fde2e2;
+  --color-info-light: #e9e9eb;
+
+  /* 文本颜色 Text Colors */
+  --color-text-primary: #303133;
+  --color-text-regular: #606266;
+  --color-text-secondary: #909399;
+  --color-text-placeholder: #c0c4cc;
+
+  /* 边框颜色 Border Colors */
+  --color-border-base: #dcdfe6;
+  --color-border-light: #e4e7ed;
+  --color-border-lighter: #ebeef5;
+  --color-border-extra-light: #f2f6fc;
+
+  /* 背景颜色 Background Colors */
+  --color-bg-page: #f5f7fa;
+  --color-bg-card: #ffffff;
+  --color-bg-hover: #f5f7fa;
+  --color-bg-overlay: rgba(0, 0, 0, 0.5);
+
+  /* 价格颜色 Price Color */
+  --color-price: #ff4d4f;
+
+  /* 渐变色 Gradients */
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-success: linear-gradient(135deg, #52c41a 0%, #237804 100%);
+  --gradient-hero: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+  /* ========== 间距系统 Spacing System ========== */
+  /* 基于 4px 基础单位的间距体系 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-base: 16px;
+  --spacing-lg: 20px;
+  --spacing-xl: 24px;
+  --spacing-2xl: 32px;
+  --spacing-3xl: 40px;
+  --spacing-4xl: 48px;
+  --spacing-5xl: 64px;
+
+  /* 容器间距 Container Spacing */
+  --container-padding: var(--spacing-xl);
+  --container-max-width: 1400px;
+  --section-gap: var(--spacing-5xl);
+
+  /* ========== 圆角系统 Border Radius System ========== */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-base: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-round: 50%;
+  --radius-full: 9999px;
+
+  /* ========== 阴影系统 Shadow System ========== */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-base: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.15);
+  --shadow-2xl: 0 20px 48px rgba(0, 0, 0, 0.18);
+
+  /* 特殊阴影 Special Shadows */
+  --shadow-card: var(--shadow-base);
+  --shadow-card-hover: var(--shadow-lg);
+  --shadow-header: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  /* ========== 排版系统 Typography System ========== */
+
+  /* 字体大小 Font Sizes */
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-base: 14px;
+  --font-size-md: 15px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
+  --font-size-3xl: 24px;
+  --font-size-4xl: 28px;
+  --font-size-5xl: 32px;
+  --font-size-6xl: 36px;
+
+  /* 字体粗细 Font Weights */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* 行高 Line Heights */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+  --line-height-loose: 2;
+
+  /* ========== 过渡动画 Transitions ========== */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.3s ease;
+  --transition-slow: 0.5s ease;
+
+  /* ========== 层级系统 Z-Index System ========== */
+  --z-index-dropdown: 1000;
+  --z-index-sticky: 1020;
+  --z-index-fixed: 1030;
+  --z-index-modal-backdrop: 1040;
+  --z-index-modal: 1050;
+  --z-index-popover: 1060;
+  --z-index-tooltip: 1070;
+
+  /* ========== 网格系统 Grid System ========== */
+  --grid-gutter: var(--spacing-lg);
+  --grid-columns: 12;
+
+  /* ========== 响应式断点 Responsive Breakpoints ========== */
+  /* 注意：CSS变量不能直接用于媒体查询，这里仅作文档说明 */
+  /* xs: 0px - 手机 */
+  /* sm: 640px - 大手机 */
+  /* md: 768px - 平板 */
+  /* lg: 1024px - 桌面 */
+  /* xl: 1280px - 大桌面 */
+  /* 2xl: 1536px - 超大桌面 */
+}
+
+/* ========== 深色模式支持 Dark Mode Support ========== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* 背景颜色 */
+    --color-bg-page: #141414;
+    --color-bg-card: #1f1f1f;
+    --color-bg-hover: #2a2a2a;
+
+    /* 文本颜色 */
+    --color-text-primary: #e5e5e5;
+    --color-text-regular: #d0d0d0;
+    --color-text-secondary: #a8a8a8;
+    --color-text-placeholder: #6c6c6c;
+
+    /* 边框颜色 */
+    --color-border-base: #434343;
+    --color-border-light: #303030;
+    --color-border-lighter: #262626;
+    --color-border-extra-light: #1f1f1f;
+
+    /* 阴影调整 */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+    --shadow-base: 0 2px 8px rgba(0, 0, 0, 0.6);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.7);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.8);
+    --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.9);
+  }
+}
+
+/* ========== 实用类 Utility Classes ========== */
+
+/* 容器 Container */
+.container {
+  width: 100%;
+  max-width: var(--container-max-width);
+  margin: 0 auto;
+  padding: 0 var(--container-padding);
+}
+
+/* 卡片 Card */
+.card {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow var(--transition-base);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* 间距 Spacing */
+.mb-xs { margin-bottom: var(--spacing-xs); }
+.mb-sm { margin-bottom: var(--spacing-sm); }
+.mb-md { margin-bottom: var(--spacing-md); }
+.mb-base { margin-bottom: var(--spacing-base); }
+.mb-lg { margin-bottom: var(--spacing-lg); }
+.mb-xl { margin-bottom: var(--spacing-xl); }
+.mb-2xl { margin-bottom: var(--spacing-2xl); }
+.mb-3xl { margin-bottom: var(--spacing-3xl); }
+.mb-4xl { margin-bottom: var(--spacing-4xl); }
+.mb-5xl { margin-bottom: var(--spacing-5xl); }
+
+.mt-xs { margin-top: var(--spacing-xs); }
+.mt-sm { margin-top: var(--spacing-sm); }
+.mt-md { margin-top: var(--spacing-md); }
+.mt-base { margin-top: var(--spacing-base); }
+.mt-lg { margin-top: var(--spacing-lg); }
+.mt-xl { margin-top: var(--spacing-xl); }
+.mt-2xl { margin-top: var(--spacing-2xl); }
+.mt-3xl { margin-top: var(--spacing-3xl); }
+.mt-4xl { margin-top: var(--spacing-4xl); }
+.mt-5xl { margin-top: var(--spacing-5xl); }
+
+/* 文本对齐 Text Alignment */
+.text-left { text-align: left; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+
+/* 文本颜色 Text Colors */
+.text-primary { color: var(--color-text-primary); }
+.text-regular { color: var(--color-text-regular); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-placeholder { color: var(--color-text-placeholder); }
+
+/* 排版 Typography */
+.heading-1 {
+  font-size: var(--font-size-5xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-tight);
+}
+
+.heading-2 {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-tight);
+}
+
+.heading-3 {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-normal);
+}
+
+.heading-4 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-normal);
+}
+
+/* 价格显示 Price Display */
+.price {
+  color: var(--color-price);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.price-small {
+  color: var(--color-price);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Flex 布局 Flex Layout */
+.flex {
+  display: flex;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Grid 布局 Grid Layout */
+.grid {
+  display: grid;
+}
+
+.grid-cols-1 { grid-template-columns: repeat(1, 1fr); }
+.grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+.grid-cols-5 { grid-template-columns: repeat(5, 1fr); }
+
+.gap-sm { gap: var(--spacing-sm); }
+.gap-md { gap: var(--spacing-md); }
+.gap-base { gap: var(--spacing-base); }
+.gap-lg { gap: var(--spacing-lg); }
+.gap-xl { gap: var(--spacing-xl); }
+.gap-2xl { gap: var(--spacing-2xl); }
+
+/* 圆角 Border Radius */
+.rounded-sm { border-radius: var(--radius-sm); }
+.rounded-base { border-radius: var(--radius-base); }
+.rounded-md { border-radius: var(--radius-md); }
+.rounded-lg { border-radius: var(--radius-lg); }
+.rounded-xl { border-radius: var(--radius-xl); }
+.rounded-full { border-radius: var(--radius-full); }
+
+/* 阴影 Shadow */
+.shadow-sm { box-shadow: var(--shadow-sm); }
+.shadow-base { box-shadow: var(--shadow-base); }
+.shadow-md { box-shadow: var(--shadow-md); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+
+/* 响应式网格 Responsive Grid */
+.responsive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--grid-gutter);
+}
+
+/* 页面布局 Page Layout */
+.page-container {
+  min-height: calc(100vh - 64px);
+  padding: var(--container-padding);
+  background: var(--color-bg-page);
+}
+
+.page-header {
+  margin-bottom: var(--spacing-3xl);
+}
+
+.page-title {
+  font-size: var(--font-size-5xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+.page-subtitle {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+}
+
+/* 卡片标题 Card Header */
+.card-header {
+  padding: var(--spacing-xl);
+  border-bottom: 1px solid var(--color-border-lighter);
+}
+
+.card-title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.card-body {
+  padding: var(--spacing-xl);
+}
+
+/* 悬停效果 Hover Effects */
+.hover-lift {
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* 加载状态 Loading State */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-border-extra-light) 25%,
+    var(--color-border-lighter) 50%,
+    var(--color-border-extra-light) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* 空状态 Empty State */
+.empty-state {
+  text-align: center;
+  padding: var(--spacing-5xl) var(--spacing-xl);
+}
+
+.empty-state-icon {
+  font-size: var(--font-size-6xl);
+  color: var(--color-text-placeholder);
+  margin-bottom: var(--spacing-lg);
+}
+
+.empty-state-text {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+}

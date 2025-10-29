@@ -1,10 +1,12 @@
-import './assets/main.css'
+// 导入样式文件 - 顺序很重要
+import 'element-plus/dist/index.css'
+import 'element-plus/theme-chalk/dark/css-vars.css'
+import './assets/design-system.css' // 设计系统变量和工具类
+import './assets/main.css' // 全局样式覆盖
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
-import 'element-plus/dist/index.css'
-import 'element-plus/theme-chalk/dark/css-vars.css'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 

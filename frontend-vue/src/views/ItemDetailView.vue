@@ -229,45 +229,46 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 使用设计系统变量 */
 .item-detail {
   max-width: 1800px;
   margin: 0 auto;
-  padding: 30px 40px;
+  padding: var(--spacing-2xl) var(--spacing-3xl);
 }
 
 .loading {
   text-align: center;
-  padding: 40px;
-  color: #6c757d;
-  font-size: 18px;
+  padding: var(--spacing-3xl);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xl);
 }
 
 .not-found {
   text-align: center;
-  padding: 40px;
-  color: #6c757d;
-  font-size: 18px;
+  padding: var(--spacing-3xl);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xl);
 }
 
 .item-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 40px;
-  margin-bottom: 40px;
+  gap: var(--spacing-3xl);
+  margin-bottom: var(--spacing-3xl);
 }
 
 .item-images {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: var(--spacing-lg);
 }
 
 .main-image {
   width: 100%;
   height: 500px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .main-image img {
@@ -278,7 +279,7 @@ onMounted(() => {
 
 .image-thumbnails {
   display: flex;
-  gap: 10px;
+  gap: var(--spacing-sm);
   overflow-x: auto;
 }
 
@@ -286,10 +287,10 @@ onMounted(() => {
   width: 80px;
   height: 80px;
   object-fit: cover;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   opacity: 0.7;
-  transition: opacity 0.3s;
+  transition: opacity var(--transition-base);
 }
 
 .image-thumbnails img:hover,
@@ -298,38 +299,38 @@ onMounted(() => {
 }
 
 .item-info h1 {
-  color: #2c3e50;
-  margin: 0 0 20px 0;
-  font-size: 2rem;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-lg) 0;
+  font-size: var(--font-size-4xl);
 }
 
 .item-price {
-  margin-bottom: 20px;
+  margin-bottom: var(--spacing-lg);
 }
 
 .current-price {
-  color: #e74c3c;
-  font-size: 2rem;
-  font-weight: 600;
+  color: var(--color-price);
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-semibold);
 }
 
 .original-price {
-  color: #6c757d;
-  font-size: 1rem;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
   text-decoration: line-through;
-  margin-left: 15px;
+  margin-left: var(--spacing-lg);
 }
 
 .item-meta {
-  background: #f8f9fa;
-  padding: 20px;
-  border-radius: 8px;
-  margin-bottom: 30px;
+  background: var(--color-bg-page);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-2xl);
 }
 
 .meta-item {
   display: flex;
-  margin-bottom: 10px;
+  margin-bottom: var(--spacing-sm);
 }
 
 .meta-item:last-child {
@@ -337,80 +338,80 @@ onMounted(() => {
 }
 
 .meta-item .label {
-  font-weight: 500;
-  color: #2c3e50;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
   width: 100px;
 }
 
 .meta-item .value {
-  color: #6c757d;
+  color: var(--color-text-secondary);
 }
 
 .seller-info {
-  margin-bottom: 30px;
+  margin-bottom: var(--spacing-2xl);
 }
 
 .seller-info h3 {
-  color: #2c3e50;
-  margin-bottom: 15px;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-lg);
 }
 
 .seller-card {
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 8px;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  background: var(--color-bg-page);
+  border-radius: var(--radius-md);
 }
 
 .seller-avatar {
   width: 60px;
   height: 60px;
-  border-radius: 50%;
+  border-radius: var(--radius-round);
   object-fit: cover;
 }
 
 .seller-name {
-  font-weight: 500;
-  color: #2c3e50;
-  margin-bottom: 5px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-xs);
 }
 
 .seller-credit {
-  color: #6c757d;
-  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
 }
 
 .actions {
   display: flex;
-  gap: 15px;
+  gap: var(--spacing-lg);
   flex-wrap: wrap;
 }
 
 .actions button {
-  padding: 12px 24px;
+  padding: var(--spacing-md) var(--spacing-xl);
   border: none;
-  border-radius: 6px;
-  font-size: 16px;
-  font-weight: 500;
+  border-radius: var(--radius-base);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all var(--transition-base);
 }
 
 .wishlist-btn {
-  background: #f8f9fa;
-  color: #6c757d;
-  border: 1px solid #ddd;
+  background: var(--color-bg-page);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-base);
 }
 
 .wishlist-btn.active {
-  background: #e74c3c;
+  background: var(--color-price);
   color: white;
 }
 
 .wishlist-btn:hover {
-  background: #e9ecef;
+  background: var(--color-bg-hover);
 }
 
 .wishlist-btn.active:hover {
@@ -418,7 +419,7 @@ onMounted(() => {
 }
 
 .contact-btn {
-  background: #28a745;
+  background: var(--color-success);
   color: white;
 }
 
@@ -427,25 +428,25 @@ onMounted(() => {
 }
 
 .buy-btn {
-  background: #007bff;
+  background: var(--color-primary);
   color: white;
 }
 
 .buy-btn:hover {
-  background: #0056b3;
+  background: var(--color-primary-dark);
 }
 
 .login-prompt {
   text-align: center;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
+  padding: var(--spacing-lg);
+  background: var(--color-bg-page);
+  border-radius: var(--radius-md);
 }
 
 .login-link {
-  color: #007bff;
+  color: var(--color-primary);
   text-decoration: none;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 .login-link:hover {
@@ -453,27 +454,27 @@ onMounted(() => {
 }
 
 .item-description {
-  background: white;
-  padding: 30px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  background: var(--color-bg-card);
+  padding: var(--spacing-2xl);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-base);
 }
 
 .item-description h2 {
-  color: #2c3e50;
-  margin-bottom: 20px;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-lg);
 }
 
 .description-content {
-  color: #6c757d;
-  line-height: 1.6;
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
   white-space: pre-wrap;
 }
 
 @media (max-width: 768px) {
   .item-content {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: var(--spacing-lg);
   }
 
   .main-image {
@@ -481,11 +482,11 @@ onMounted(() => {
   }
 
   .item-info h1 {
-    font-size: 1.5rem;
+    font-size: var(--font-size-3xl);
   }
 
   .current-price {
-    font-size: 1.5rem;
+    font-size: var(--font-size-3xl);
   }
 
   .actions {

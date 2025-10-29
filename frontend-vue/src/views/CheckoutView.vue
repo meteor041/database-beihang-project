@@ -370,10 +370,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 使用设计系统变量 */
 .checkout-view {
   min-height: calc(100vh - 200px);
-  background-color: #f5f5f5;
-  padding: 20px;
+  background-color: var(--color-bg-page);
+  padding: var(--spacing-lg);
 }
 
 .checkout-container {
@@ -382,50 +383,50 @@ onMounted(() => {
 }
 
 .checkout-container h1 {
-  color: #303133;
-  margin-bottom: 30px;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-2xl);
   text-align: center;
 }
 
 .loading,
 .error {
   text-align: center;
-  padding: 40px;
-  background: white;
-  border-radius: 8px;
+  padding: var(--spacing-3xl);
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
 }
 
 .checkout-content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--spacing-lg);
 }
 
 .section {
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
 }
 
 .section h2 {
-  color: #303133;
-  font-size: 18px;
-  margin-bottom: 15px;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--spacing-md);
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: var(--spacing-md);
 }
 
 .btn-link {
   background: none;
   border: none;
-  color: #409eff;
+  color: var(--color-primary);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--font-size-base);
 }
 
 .btn-link:hover {
@@ -435,71 +436,71 @@ onMounted(() => {
 /* 商品卡片 */
 .item-card {
   display: flex;
-  gap: 15px;
-  padding: 15px;
-  background: #f9f9f9;
-  border-radius: 8px;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--color-bg-hover);
+  border-radius: var(--radius-md);
 }
 
 .item-image {
   width: 100px;
   height: 100px;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 
 .item-info h3 {
-  color: #303133;
-  margin-bottom: 8px;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-sm);
 }
 
 .item-price {
-  color: #f56c6c;
-  font-size: 20px;
-  font-weight: bold;
-  margin-bottom: 5px;
+  color: var(--color-danger);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-xs);
 }
 
 .item-seller {
-  color: #909399;
-  font-size: 14px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
 }
 
 /* 地址卡片 */
 .address-card {
-  padding: 15px;
-  background: #f9f9f9;
-  border-radius: 8px;
+  padding: var(--spacing-md);
+  background: var(--color-bg-hover);
+  border-radius: var(--radius-md);
 }
 
 .address-info {
   display: flex;
-  gap: 15px;
-  margin-bottom: 8px;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
 }
 
 .recipient {
-  font-weight: 500;
-  color: #303133;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
 }
 
 .phone {
-  color: #606266;
+  color: var(--color-text-regular);
 }
 
 .address-detail {
-  color: #606266;
-  font-size: 14px;
+  color: var(--color-text-regular);
+  font-size: var(--font-size-base);
 }
 
 .no-address {
   text-align: center;
-  padding: 30px;
+  padding: var(--spacing-2xl);
 }
 
 .no-address p {
-  color: #909399;
-  margin-bottom: 15px;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-md);
 }
 
 /* 支付和配送方式 */
@@ -507,24 +508,24 @@ onMounted(() => {
 .delivery-methods {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--spacing-sm);
 }
 
 .payment-option,
 .delivery-option {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px;
-  border: 1px solid #dcdfe6;
-  border-radius: 8px;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all var(--transition-base);
 }
 
 .payment-option:hover,
 .delivery-option:hover {
-  border-color: #409eff;
+  border-color: var(--color-primary);
   background: #ecf5ff;
 }
 
@@ -536,61 +537,61 @@ onMounted(() => {
 /* 备注 */
 textarea {
   width: 100%;
-  padding: 12px;
-  border: 1px solid #dcdfe6;
-  border-radius: 8px;
-  font-size: 14px;
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
   resize: vertical;
   font-family: inherit;
 }
 
 textarea:focus {
   outline: none;
-  border-color: #409eff;
+  border-color: var(--color-primary);
 }
 
 /* 订单总价 */
 .summary {
-  background: #fff9e6;
+  background: var(--color-warning-light);
 }
 
 .summary-row {
   display: flex;
   justify-content: space-between;
-  padding: 8px 0;
+  padding: var(--spacing-sm) 0;
 }
 
 .summary-row.total {
-  border-top: 2px solid #e6a23c;
-  padding-top: 12px;
-  margin-top: 8px;
-  font-size: 18px;
-  font-weight: bold;
-  color: #f56c6c;
+  border-top: 2px solid var(--color-warning);
+  padding-top: var(--spacing-md);
+  margin-top: var(--spacing-sm);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-danger);
 }
 
 /* 操作按钮 */
 .actions {
   display: flex;
-  gap: 15px;
+  gap: var(--spacing-md);
   justify-content: center;
-  padding: 20px 0;
+  padding: var(--spacing-lg) 0;
 }
 
 .btn-cancel,
 .btn-submit,
 .btn-primary {
-  padding: 12px 40px;
+  padding: var(--spacing-md) var(--spacing-3xl);
   border: none;
-  border-radius: 8px;
-  font-size: 16px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-lg);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all var(--transition-base);
 }
 
 .btn-cancel {
-  background: #f5f5f5;
-  color: #606266;
+  background: var(--color-bg-page);
+  color: var(--color-text-regular);
 }
 
 .btn-cancel:hover {
@@ -599,7 +600,7 @@ textarea:focus {
 
 .btn-submit,
 .btn-primary {
-  background: #67c23a;
+  background: var(--color-success);
   color: white;
 }
 
@@ -609,7 +610,7 @@ textarea:focus {
 }
 
 .btn-submit:disabled {
-  background: #c0c4cc;
+  background: var(--color-text-placeholder);
   cursor: not-allowed;
 }
 
@@ -620,17 +621,17 @@ textarea:focus {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--color-bg-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: var(--z-index-modal);
 }
 
 .modal-content {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
   max-width: 600px;
   width: 90%;
   max-height: 80vh;
@@ -638,47 +639,47 @@ textarea:focus {
 }
 
 .modal-content h3 {
-  color: #303133;
-  margin-bottom: 20px;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-lg);
 }
 
 .no-data {
   text-align: center;
-  padding: 40px;
-  color: #909399;
+  padding: var(--spacing-3xl);
+  color: var(--color-text-secondary);
 }
 
 .address-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
 }
 
 .address-item {
-  padding: 15px;
-  border: 2px solid #dcdfe6;
-  border-radius: 8px;
+  padding: var(--spacing-md);
+  border: 2px solid var(--color-border-base);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all var(--transition-base);
 }
 
 .address-item:hover {
-  border-color: #409eff;
+  border-color: var(--color-primary);
   background: #ecf5ff;
 }
 
 .address-item.active {
-  border-color: #409eff;
+  border-color: var(--color-primary);
   background: #ecf5ff;
 }
 
 .default-badge {
-  padding: 2px 8px;
-  background: #67c23a;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-success);
   color: white;
-  font-size: 12px;
-  border-radius: 4px;
+  font-size: var(--font-size-xs);
+  border-radius: var(--radius-sm);
 }
 
 .modal-actions {
@@ -686,9 +687,13 @@ textarea:focus {
   justify-content: flex-end;
 }
 
+.modal-toolbar {
+  margin-bottom: var(--spacing-lg);
+}
+
 @media (max-width: 768px) {
   .checkout-view {
-    padding: 10px;
+    padding: var(--spacing-sm);
   }
 
   .item-card {

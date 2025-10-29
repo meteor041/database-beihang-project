@@ -353,34 +353,35 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 使用设计系统变量 */
 .publish-view {
   max-width: 1000px;
   margin: 0 auto;
-  padding: 30px 40px;
+  padding: var(--spacing-2xl) var(--spacing-3xl);
 }
 
 .publish-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  padding: 30px;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: var(--spacing-2xl);
 }
 
 .publish-container h1 {
-  color: #2c3e50;
-  margin-bottom: 30px;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-2xl);
   text-align: center;
 }
 
 .publish-form {
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: var(--spacing-2xl);
 }
 
 .form-section {
-  border-bottom: 1px solid #eee;
-  padding-bottom: 30px;
+  border-bottom: 1px solid var(--color-border-lighter);
+  padding-bottom: var(--spacing-2xl);
 }
 
 .form-section:last-of-type {
@@ -389,103 +390,103 @@ onMounted(() => {
 }
 
 .form-section h2 {
-  color: #2c3e50;
-  margin-bottom: 20px;
-  font-size: 1.3rem;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-lg);
+  font-size: var(--font-size-3xl);
 }
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: var(--spacing-lg);
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--spacing-sm);
   position: relative;
 }
 
 .form-group label {
-  font-weight: 500;
-  color: #2c3e50;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 16px;
-  transition: border-color 0.3s;
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-lg);
+  transition: border-color var(--transition-base);
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: var(--color-primary);
 }
 
 .char-count {
   position: absolute;
-  bottom: 8px;
-  right: 12px;
-  font-size: 12px;
-  color: #6c757d;
-  background: white;
-  padding: 2px 4px;
+  bottom: var(--spacing-sm);
+  right: var(--spacing-md);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-card);
+  padding: var(--spacing-xs) var(--spacing-xs);
 }
 
 .image-upload {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--spacing-lg);
 }
 
 .upload-area {
-  border: 2px dashed #ddd;
-  border-radius: 8px;
-  padding: 40px;
+  border: 2px dashed var(--color-border-base);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-3xl);
   text-align: center;
   cursor: pointer;
-  transition: border-color 0.3s;
+  transition: border-color var(--transition-base);
 }
 
 .upload-area:hover {
-  border-color: #007bff;
+  border-color: var(--color-primary);
 }
 
 .upload-icon {
-  font-size: 3rem;
-  margin-bottom: 10px;
+  font-size: var(--font-size-6xl);
+  margin-bottom: var(--spacing-sm);
 }
 
 .upload-text {
-  font-size: 1.1rem;
-  color: #2c3e50;
-  margin-bottom: 5px;
+  font-size: var(--font-size-lg);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-xs);
 }
 
 .upload-hint {
-  font-size: 0.9rem;
-  color: #6c757d;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
 }
 
 .image-preview {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 15px;
+  gap: var(--spacing-md);
 }
 
 .image-item {
   position: relative;
   aspect-ratio: 1;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-card);
 }
 
 .image-item img {
@@ -496,19 +497,19 @@ onMounted(() => {
 
 .remove-btn {
   position: absolute;
-  top: 5px;
-  right: 5px;
+  top: var(--spacing-xs);
+  right: var(--spacing-xs);
   width: 24px;
   height: 24px;
   border: none;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.7);
+  border-radius: var(--radius-round);
+  background: var(--color-bg-overlay);
   color: white;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: var(--font-size-lg);
   line-height: 1;
 }
 
@@ -517,45 +518,45 @@ onMounted(() => {
 }
 
 .error-message {
-  color: #dc3545;
-  font-size: 14px;
+  color: var(--color-danger);
+  font-size: var(--font-size-base);
   text-align: center;
-  padding: 10px;
-  background-color: #f8d7da;
+  padding: var(--spacing-sm);
+  background-color: var(--color-danger-light);
   border: 1px solid #f5c6cb;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .success-message {
   color: #155724;
-  font-size: 14px;
+  font-size: var(--font-size-base);
   text-align: center;
-  padding: 10px;
-  background-color: #d4edda;
+  padding: var(--spacing-sm);
+  background-color: var(--color-success-light);
   border: 1px solid #c3e6cb;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .form-actions {
   display: flex;
-  gap: 20px;
+  gap: var(--spacing-lg);
   justify-content: center;
-  padding-top: 20px;
+  padding-top: var(--spacing-lg);
 }
 
 .reset-btn,
 .submit-btn {
-  padding: 12px 30px;
+  padding: var(--spacing-md) var(--spacing-2xl);
   border: none;
-  border-radius: 6px;
-  font-size: 16px;
-  font-weight: 500;
+  border-radius: var(--radius-base);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all var(--transition-base);
 }
 
 .reset-btn {
-  background: #6c757d;
+  background: var(--color-info);
   color: white;
 }
 
@@ -564,16 +565,16 @@ onMounted(() => {
 }
 
 .submit-btn {
-  background: #007bff;
+  background: var(--color-primary);
   color: white;
 }
 
 .submit-btn:hover:not(:disabled) {
-  background: #0056b3;
+  background: var(--color-primary-dark);
 }
 
 .submit-btn:disabled {
-  background: #6c757d;
+  background: var(--color-info);
   cursor: not-allowed;
 }
 
