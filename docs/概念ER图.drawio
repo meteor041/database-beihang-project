@@ -1,0 +1,166 @@
+<mxfile host="65bd71144e">
+    <diagram name="概念ER图" id="er-diagram">
+        <mxGraphModel dx="2854" dy="851" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="user" value="User&#xa;用户" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="640" y="400" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="item" value="Item&#xa;物品" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="280" y="400" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="category" value="Category&#xa;分类" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="-10" y="400" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="order" value="Order&#xa;订单" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="640" y="650" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="address" value="Address&#xa;地址" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="990" y="650" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="message" value="Message&#xa;消息" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="640" y="150" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="review" value="Review&#xa;评价" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="940" y="400" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel-publish" value="发布" style="rhombus;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="460" y="400" width="80" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-user-publish" value="1" style="curved=1;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="user" target="rel-publish" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-publish-item" value="N" style="curved=1;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="rel-publish" target="item" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel-belong" value="属于" style="rhombus;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="150" y="400" width="80" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-item-belong" value="N" style="curved=1;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="item" target="rel-belong" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-belong-category" value="1" style="curved=1;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="rel-belong" target="category" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel-parent" value="包含&#xa;子类" style="rhombus;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="10" y="260" width="80" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-category-parent" value="1" style="curved=1;exitX=0.75;exitY=0;exitDx=0;exitDy=0;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="category" target="rel-parent" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-parent-category" value="N" style="curved=1;entryX=0.25;entryY=0;entryDx=0;entryDy=0;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="rel-parent" target="category" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel-has-address" value="拥有" style="rhombus;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="810" y="525" width="80" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-user-address" value="1" style="curved=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="user" target="rel-has-address" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-address-address" value="N" style="curved=1;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="rel-has-address" target="address" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel-buy" value="购买" style="rhombus;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="550" y="525" width="80" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-user-buy" value="1" style="curved=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="user" target="rel-buy" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-buy-order" value="N" style="curved=1;entryX=0.25;entryY=0;entryDx=0;entryDy=0;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="rel-buy" target="order" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel-sell" value="出售" style="rhombus;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="690" y="525" width="80" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-user-sell" value="1" style="curved=1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="user" target="rel-sell" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-sell-order" value="N" style="curved=1;entryX=0.75;entryY=0;entryDx=0;entryDy=0;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="rel-sell" target="order" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel-contain" value="包含" style="rhombus;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="300" y="650" width="80" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-order-contain" value="N" style="curved=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="order" target="rel-contain" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-contain-item" value="1" style="curved=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="rel-contain" target="item" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel-use-addr" value="使用&#xa;地址" style="rhombus;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="650" width="80" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-order-addr" value="N" style="curved=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="order" target="rel-use-addr" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-addr-address" value="1" style="curved=1;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="rel-use-addr" target="address" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel-wishlist" value="收藏" style="rhombus;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="460" y="290" width="80" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-user-wishlist" value="M" style="curved=1;exitX=0.25;exitY=0;exitDx=0;exitDy=0;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="user" target="rel-wishlist" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-wishlist-item" value="N" style="curved=1;entryX=0.75;entryY=0;entryDx=0;entryDy=0;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="rel-wishlist" target="item" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel-send" value="发送" style="rhombus;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="600" y="280" width="80" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-user-send" value="1" style="curved=1;exitX=0.25;exitY=0;exitDx=0;exitDy=0;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="user" target="rel-send" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-send-message" value="N" style="curved=1;entryX=0.25;entryY=1;entryDx=0;entryDy=0;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="rel-send" target="message" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel-receive" value="接收" style="rhombus;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="720" y="280" width="80" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-user-receive" value="1" style="curved=1;exitX=0.75;exitY=0;exitDx=0;exitDy=0;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="user" target="rel-receive" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-receive-message" value="N" style="curved=1;entryX=0.75;entryY=1;entryDx=0;entryDy=0;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="rel-receive" target="message" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel-msg-item" value="关联" style="rhombus;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="300" y="150" width="80" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-msg-relate" value="N" style="curved=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="message" target="rel-msg-item" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-relate-item" value="1" style="curved=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="rel-msg-item" target="item" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel-reviewer" value="评价" style="rhombus;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="810" y="400" width="80" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-user-reviewer" value="1" style="curved=1;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="user" target="rel-reviewer" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-reviewer-review" value="N" style="curved=1;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="rel-reviewer" target="review" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel-reviewee" value="被评价" style="rhombus;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="850" y="230" width="80" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-user-reviewee" value="1" style="curved=1;exitX=1;exitY=0.25;exitDx=0;exitDy=0;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="user" target="rel-reviewee" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-reviewee-review" value="N" style="curved=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="rel-reviewee" target="review" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel-review-order" value="关于" style="rhombus;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="960" y="525" width="80" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-review-order" value="N" style="curved=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="review" target="rel-review-order" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-order-review" value="1" style="curved=1;entryX=1;entryY=0.25;entryDx=0;entryDy=0;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" parent="1" source="rel-review-order" target="order" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
