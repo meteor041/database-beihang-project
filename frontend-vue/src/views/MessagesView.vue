@@ -320,54 +320,59 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* 使用设计系统变量 */
+/* 现代扁平化风格 - Twitter/YouTube/Google 风格 */
+
 .messages-view {
-  max-width: 1800px;
+  max-width: var(--container-max-width);
   margin: 0 auto;
-  padding: var(--spacing-2xl) var(--spacing-3xl);
+  padding: var(--spacing-6);
+  background: var(--color-bg-page);
 }
 
 .messages-view h1 {
   color: var(--color-text-primary);
-  margin-bottom: var(--spacing-2xl);
-  text-align: center;
+  margin-bottom: var(--spacing-8);
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
 }
 
+/* 消息容器 - 扁平带边框 */
 .messages-container {
   display: grid;
-  grid-template-columns: 400px 1fr;
-  gap: var(--spacing-2xl);
+  grid-template-columns: 360px 1fr;
+  gap: 0;
   height: 700px;
   background: var(--color-bg-card);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-base);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 
+/* 会话列表 */
 .conversations-list {
-  border-right: 1px solid var(--color-border-lighter);
+  border-right: 1px solid var(--color-border-base);
   display: flex;
   flex-direction: column;
+  background: var(--color-bg-card);
 }
 
 .conversations-list h2 {
   color: var(--color-text-primary);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-4);
   margin: 0;
-  border-bottom: 1px solid var(--color-border-lighter);
-  font-size: var(--font-size-2xl);
+  border-bottom: 1px solid var(--color-border-light);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  background: var(--color-bg-section);
 }
 
-.loading {
-  text-align: center;
-  padding: var(--spacing-3xl) var(--spacing-lg);
-  color: var(--color-text-secondary);
-}
-
+/* 加载和空状态 */
+.loading,
 .no-conversations {
   text-align: center;
-  padding: var(--spacing-3xl) var(--spacing-lg);
+  padding: var(--spacing-8) var(--spacing-4);
   color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
 }
 
 .conversation-items {
@@ -375,30 +380,34 @@ onMounted(async () => {
   overflow-y: auto;
 }
 
+/* 会话项 - 扁平 */
 .conversation-item {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-lg) var(--spacing-lg);
+  gap: var(--spacing-3);
+  padding: var(--spacing-3);
   cursor: pointer;
-  transition: background-color var(--transition-base);
-  border-bottom: 1px solid var(--color-bg-page);
+  transition: all var(--transition-base);
+  border-bottom: 1px solid var(--color-border-light);
   position: relative;
 }
 
 .conversation-item:hover {
-  background-color: var(--color-bg-page);
+  background-color: var(--color-bg-section);
 }
 
 .conversation-item.active {
-  background-color: #e3f2fd;
+  background-color: var(--color-primary-lighter);
+  border-left: 3px solid var(--color-primary);
 }
 
 .user-avatar {
-  width: 50px;
-  height: 50px;
+  width: 48px;
+  height: 48px;
   border-radius: var(--radius-round);
   object-fit: cover;
+  border: 2px solid var(--color-border-light);
+  flex-shrink: 0;
 }
 
 .conversation-info {
@@ -410,12 +419,13 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: var(--spacing-1);
 }
 
 .username {
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
 }
 
 .time {
@@ -424,16 +434,16 @@ onMounted(async () => {
 }
 
 .item-title {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   color: var(--color-primary);
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: var(--spacing-1);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .last-message {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -444,18 +454,22 @@ onMounted(async () => {
   background: var(--color-price);
   color: white;
   border-radius: var(--radius-round);
-  width: 20px;
+  min-width: 20px;
   height: 20px;
+  padding: 0 var(--spacing-1);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-bold);
+  flex-shrink: 0;
 }
 
+/* 聊天区域 */
 .chat-area {
   display: flex;
   flex-direction: column;
+  background: var(--color-bg-card);
 }
 
 .no-selection {
@@ -464,7 +478,7 @@ onMounted(async () => {
   justify-content: center;
   height: 100%;
   color: var(--color-text-secondary);
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-base);
 }
 
 .chat-container {
@@ -473,21 +487,24 @@ onMounted(async () => {
   height: 100%;
 }
 
+/* 聊天头部 */
 .chat-header {
-  padding: var(--spacing-lg);
-  border-bottom: 1px solid var(--color-border-lighter);
+  padding: var(--spacing-4);
+  border-bottom: 1px solid var(--color-border-light);
+  background: var(--color-bg-section);
 }
 
 .chat-info {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: var(--spacing-3);
 }
 
 .chat-info .username {
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: var(--spacing-1);
+  font-size: var(--font-size-base);
 }
 
 .chat-info .item-title {
@@ -495,16 +512,18 @@ onMounted(async () => {
   color: var(--color-primary);
 }
 
+/* 消息区域 */
 .messages-area {
   flex: 1;
   overflow-y: auto;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-4);
+  background: var(--color-bg-page);
 }
 
 .message-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-3);
 }
 
 .message-item {
@@ -515,50 +534,59 @@ onMounted(async () => {
   justify-content: flex-end;
 }
 
+/* 消息气泡 - 扁平带边框 */
 .message-content {
   max-width: 70%;
-  background: var(--color-bg-page);
-  padding: var(--spacing-md) var(--spacing-base);
-  border-radius: var(--radius-xl);
+  background: white;
+  border: 1px solid var(--color-border-base);
+  padding: var(--spacing-3);
+  border-radius: var(--radius-lg);
   position: relative;
 }
 
 .own-message .message-content {
   background: var(--color-primary);
   color: white;
+  border-color: var(--color-primary);
 }
 
 .message-text {
   word-wrap: break-word;
   white-space: pre-wrap;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
 }
 
 .message-time {
   font-size: var(--font-size-xs);
   opacity: 0.7;
-  margin-top: var(--spacing-xs);
+  margin-top: var(--spacing-1);
 }
 
+/* 消息输入 */
 .message-input {
-  padding: var(--spacing-lg);
-  border-top: 1px solid var(--color-border-lighter);
+  padding: var(--spacing-4);
+  border-top: 1px solid var(--color-border-light);
+  background: var(--color-bg-card);
 }
 
 .input-container {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
   align-items: flex-end;
 }
 
 .input-container textarea {
   flex: 1;
-  padding: var(--spacing-md);
+  padding: var(--spacing-3);
   border: 1px solid var(--color-border-base);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-base);
   resize: none;
   font-family: inherit;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   outline: none;
+  transition: border-color var(--transition-fast);
+  background: var(--color-bg-card);
 }
 
 .input-container textarea:focus {
@@ -566,14 +594,16 @@ onMounted(async () => {
 }
 
 .send-btn {
-  padding: var(--spacing-md) var(--spacing-lg);
+  padding: var(--spacing-3) var(--spacing-5);
   background: var(--color-primary);
   color: white;
   border: none;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-base);
   cursor: pointer;
-  font-size: var(--font-size-base);
-  transition: background-color var(--transition-base);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  transition: all var(--transition-base);
+  white-space: nowrap;
 }
 
 .send-btn:hover:not(:disabled) {
@@ -581,26 +611,43 @@ onMounted(async () => {
 }
 
 .send-btn:disabled {
-  background: var(--color-info);
+  background: var(--color-neutral-400);
   cursor: not-allowed;
 }
 
 .input-hint {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
-  margin-top: var(--spacing-sm);
+  margin-top: var(--spacing-2);
   text-align: center;
 }
 
+/* 响应式 */
+@media (max-width: 1024px) {
+  .messages-container {
+    grid-template-columns: 300px 1fr;
+  }
+}
+
 @media (max-width: 768px) {
+  .messages-view {
+    padding: var(--spacing-4);
+  }
+
+  .messages-view h1 {
+    font-size: var(--font-size-3xl);
+    margin-bottom: var(--spacing-6);
+  }
+
   .messages-container {
     grid-template-columns: 1fr;
     height: auto;
+    min-height: 600px;
   }
 
   .conversations-list {
     border-right: none;
-    border-bottom: 1px solid var(--color-border-lighter);
+    border-bottom: 1px solid var(--color-border-base);
     max-height: 300px;
   }
 

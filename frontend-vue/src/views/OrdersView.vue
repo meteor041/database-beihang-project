@@ -289,38 +289,45 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 使用设计系统变量 */
+/* 现代扁平化风格 - Twitter/YouTube/Google 风格 */
+
 .orders-view {
-  max-width: 1600px;
+  max-width: var(--container-max-width);
   margin: 0 auto;
-  padding: var(--spacing-2xl) var(--spacing-3xl);
+  padding: var(--spacing-6);
+  background: var(--color-bg-page);
 }
 
 .orders-view h1 {
   color: var(--color-text-primary);
-  margin-bottom: var(--spacing-2xl);
-  text-align: center;
+  margin-bottom: var(--spacing-8);
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
 }
 
+/* 标签切换 - 扁平 */
 .order-tabs {
   display: flex;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-2xl);
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-8);
   justify-content: center;
 }
 
 .tab-btn {
-  padding: var(--spacing-sm) var(--spacing-lg);
+  padding: var(--spacing-3) var(--spacing-5);
   border: 1px solid var(--color-border-base);
   background: var(--color-bg-card);
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
   border-radius: var(--radius-base);
   cursor: pointer;
   transition: all var(--transition-base);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
 }
 
 .tab-btn:hover {
-  background: var(--color-bg-page);
+  border-color: var(--color-primary-light);
+  background: var(--color-bg-section);
 }
 
 .tab-btn.active {
@@ -329,101 +336,116 @@ onMounted(() => {
   border-color: var(--color-primary);
 }
 
-.loading {
-  text-align: center;
-  padding: var(--spacing-3xl);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xl);
-}
-
+/* 加载和空状态 */
+.loading,
 .no-orders {
   text-align: center;
-  padding: var(--spacing-3xl);
+  padding: var(--spacing-10);
   color: var(--color-text-secondary);
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-base);
 }
 
+/* 订单列表 */
 .orders-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-4);
 }
 
+/* 订单卡片 - 扁平带边框 */
 .order-card {
   background: var(--color-bg-card);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-base);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-lg);
   overflow: hidden;
+  transition: all var(--transition-base);
 }
 
+.order-card:hover {
+  border-color: var(--color-border-light);
+  box-shadow: var(--shadow-md);
+}
+
+/* 订单头部 */
 .order-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-lg) var(--spacing-lg);
-  background: var(--color-bg-page);
-  border-bottom: 1px solid var(--color-border-lighter);
+  padding: var(--spacing-4) var(--spacing-4);
+  background: var(--color-bg-section);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .order-info {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-1);
 }
 
 .order-number {
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
 }
 
 .order-date {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
 }
 
+/* 状态标签 - 扁平 */
 .status-badge {
-  padding: var(--spacing-xs) var(--spacing-md);
-  border-radius: var(--radius-lg);
-  font-size: var(--font-size-sm);
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
+  border: 1px solid;
 }
 
 .status-badge.pending {
   background: var(--color-warning-light);
   color: #856404;
+  border-color: #ffeaa7;
 }
 
 .status-badge.paid {
   background: var(--color-info-light);
   color: #0c5460;
+  border-color: #bee5eb;
 }
 
 .status-badge.shipped {
   background: var(--color-success-light);
   color: #155724;
+  border-color: #c3e6cb;
 }
 
 .status-badge.completed {
-  background: var(--color-info-light);
-  color: #0c5460;
+  background: var(--color-primary-lighter);
+  color: var(--color-primary-dark);
+  border-color: var(--color-primary-light);
 }
 
 .status-badge.cancelled {
   background: var(--color-danger-light);
   color: #721c24;
+  border-color: #f5c6cb;
 }
 
+/* 订单内容 */
 .order-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-4);
+  gap: var(--spacing-4);
 }
 
 .item-info {
   display: flex;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-4);
   flex: 1;
+  align-items: center;
 }
 
 .item-image {
@@ -431,49 +453,65 @@ onMounted(() => {
   height: 80px;
   object-fit: cover;
   border-radius: var(--radius-base);
+  border: 1px solid var(--color-border-base);
+  background: var(--color-neutral-100);
+  flex-shrink: 0;
+}
+
+.item-details {
+  flex: 1;
+  min-width: 0;
 }
 
 .item-details h3 {
   color: var(--color-text-primary);
-  margin: 0 0 var(--spacing-sm) 0;
-  font-size: var(--font-size-xl);
+  margin: 0 0 var(--spacing-2) 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .item-price {
   color: var(--color-price);
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-2xl);
-  margin: 0 0 var(--spacing-xs) 0;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-xl);
+  margin: 0 0 var(--spacing-1) 0;
 }
 
 .payment-method {
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   margin: 0;
 }
 
+/* 操作按钮 - 扁平 */
 .order-actions {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .action-btn {
-  padding: var(--spacing-sm) var(--spacing-base);
+  padding: var(--spacing-2) var(--spacing-3);
   border: none;
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-base);
+  border-radius: var(--radius-base);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition: all var(--transition-base);
+  white-space: nowrap;
 }
 
 .cancel-btn {
-  background: var(--color-info);
+  background: var(--color-neutral-500);
   color: white;
 }
 
 .cancel-btn:hover {
-  background: #5a6268;
+  background: var(--color-neutral-600);
 }
 
 .pay-btn {
@@ -503,22 +541,25 @@ onMounted(() => {
   background: var(--color-primary-dark);
 }
 
+/* 分页 */
 .pagination {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: var(--spacing-lg);
-  margin-top: var(--spacing-3xl);
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-8);
 }
 
 .page-btn {
-  padding: var(--spacing-sm) var(--spacing-base);
+  padding: var(--spacing-2) var(--spacing-4);
   background-color: var(--color-primary);
   color: white;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-base);
   cursor: pointer;
-  transition: background-color var(--transition-fast);
+  transition: all var(--transition-base);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
 }
 
 .page-btn:hover:not(:disabled) {
@@ -526,40 +567,51 @@ onMounted(() => {
 }
 
 .page-btn:disabled {
-  background-color: var(--color-info);
+  background-color: var(--color-neutral-400);
   cursor: not-allowed;
 }
 
 .page-info {
   color: var(--color-text-secondary);
   font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
 }
 
+/* 响应式 */
 @media (max-width: 768px) {
+  .orders-view {
+    padding: var(--spacing-4);
+  }
+
+  .orders-view h1 {
+    font-size: var(--font-size-3xl);
+    margin-bottom: var(--spacing-6);
+  }
+
   .order-header {
     flex-direction: column;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-2);
     align-items: flex-start;
   }
 
   .order-content {
     flex-direction: column;
-    gap: var(--spacing-lg);
+    gap: var(--spacing-4);
     align-items: stretch;
   }
 
   .item-info {
-    flex-direction: column;
-    text-align: center;
+    flex-direction: row;
+    align-items: center;
   }
 
   .order-actions {
-    justify-content: center;
+    width: 100%;
+    justify-content: stretch;
   }
 
   .action-btn {
     flex: 1;
-    min-width: 80px;
   }
 }
 </style>

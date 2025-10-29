@@ -139,30 +139,50 @@ const handleClick = () => {
 </script>
 
 <style scoped>
+/* 现代扁平化商品卡片 - Twitter/YouTube/Google 风格 */
+
 .item-card {
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all var(--transition-base);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.item-card :deep(.el-card__body) {
+  padding: 0;
   height: 100%;
   display: flex;
   flex-direction: column;
 }
 
 .item-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+  border-color: var(--color-border-light);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 
+/* 商品图片 */
 .item-image {
   position: relative;
   width: 100%;
   height: 200px;
   overflow: hidden;
-  background-color: #f5f7fa;
+  background-color: var(--color-neutral-100);
 }
 
 .item-image .el-image {
   width: 100%;
   height: 100%;
+  transition: transform var(--transition-slow);
+}
+
+.item-card:hover .item-image .el-image {
+  transform: scale(1.03);
 }
 
 .image-slot {
@@ -171,8 +191,8 @@ const handleClick = () => {
   align-items: center;
   width: 100%;
   height: 100%;
-  background-color: #f5f7fa;
-  color: #909399;
+  background-color: var(--color-neutral-100);
+  color: var(--color-text-placeholder);
 }
 
 .image-slot .el-icon {
@@ -181,111 +201,135 @@ const handleClick = () => {
 
 .status-tag {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: var(--spacing-2);
+  right: var(--spacing-2);
 }
 
+/* 商品信息 */
 .item-info {
-  padding: 15px;
+  padding: var(--spacing-4);
   flex: 1;
   display: flex;
   flex-direction: column;
 }
 
 .item-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
-  margin: 0 0 8px 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-2) 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: var(--line-height-snug);
+  transition: color var(--transition-fast);
+}
+
+.item-card:hover .item-title {
+  color: var(--color-primary);
 }
 
 .item-description {
-  font-size: 13px;
-  color: #606266;
-  margin: 0 0 12px 0;
-  line-height: 1.5;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--spacing-3) 0;
+  line-height: var(--line-height-relaxed);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
+/* 价格和成色 */
 .item-details {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: var(--spacing-3);
 }
 
 .price-section {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: var(--spacing-2);
 }
 
 .current-price {
-  font-size: 20px;
-  font-weight: 700;
-  color: #f56c6c;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-price);
 }
 
 .original-price {
-  font-size: 14px;
-  color: #909399;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-placeholder);
   text-decoration: line-through;
 }
 
+/* 元信息 */
 .item-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-top: auto;
-  padding-top: 12px;
-  border-top: 1px solid #f0f0f0;
+  padding-top: var(--spacing-3);
+  border-top: 1px solid var(--color-border-light);
 }
 
 .seller-info {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--spacing-2);
 }
 
 .seller-name {
-  font-size: 13px;
-  color: #606266;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100px;
 }
 
 .stats {
   display: flex;
-  gap: 12px;
+  gap: var(--spacing-3);
 }
 
 .stat-item {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  color: #909399;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
 }
 
 .stat-item .el-icon {
   font-size: 14px;
 }
 
+/* 响应式 */
 @media (max-width: 768px) {
   .item-image {
-    height: 150px;
+    height: 180px;
+  }
+
+  .item-info {
+    padding: var(--spacing-3);
   }
 
   .item-title {
-    font-size: 14px;
+    font-size: var(--font-size-sm);
   }
 
   .current-price {
-    font-size: 18px;
+    font-size: var(--font-size-xl);
+  }
+
+  .seller-name {
+    max-width: 80px;
   }
 }
 </style>

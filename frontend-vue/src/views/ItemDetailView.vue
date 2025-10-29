@@ -1,111 +1,189 @@
 <template>
   <div class="item-detail">
-    <div v-if="loading" class="loading">
-      加载中...
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading-container" v-loading="loading" element-loading-text="加载中...">
+      <div style="height: 600px"></div>
     </div>
 
-    <div v-else-if="!item" class="not-found">
-      商品不存在
-    </div>
+    <!-- 未找到 -->
+    <el-empty v-else-if="!item" description="商品不存在" :image-size="100">
+      <el-button type="primary" @click="router.push('/items')">
+        返回商品列表
+      </el-button>
+    </el-empty>
 
-    <div v-else class="item-content">
-      <div class="item-images">
-        <div class="main-image">
-          <img 
-            :src="currentImage || '/placeholder.png'" 
-            :alt="item.title"
-          />
-        </div>
-        <div v-if="item.images && item.images.length > 1" class="image-thumbnails">
-          <img 
-            v-for="(image, index) in item.images"
-            :key="index"
-            :src="image"
-            :alt="`${item.title} ${index + 1}`"
-            :class="{ active: currentImage === image }"
-            @click="currentImage = image"
-          />
-        </div>
+    <!-- 商品详情 -->
+    <div v-else class="detail-container">
+      <!-- 左侧：图片 -->
+      <div class="item-images-section">
+        <el-card class="images-card" :body-style="{ padding: '0' }">
+          <div class="main-image">
+            <el-image
+              :src="currentImage || '/placeholder.png'"
+              :alt="item.title"
+              fit="contain"
+              :preview-src-list="item.images"
+              :initial-index="item.images?.indexOf(currentImage)"
+            >
+              <template #error>
+                <div class="image-error">
+                  <el-icon :size="80"><Picture /></el-icon>
+                </div>
+              </template>
+            </el-image>
+
+            <!-- 状态标签 -->
+            <el-tag v-if="item.status === 'sold'" class="status-badge" type="danger" size="large">
+              已售出
+            </el-tag>
+          </div>
+
+          <!-- 缩略图 -->
+          <div v-if="item.images && item.images.length > 1" class="image-thumbnails">
+            <div
+              v-for="(image, index) in item.images"
+              :key="index"
+              :class="['thumbnail-item', { active: currentImage === image }]"
+              @click="currentImage = image"
+            >
+              <el-image
+                :src="image"
+                :alt="`${item.title} ${index + 1}`"
+                fit="cover"
+              />
+            </div>
+          </div>
+        </el-card>
       </div>
 
-      <div class="item-info">
-        <h1>{{ item.title }}</h1>
-        
-        <div class="item-price">
-          <span class="current-price">¥{{ item.price }}</span>
-          <span v-if="item.original_price" class="original-price">
-            原价：¥{{ item.original_price }}
-          </span>
-        </div>
+      <!-- 右侧：商品信息 -->
+      <div class="item-info-section">
+        <!-- 标题 -->
+        <h1 class="item-title">{{ item.title }}</h1>
 
-        <div class="item-meta">
-          <div class="meta-item">
-            <span class="label">成色：</span>
-            <span class="value">{{ getConditionText(item.condition_level) }}</span>
+        <!-- 价格卡片 -->
+        <el-card class="price-card">
+          <div class="price-row">
+            <span class="current-price">¥{{ item.price }}</span>
+            <el-tag v-if="item.original_price" class="discount-tag" size="large" type="warning">
+              原价 ¥{{ item.original_price }}
+            </el-tag>
           </div>
-          <div class="meta-item">
-            <span class="label">分类：</span>
-            <span class="value">{{ item.category_name }}</span>
-          </div>
-          <div class="meta-item">
-            <span class="label">交易地点：</span>
-            <span class="value">{{ item.location }}</span>
-          </div>
-          <div class="meta-item">
-            <span class="label">浏览次数：</span>
-            <span class="value">{{ item.view_count }}</span>
-          </div>
-        </div>
+        </el-card>
 
-        <div class="seller-info">
-          <h3>卖家信息</h3>
-          <div class="seller-card">
-            <img 
-              :src="item.avatar || '/default-avatar.png'" 
-              :alt="item.username"
-              class="seller-avatar"
+        <!-- 商品信息卡片 -->
+        <el-card class="info-card">
+          <template #header>
+            <div class="card-header">
+              <el-icon><InfoFilled /></el-icon>
+              <span>商品信息</span>
+            </div>
+          </template>
+
+          <el-descriptions :column="1" border>
+            <el-descriptions-item label="成色">
+              <el-tag :type="getConditionType(item.condition_level)" size="small">
+                {{ getConditionText(item.condition_level) }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="分类">
+              <el-icon size="14"><Grid /></el-icon>
+              {{ item.category_name }}
+            </el-descriptions-item>
+            <el-descriptions-item label="交易地点">
+              <el-icon size="14"><Location /></el-icon>
+              {{ item.location }}
+            </el-descriptions-item>
+            <el-descriptions-item label="浏览次数">
+              <el-icon size="14"><View /></el-icon>
+              {{ item.view_count }} 次
+            </el-descriptions-item>
+            <el-descriptions-item label="发布时间">
+              <el-icon size="14"><Clock /></el-icon>
+              {{ formatDate(item.publish_date) }}
+            </el-descriptions-item>
+          </el-descriptions>
+        </el-card>
+
+        <!-- 卖家信息卡片 -->
+        <el-card class="seller-card">
+          <template #header>
+            <div class="card-header">
+              <el-icon><User /></el-icon>
+              <span>卖家信息</span>
+            </div>
+          </template>
+
+          <div class="seller-content">
+            <UserAvatar
+              :avatar="item.avatar"
+              :username="item.username"
+              :size="56"
             />
             <div class="seller-details">
               <div class="seller-name">{{ item.username }}</div>
               <div class="seller-credit">
+                <el-icon><Medal /></el-icon>
                 信用分：{{ item.credit_score }}
               </div>
             </div>
           </div>
-        </div>
+        </el-card>
 
+        <!-- 操作按钮 -->
         <div v-if="isLoggedIn && currentUser?.user_id !== item.user_id" class="actions">
-          <button 
+          <el-button
+            :type="isWishlisted ? 'warning' : 'default'"
+            :icon="isWishlisted ? StarFilled : Star"
             @click="toggleWishlist"
-            :class="['wishlist-btn', { active: isWishlisted }]"
-            :disabled="wishlistLoading"
+            :loading="wishlistLoading"
+            size="large"
           >
             {{ isWishlisted ? '已收藏' : '收藏' }}
-          </button>
-          
-          <button @click="contactSeller" class="contact-btn">
+          </el-button>
+
+          <el-button
+            type="success"
+            :icon="ChatDotRound"
+            @click="contactSeller"
+            size="large"
+          >
             联系卖家
-          </button>
-          
-          <button @click="buyNow" class="buy-btn">
+          </el-button>
+
+          <el-button
+            type="primary"
+            :icon="ShoppingCart"
+            @click="buyNow"
+            size="large"
+          >
             立即购买
-          </button>
+          </el-button>
         </div>
 
-        <div v-else-if="!isLoggedIn" class="login-prompt">
-          <router-link to="/login" class="login-link">
-            登录后可收藏、联系卖家和购买
-          </router-link>
-        </div>
+        <el-alert v-else-if="!isLoggedIn" type="info" :closable="false">
+          <template #title>
+            <router-link to="/login" class="login-link">
+              登录后可收藏、联系卖家和购买
+            </router-link>
+          </template>
+        </el-alert>
       </div>
     </div>
 
-    <div v-if="item" class="item-description">
-      <h2>商品描述</h2>
+    <!-- 商品描述 -->
+    <el-card v-if="item" class="description-card">
+      <template #header>
+        <div class="card-header">
+          <el-icon><Document /></el-icon>
+          <span>商品描述</span>
+        </div>
+      </template>
+
       <div class="description-content">
         {{ item.description }}
       </div>
-    </div>
+    </el-card>
   </div>
 </template>
 
@@ -114,7 +192,13 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { itemAPI, wishlistAPI } from '@/api'
-import type { Item } from '@/types'
+import { ElMessage } from 'element-plus'
+import {
+  Picture, InfoFilled, Grid, Location, View, Clock, User, Medal,
+  Star, StarFilled, ChatDotRound, ShoppingCart, Document
+} from '@element-plus/icons-vue'
+import UserAvatar from '@/components/UserAvatar.vue'
+import type { Item, ConditionLevel } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -139,6 +223,32 @@ const conditionMap: Record<string, string> = {
 
 const getConditionText = (condition: string): string => {
   return conditionMap[condition] || condition
+}
+
+const getConditionType = (condition: string): 'success' | 'warning' | 'info' | '' => {
+  const typeMap: Record<string, 'success' | 'warning' | 'info' | ''> = {
+    'brand_new': 'success',
+    'like_new': 'success',
+    'very_good': '',
+    'good': 'warning',
+    'acceptable': 'info'
+  }
+  return typeMap[condition] || ''
+}
+
+const formatDate = (dateString?: string): string => {
+  if (!dateString) return '-'
+  const date = new Date(dateString)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+  if (days === 0) return '今天'
+  if (days === 1) return '昨天'
+  if (days < 7) return `${days}天前`
+  if (days < 30) return `${Math.floor(days / 7)}周前`
+  if (days < 365) return `${Math.floor(days / 30)}个月前`
+  return date.toLocaleDateString('zh-CN')
 }
 
 const loadItem = async (): Promise<void> => {
@@ -189,15 +299,18 @@ const toggleWishlist = async (): Promise<void> => {
         item_id: item.value.item_id
       })
       isWishlisted.value = false
+      ElMessage.success('已取消收藏')
     } else {
       await wishlistAPI.addToWishlist({
         user_id: currentUser.value.user_id,
         item_id: item.value.item_id
       })
       isWishlisted.value = true
+      ElMessage.success('收藏成功')
     }
   } catch (error) {
     console.error('Failed to toggle wishlist:', error)
+    ElMessage.error('操作失败，请重试')
   } finally {
     wishlistLoading.value = false
   }
@@ -229,272 +342,272 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 使用设计系统变量 */
+/* 现代扁平化风格 - Twitter/YouTube/Google 风格 */
+
 .item-detail {
-  max-width: 1800px;
+  max-width: var(--container-max-width);
   margin: 0 auto;
-  padding: var(--spacing-2xl) var(--spacing-3xl);
+  padding: var(--spacing-6);
+  background: var(--color-bg-page);
 }
 
-.loading {
-  text-align: center;
-  padding: var(--spacing-3xl);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xl);
+/* 加载容器 */
+.loading-container {
+  min-height: 600px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.not-found {
-  text-align: center;
-  padding: var(--spacing-3xl);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xl);
-}
-
-.item-content {
+/* 详情容器 */
+.detail-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-3xl);
-  margin-bottom: var(--spacing-3xl);
+  gap: var(--spacing-6);
+  margin-bottom: var(--spacing-8);
 }
 
-.item-images {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-lg);
+/* 图片区域 */
+.item-images-section {
+  position: sticky;
+  top: var(--spacing-6);
+  align-self: start;
+}
+
+.images-card {
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
 }
 
 .main-image {
+  position: relative;
   width: 100%;
   height: 500px;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  box-shadow: var(--shadow-md);
-}
-
-.main-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.image-thumbnails {
-  display: flex;
-  gap: var(--spacing-sm);
-  overflow-x: auto;
-}
-
-.image-thumbnails img {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  opacity: 0.7;
-  transition: opacity var(--transition-base);
-}
-
-.image-thumbnails img:hover,
-.image-thumbnails img.active {
-  opacity: 1;
-}
-
-.item-info h1 {
-  color: var(--color-text-primary);
-  margin: 0 0 var(--spacing-lg) 0;
-  font-size: var(--font-size-4xl);
-}
-
-.item-price {
-  margin-bottom: var(--spacing-lg);
-}
-
-.current-price {
-  color: var(--color-price);
-  font-size: var(--font-size-4xl);
-  font-weight: var(--font-weight-semibold);
-}
-
-.original-price {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-base);
-  text-decoration: line-through;
-  margin-left: var(--spacing-lg);
-}
-
-.item-meta {
-  background: var(--color-bg-page);
-  padding: var(--spacing-lg);
-  border-radius: var(--radius-md);
-  margin-bottom: var(--spacing-2xl);
-}
-
-.meta-item {
-  display: flex;
-  margin-bottom: var(--spacing-sm);
-}
-
-.meta-item:last-child {
-  margin-bottom: 0;
-}
-
-.meta-item .label {
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
-  width: 100px;
-}
-
-.meta-item .value {
-  color: var(--color-text-secondary);
-}
-
-.seller-info {
-  margin-bottom: var(--spacing-2xl);
-}
-
-.seller-info h3 {
-  color: var(--color-text-primary);
-  margin-bottom: var(--spacing-lg);
-}
-
-.seller-card {
+  background: var(--color-neutral-100);
   display: flex;
   align-items: center;
-  gap: var(--spacing-lg);
-  padding: var(--spacing-lg);
-  background: var(--color-bg-page);
-  border-radius: var(--radius-md);
+  justify-content: center;
 }
 
-.seller-avatar {
-  width: 60px;
-  height: 60px;
-  border-radius: var(--radius-round);
-  object-fit: cover;
+.main-image .el-image {
+  width: 100%;
+  height: 100%;
 }
 
-.seller-name {
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
-  margin-bottom: var(--spacing-xs);
-}
-
-.seller-credit {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-.actions {
+.image-error {
   display: flex;
-  gap: var(--spacing-lg);
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--color-text-placeholder);
 }
 
-.actions button {
-  padding: var(--spacing-md) var(--spacing-xl);
-  border: none;
+.status-badge {
+  position: absolute;
+  top: var(--spacing-4);
+  right: var(--spacing-4);
+}
+
+/* 缩略图 */
+.image-thumbnails {
+  display: flex;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+  overflow-x: auto;
+  background: var(--color-bg-section);
+}
+
+.thumbnail-item {
+  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
+  border: 2px solid transparent;
   border-radius: var(--radius-base);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-medium);
+  overflow: hidden;
   cursor: pointer;
   transition: all var(--transition-base);
 }
 
-.wishlist-btn {
-  background: var(--color-bg-page);
-  color: var(--color-text-secondary);
+.thumbnail-item:hover {
+  border-color: var(--color-primary-light);
+}
+
+.thumbnail-item.active {
+  border-color: var(--color-primary);
+}
+
+.thumbnail-item .el-image {
+  width: 100%;
+  height: 100%;
+}
+
+/* 信息区域 */
+.item-info-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.item-title {
+  margin: 0;
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-snug);
+}
+
+/* 价格卡片 */
+.price-card {
   border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-lg);
 }
 
-.wishlist-btn.active {
-  background: var(--color-price);
-  color: white;
+.price-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-3);
 }
 
-.wishlist-btn:hover {
-  background: var(--color-bg-hover);
+.current-price {
+  font-size: var(--font-size-5xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-price);
 }
 
-.wishlist-btn.active:hover {
-  background: #c82333;
+.discount-tag {
+  text-decoration: line-through;
 }
 
-.contact-btn {
-  background: var(--color-success);
-  color: white;
+/* 信息卡片 */
+.info-card,
+.seller-card {
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-lg);
 }
 
-.contact-btn:hover {
-  background: #218838;
+.info-card :deep(.el-card__header),
+.seller-card :deep(.el-card__header) {
+  background: var(--color-bg-section);
+  border-bottom: 1px solid var(--color-border-light);
+  padding: var(--spacing-3) var(--spacing-4);
 }
 
-.buy-btn {
-  background: var(--color-primary);
-  color: white;
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
 }
 
-.buy-btn:hover {
-  background: var(--color-primary-dark);
+.card-header .el-icon {
+  color: var(--color-primary);
 }
 
-.login-prompt {
-  text-align: center;
-  padding: var(--spacing-lg);
-  background: var(--color-bg-page);
-  border-radius: var(--radius-md);
+/* 卖家信息 */
+.seller-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.seller-details {
+  flex: 1;
+}
+
+.seller-name {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-1);
+}
+
+.seller-credit {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* 操作按钮 */
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding-top: var(--spacing-2);
+}
+
+.actions .el-button {
+  width: 100%;
+  justify-content: center;
 }
 
 .login-link {
   color: var(--color-primary);
   text-decoration: none;
   font-weight: var(--font-weight-medium);
+  transition: color var(--transition-fast);
 }
 
 .login-link:hover {
+  color: var(--color-primary-dark);
   text-decoration: underline;
 }
 
-.item-description {
-  background: var(--color-bg-card);
-  padding: var(--spacing-2xl);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-base);
+/* 商品描述卡片 */
+.description-card {
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-lg);
 }
 
-.item-description h2 {
-  color: var(--color-text-primary);
-  margin-bottom: var(--spacing-lg);
+.description-card :deep(.el-card__header) {
+  background: var(--color-bg-section);
+  border-bottom: 1px solid var(--color-border-light);
+  padding: var(--spacing-3) var(--spacing-4);
 }
 
 .description-content {
+  font-size: var(--font-size-base);
   color: var(--color-text-secondary);
-  line-height: var(--line-height-normal);
+  line-height: var(--line-height-relaxed);
   white-space: pre-wrap;
 }
 
-@media (max-width: 768px) {
-  .item-content {
+/* 响应式 */
+@media (max-width: 1024px) {
+  .detail-container {
     grid-template-columns: 1fr;
-    gap: var(--spacing-lg);
+  }
+
+  .item-images-section {
+    position: relative;
+    top: 0;
+  }
+
+  .main-image {
+    height: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .item-detail {
+    padding: var(--spacing-4);
   }
 
   .main-image {
     height: 300px;
   }
 
-  .item-info h1 {
-    font-size: var(--font-size-3xl);
+  .item-title {
+    font-size: var(--font-size-2xl);
   }
 
   .current-price {
-    font-size: var(--font-size-3xl);
-  }
-
-  .actions {
-    flex-direction: column;
-  }
-
-  .actions button {
-    width: 100%;
+    font-size: var(--font-size-4xl);
   }
 }
 </style>

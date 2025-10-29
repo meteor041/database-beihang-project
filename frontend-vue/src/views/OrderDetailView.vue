@@ -439,10 +439,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 现代扁平化风格 - Twitter/YouTube/Google 风格 */
+
 .order-detail-view {
   min-height: calc(100vh - 200px);
-  background-color: #f5f5f5;
-  padding: 20px;
+  background-color: var(--color-bg-page);
+  padding: var(--spacing-6);
 }
 
 .detail-container {
@@ -451,81 +453,120 @@ onMounted(() => {
 }
 
 .detail-container h1 {
-  color: #303133;
-  margin-bottom: 30px;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-8);
   text-align: center;
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
 }
 
 .loading,
 .error {
   text-align: center;
-  padding: 40px;
-  background: white;
-  border-radius: 8px;
+  padding: var(--spacing-5xl);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-secondary);
 }
 
 .detail-content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--spacing-5);
 }
 
+/* 卡片 - 扁平带边框 */
 .section {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+  box-shadow: var(--shadow-sm);
 }
 
 .section h3 {
-  color: #303133;
-  font-size: 16px;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #f0f0f0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-4);
+  padding-bottom: var(--spacing-3);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
-/* 状态卡片 */
+/* 状态卡片 - 扁平带边框 */
 .status-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+  box-shadow: var(--shadow-sm);
 }
 
 .status-card {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: var(--spacing-5);
 }
 
 .status-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-round);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32px;
-  background: rgba(255, 255, 255, 0.2);
+  font-size: var(--font-size-4xl);
+  background: var(--color-bg-section);
+  border: 2px solid var(--color-border-base);
+  flex-shrink: 0;
+}
+
+.status-icon.pending {
+  background: var(--color-warning-lighter);
+  border-color: var(--color-warning-light);
+}
+
+.status-icon.paid {
+  background: var(--color-primary-lighter);
+  border-color: var(--color-primary-light);
+}
+
+.status-icon.shipped {
+  background: var(--color-info-light);
+  border-color: var(--color-info);
+}
+
+.status-icon.completed {
+  background: var(--color-success-light);
+  border-color: var(--color-success);
+}
+
+.status-icon.cancelled {
+  background: var(--color-danger-light);
+  border-color: var(--color-danger);
 }
 
 .status-info h2 {
-  color: white;
-  margin-bottom: 8px;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-2);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
 }
 
 .status-time {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 14px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
 }
 
-/* 时间线 */
+/* 时间线 - 扁平 */
 .timeline-section {
-  padding: 24px 40px;
+  padding: var(--spacing-6);
 }
 
 .timeline {
   position: relative;
-  padding-left: 30px;
+  padding-left: var(--spacing-8);
 }
 
 .timeline::before {
@@ -535,12 +576,12 @@ onMounted(() => {
   top: 0;
   bottom: 0;
   width: 2px;
-  background: #e4e7ed;
+  background: var(--color-border-base);
 }
 
 .timeline-item {
   position: relative;
-  padding-bottom: 30px;
+  padding-bottom: var(--spacing-8);
 }
 
 .timeline-item:last-child {
@@ -553,200 +594,225 @@ onMounted(() => {
   top: 4px;
   width: 12px;
   height: 12px;
-  border-radius: 50%;
-  background: #e4e7ed;
-  border: 2px solid white;
-  box-shadow: 0 0 0 2px #e4e7ed;
+  border-radius: var(--radius-round);
+  background: var(--color-border-base);
+  border: 2px solid var(--color-bg-card);
+  box-shadow: 0 0 0 2px var(--color-border-base);
 }
 
 .timeline-item.active .timeline-dot {
-  background: #409eff;
-  box-shadow: 0 0 0 2px #409eff;
+  background: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary);
 }
 
 .timeline-title {
-  color: #606266;
-  font-size: 14px;
-  margin-bottom: 4px;
+  color: var(--color-text-regular);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--spacing-1);
 }
 
 .timeline-item.active .timeline-title {
-  color: #303133;
-  font-weight: 500;
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
 }
 
 .timeline-time {
-  color: #909399;
-  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
 }
 
-/* 商品卡片 */
+/* 商品卡片 - 扁平带边框 */
 .item-card {
   display: flex;
-  gap: 16px;
-  padding: 16px;
-  background: #fafafa;
-  border-radius: 8px;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4);
+  background: var(--color-bg-section);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
 }
 
 .item-image {
   width: 80px;
   height: 80px;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: var(--radius-base);
+  border: 1px solid var(--color-border-light);
+  flex-shrink: 0;
 }
 
 .item-info h4 {
-  color: #303133;
-  margin-bottom: 8px;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-2);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
 }
 
 .item-price {
-  color: #f56c6c;
-  font-size: 18px;
-  font-weight: bold;
+  color: var(--color-price);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
 }
 
 /* 信息列表 */
 .info-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--spacing-3);
 }
 
 .info-item {
   display: flex;
-  color: #606266;
-  font-size: 14px;
+  color: var(--color-text-regular);
+  font-size: var(--font-size-sm);
 }
 
 .info-item .label {
   width: 100px;
-  color: #909399;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
 }
 
 .info-item .value {
   flex: 1;
-  color: #303133;
+  color: var(--color-text-primary);
 }
 
-/* 地址卡片 */
+/* 地址卡片 - 扁平带边框 */
 .address-card {
-  padding: 16px;
-  background: #fafafa;
-  border-radius: 8px;
+  padding: var(--spacing-4);
+  background: var(--color-bg-section);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
 }
 
 .address-header {
   display: flex;
-  gap: 16px;
-  margin-bottom: 8px;
-  font-weight: 500;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-2);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
 }
 
 .address-detail {
-  color: #606266;
-  font-size: 14px;
+  color: var(--color-text-regular);
+  font-size: var(--font-size-sm);
 }
 
-/* 费用明细 */
+/* 费用明细 - 扁平带边框 */
 .summary-section {
-  background: #fff9e6;
+  background: var(--color-warning-lighter);
+  border-color: var(--color-warning-light);
 }
 
 .summary-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--spacing-3);
 }
 
 .summary-item {
   display: flex;
   justify-content: space-between;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-regular);
 }
 
 .summary-item.total {
-  border-top: 2px solid #e6a23c;
-  padding-top: 12px;
-  margin-top: 8px;
-  font-size: 18px;
-  font-weight: bold;
-  color: #f56c6c;
+  border-top: 2px solid var(--color-warning);
+  padding-top: var(--spacing-3);
+  margin-top: var(--spacing-2);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-price);
 }
 
-/* 操作按钮 */
+/* 操作按钮 - 扁平 */
 .actions {
   display: flex;
-  gap: 12px;
+  gap: var(--spacing-3);
   justify-content: center;
   flex-wrap: wrap;
-  padding: 20px 0;
+  padding: var(--spacing-5) 0;
 }
 
 .btn-primary,
 .btn-secondary,
 .btn-success,
 .btn-danger {
-  padding: 10px 24px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
+  padding: var(--spacing-3) var(--spacing-6);
+  border: 1px solid;
+  border-radius: var(--radius-base);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all var(--transition-base);
 }
 
 .btn-primary {
-  background: #409eff;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
   color: white;
 }
 
 .btn-primary:hover {
-  background: #66b1ff;
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
 }
 
 .btn-secondary {
-  background: #f5f5f5;
-  color: #606266;
+  background: var(--color-bg-section);
+  border-color: var(--color-border-base);
+  color: var(--color-text-regular);
 }
 
 .btn-secondary:hover {
-  background: #e0e0e0;
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-light);
 }
 
 .btn-success {
-  background: #67c23a;
+  background: var(--color-success);
+  border-color: var(--color-success);
   color: white;
 }
 
 .btn-success:hover {
-  background: #85ce61;
+  background: #5daf34;
+  border-color: #5daf34;
 }
 
 .btn-danger {
-  background: #f56c6c;
+  background: var(--color-danger);
+  border-color: var(--color-danger);
   color: white;
 }
 
 .btn-danger:hover {
-  background: #f78989;
+  background: #f35151;
+  border-color: #f35151;
 }
 
+/* 响应式 */
 @media (max-width: 768px) {
+  .order-detail-view {
+    padding: var(--spacing-4);
+  }
+
   .detail-container {
-    padding: 10px;
+    padding: 0;
   }
 
   .section {
-    padding: 16px;
+    padding: var(--spacing-4);
   }
 
   .timeline-section {
-    padding: 16px 24px;
+    padding: var(--spacing-4);
   }
 
   .actions {
     flex-direction: column;
+    padding: var(--spacing-4) 0;
   }
 
   .actions button {
@@ -755,6 +821,11 @@ onMounted(() => {
 
   .item-card {
     flex-direction: column;
+  }
+
+  .item-image {
+    width: 100%;
+    height: 200px;
   }
 }
 </style>

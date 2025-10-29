@@ -134,6 +134,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { itemAPI } from '@/api'
 import { ElMessage } from 'element-plus'
+import { Search, Plus, UserFilled, Grid, Clock, ArrowRight, Star } from '@element-plus/icons-vue'
 import ItemCard from '@/components/ItemCard.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import type { Item, Category } from '@/types'
@@ -223,56 +224,55 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 使用设计系统变量的简洁卡片式布局 */
+/* 现代扁平化风格 - Twitter/YouTube/Google 风格 */
 
 .home {
   max-width: var(--container-max-width);
   margin: 0 auto;
+  padding: var(--spacing-6);
+  background: var(--color-bg-page);
 }
 
-/* 首页横幅 - 卡片式设计 */
+/* 首页横幅 - 扁平简洁 */
 .hero {
-  background: var(--gradient-hero);
-  color: white;
-  padding: var(--spacing-5xl) var(--spacing-3xl);
-  text-align: center;
+  background: var(--color-bg-section);
+  border: 1px solid var(--color-border-base);
   border-radius: var(--radius-2xl);
-  margin-bottom: var(--section-gap);
-  box-shadow: var(--shadow-xl);
+  padding: var(--spacing-10) var(--spacing-6);
+  text-align: center;
+  margin-bottom: var(--spacing-10);
 }
 
 .hero-content h1 {
-  font-size: var(--font-size-6xl);
-  margin: 0 0 var(--spacing-lg) 0;
+  font-size: var(--font-size-5xl);
+  margin: 0 0 var(--spacing-4) 0;
   font-weight: var(--font-weight-bold);
-  text-shadow: var(--shadow-sm);
+  color: var(--color-text-primary);
 }
 
 .hero-content p {
-  font-size: var(--font-size-2xl);
-  margin: 0 0 var(--spacing-3xl) 0;
-  opacity: 0.95;
+  font-size: var(--font-size-xl);
+  margin: 0 0 var(--spacing-8) 0;
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
 }
 
 .hero-actions {
   display: flex;
-  gap: var(--spacing-base);
+  gap: var(--spacing-3);
   justify-content: center;
   flex-wrap: wrap;
 }
 
 .hero-actions .el-button {
   min-width: 140px;
-  transition: transform var(--transition-fast);
 }
 
-.hero-actions .el-button:hover {
-  transform: translateY(-2px);
-}
-
-/* 分类部分 - 统一间距 */
-.categories {
-  margin-bottom: var(--section-gap);
+/* 统一的区块样式 */
+.categories,
+.latest-items,
+.features {
+  margin-bottom: var(--spacing-10);
 }
 
 /* 统一的标题样式 */
@@ -281,111 +281,130 @@ onMounted(() => {
 .features h2 {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-2xl);
-  font-size: var(--font-size-4xl);
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-6);
+  font-size: var(--font-size-3xl);
   color: var(--color-text-primary);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-bold);
 }
 
-/* 分类卡片 */
+.categories h2 .el-icon,
+.latest-items h2 .el-icon,
+.features h2 .el-icon {
+  color: var(--color-primary);
+}
+
+/* 区块头部 */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-6);
+}
+
+.section-header .el-link {
+  font-size: var(--font-size-base);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-weight: var(--font-weight-medium);
+}
+
+/* 分类卡片 - 扁平带边框 */
 .category-card {
   text-align: center;
   cursor: pointer;
   transition: all var(--transition-base);
-  margin-bottom: var(--spacing-lg);
-  border: none;
+  margin-bottom: var(--spacing-4);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-lg);
 }
 
 .category-card:hover {
-  transform: translateY(-4px);
+  border-color: var(--color-primary-light);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.category-card :deep(.el-card__body) {
+  padding: var(--spacing-5) var(--spacing-4);
 }
 
 .category-icon {
-  font-size: var(--font-size-6xl);
-  margin-bottom: var(--spacing-base);
+  font-size: 48px;
+  margin-bottom: var(--spacing-3);
 }
 
 .category-card h3 {
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-lg);
   color: var(--color-text-primary);
-  margin: 0 0 var(--spacing-sm) 0;
+  margin: 0 0 var(--spacing-2) 0;
   font-weight: var(--font-weight-medium);
 }
 
 .category-card p {
   color: var(--color-text-secondary);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   margin: 0;
 }
 
-/* 最新商品 */
-.latest-items {
-  margin-bottom: var(--section-gap);
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-2xl);
-}
-
-.section-header .el-link {
-  font-size: var(--font-size-lg);
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-}
-
-/* 平台特色 */
-.features {
-  margin-bottom: var(--section-gap);
-}
-
+/* 平台特色卡片 - 扁平带边框 */
 .feature-card {
   text-align: center;
   height: 100%;
   transition: all var(--transition-base);
-  border: none;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-lg);
 }
 
 .feature-card:hover {
-  transform: translateY(-4px);
+  border-color: var(--color-border-light);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.feature-card :deep(.el-card__body) {
+  padding: var(--spacing-6) var(--spacing-5);
 }
 
 .feature-icon {
-  font-size: var(--font-size-6xl);
-  margin-bottom: var(--spacing-lg);
+  font-size: 56px;
+  margin-bottom: var(--spacing-4);
 }
 
 .feature-card h3 {
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-xl);
   color: var(--color-text-primary);
-  margin: 0 0 var(--spacing-md) 0;
+  margin: 0 0 var(--spacing-3) 0;
   font-weight: var(--font-weight-semibold);
 }
 
 .feature-card p {
-  color: var(--color-text-regular);
+  color: var(--color-text-secondary);
   line-height: var(--line-height-relaxed);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   margin: 0;
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
+  .home {
+    padding: var(--spacing-4);
+  }
+
   .hero {
-    padding: var(--spacing-4xl) var(--spacing-lg);
-    margin-bottom: var(--spacing-4xl);
+    padding: var(--spacing-8) var(--spacing-4);
+    margin-bottom: var(--spacing-8);
   }
 
   .hero-content h1 {
-    font-size: var(--font-size-4xl);
+    font-size: var(--font-size-3xl);
   }
 
   .hero-content p {
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-base);
   }
 
   .hero-actions {
@@ -400,13 +419,19 @@ onMounted(() => {
   .categories h2,
   .latest-items h2,
   .features h2 {
-    font-size: var(--font-size-3xl);
+    font-size: var(--font-size-2xl);
   }
 
   .section-header {
     flex-direction: column;
-    gap: var(--spacing-base);
+    gap: var(--spacing-3);
     align-items: flex-start;
+  }
+
+  .categories,
+  .latest-items,
+  .features {
+    margin-bottom: var(--spacing-8);
   }
 }
 </style>
