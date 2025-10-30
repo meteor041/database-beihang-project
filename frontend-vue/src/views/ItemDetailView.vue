@@ -607,16 +607,12 @@ onMounted(() => {
   padding-top: var(--spacing-2);
 }
 
-.actions .el-button {
+.actions :deep(.el-button) {
   width: 100%;
 }
 
-.actions :deep(.el-button > span) {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-2);
-  width: 100%;
+.actions :deep(.el-button + .el-button) {
+  margin-left: 0;
 }
 
 .login-link {

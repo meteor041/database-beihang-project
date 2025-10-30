@@ -14,14 +14,19 @@ def create_order():
         data = request.get_json()
         
         # 验证必填字段
-        required_fields = ['buyer_id', 'item_id', 'address_id', 'payment_method', 'delivery_method']
+        required_fields = ['buyer_id', 'item_id', 'payment_method', 'delivery_method']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'error': f'{field} is required'}), 400
-        
+
         buyer_id = data['buyer_id']
         item_id = data['item_id']
-        address_id = data['address_id']
+        delivery_method = data['delivery_method']
+        address_id = data.get('address_id')  # 可选字段
+
+        # 如果是快递配送，地址必填
+        if delivery_method == 'express' and not address_id:
+            return jsonify({'error': 'address_id is required for express delivery'}), 400
         
         # 获取商品信息
         item_sql = """
@@ -43,13 +48,14 @@ def create_order():
         # 验证不能购买自己的商品
         if item['seller_id'] == buyer_id:
             return jsonify({'error': 'Cannot buy your own item'}), 400
-        
-        # 验证地址是否属于买家
-        address_sql = "SELECT user_id FROM address WHERE address_id = %s"
-        address_result = db_manager.execute_query(address_sql, (address_id,))
-        
-        if not address_result or address_result[0]['user_id'] != buyer_id:
-            return jsonify({'error': 'Invalid address'}), 400
+
+        # 验证地址是否属于买家（仅当提供了地址时）
+        if address_id:
+            address_sql = "SELECT user_id FROM address WHERE address_id = %s"
+            address_result = db_manager.execute_query(address_sql, (address_id,))
+
+            if not address_result or address_result[0]['user_id'] != buyer_id:
+                return jsonify({'error': 'Invalid address'}), 400
         
         # 生成订单号
         order_number = db_manager.generate_order_number()
@@ -91,17 +97,17 @@ def get_order(order_id):
     """订单查询 - SELECT操作"""
     try:
         sql = """
-        SELECT o.*, 
-               i.title as item_title, i.images as item_images,
+        SELECT o.*,
+               i.title as item_title, i.images as item_images, i.location as item_location,
                buyer.username as buyer_name, buyer.phone as buyer_phone,
                seller.username as seller_name, seller.phone as seller_phone,
-               a.recipient_name, a.phone as address_phone, a.province, a.city, 
+               a.recipient_name, a.phone as address_phone, a.province, a.city,
                a.district, a.detailed_address
         FROM `order` o
         JOIN item i ON o.item_id = i.item_id
         JOIN user buyer ON o.buyer_id = buyer.user_id
         JOIN user seller ON o.seller_id = seller.user_id
-        JOIN address a ON o.address_id = a.address_id
+        LEFT JOIN address a ON o.address_id = a.address_id
         WHERE o.order_id = %s
         """
         

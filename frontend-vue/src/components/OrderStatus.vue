@@ -1,6 +1,7 @@
 <template>
-  <div class="order-status-timeline">
-    <el-timeline>
+  <div class="order-status-wrapper">
+    <!-- 时间线模式 - 用于订单详情页 -->
+    <el-timeline v-if="showTimeline" class="order-status-timeline">
       <el-timeline-item
         v-for="step in statusSteps"
         :key="step.status"
@@ -17,12 +18,10 @@
       </el-timeline-item>
     </el-timeline>
 
-    <!-- 状态徽章展示 -->
-    <div v-if="showBadge" class="status-badge">
-      <el-tag :type="getBadgeType(status)" size="large">
-        {{ getStatusText(status) }}
-      </el-tag>
-    </div>
+    <!-- 徽章模式 - 用于订单列表 -->
+    <el-tag v-else :type="getBadgeType(status)" size="large">
+      {{ getStatusText(status) }}
+    </el-tag>
   </div>
 </template>
 
@@ -38,7 +37,7 @@ interface Props {
   deliveryDate?: string
   completionDate?: string
   cancellationDate?: string
-  showBadge?: boolean
+  showTimeline?: boolean  // 是否显示时间线，默认false只显示徽章
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -47,7 +46,7 @@ const props = withDefaults(defineProps<Props>(), {
   deliveryDate: '',
   completionDate: '',
   cancellationDate: '',
-  showBadge: true
+  showTimeline: false
 })
 
 // 状态步骤配置
@@ -147,6 +146,10 @@ const getStatusText = (status: OrderStatus): string => {
 </script>
 
 <style scoped>
+.order-status-wrapper {
+  display: inline-block;
+}
+
 .order-status-timeline {
   padding: 20px 0;
 }
@@ -162,11 +165,6 @@ const getStatusText = (status: OrderStatus): string => {
   margin: 0;
   font-size: 14px;
   color: #909399;
-}
-
-.status-badge {
-  margin-top: 20px;
-  text-align: center;
 }
 
 :deep(.el-timeline-item__timestamp) {

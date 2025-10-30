@@ -118,30 +118,29 @@
               <el-skeleton :loading="ordersLoading" :rows="3" animated>
                 <el-empty v-if="buyerOrders.length === 0" description="暂无订单" />
                 <div v-else class="orders-list">
-                  <el-card
+                  <div
                     v-for="order in buyerOrders"
                     :key="order.order_id"
-                    class="order-card"
-                    shadow="hover"
+                    class="order-item-wrapper"
                     @click="viewOrder(order.order_id)"
                   >
-                    <div class="order-header">
-                      <span class="order-number">订单号: {{ order.order_number }}</span>
-                      <OrderStatus :status="order.status" />
-                    </div>
-                    <div class="order-body">
+                    <div class="order-item-card">
                       <el-image
                         :src="order.item_images?.[0] || '/placeholder.png'"
-                        class="order-image"
+                        class="order-item-image"
                         fit="cover"
                       />
-                      <div class="order-info">
-                        <div class="order-title">{{ order.item_title }}</div>
-                        <div class="order-price">¥{{ order.total_amount }}</div>
-                        <div class="order-time">{{ formatDate(order.create_time) }}</div>
+                      <div class="order-item-info">
+                        <div class="order-item-title">{{ order.item_title }}</div>
+                        <div class="order-item-number">订单号: {{ order.order_number }}</div>
+                        <div class="order-item-time">下单时间: {{ formatDate(order.create_time) }}</div>
                       </div>
+                      <div class="order-item-status">
+                        <OrderStatus :status="order.order_status" />
+                      </div>
+                      <div class="order-item-price">¥{{ order.total_amount }}</div>
                     </div>
-                  </el-card>
+                  </div>
                 </div>
               </el-skeleton>
             </el-tab-pane>
@@ -150,30 +149,29 @@
               <el-skeleton :loading="ordersLoading" :rows="3" animated>
                 <el-empty v-if="sellerOrders.length === 0" description="暂无订单" />
                 <div v-else class="orders-list">
-                  <el-card
+                  <div
                     v-for="order in sellerOrders"
                     :key="order.order_id"
-                    class="order-card"
-                    shadow="hover"
+                    class="order-item-wrapper"
                     @click="viewOrder(order.order_id)"
                   >
-                    <div class="order-header">
-                      <span class="order-number">订单号: {{ order.order_number }}</span>
-                      <OrderStatus :status="order.status" />
-                    </div>
-                    <div class="order-body">
+                    <div class="order-item-card">
                       <el-image
                         :src="order.item_images?.[0] || '/placeholder.png'"
-                        class="order-image"
+                        class="order-item-image"
                         fit="cover"
                       />
-                      <div class="order-info">
-                        <div class="order-title">{{ order.item_title }}</div>
-                        <div class="order-price">¥{{ order.total_amount }}</div>
-                        <div class="order-time">{{ formatDate(order.create_time) }}</div>
+                      <div class="order-item-info">
+                        <div class="order-item-title">{{ order.item_title }}</div>
+                        <div class="order-item-number">订单号: {{ order.order_number }}</div>
+                        <div class="order-item-time">下单时间: {{ formatDate(order.create_time) }}</div>
                       </div>
+                      <div class="order-item-status">
+                        <OrderStatus :status="order.order_status" />
+                      </div>
+                      <div class="order-item-price">¥{{ order.total_amount }}</div>
                     </div>
-                  </el-card>
+                  </div>
                 </div>
               </el-skeleton>
             </el-tab-pane>
@@ -192,16 +190,19 @@
                 :key="wishlist.item_id"
                 :item="{
                   item_id: wishlist.item_id,
-                  title: wishlist.title,
-                  price: wishlist.price,
-                  images: wishlist.images,
-                  status: wishlist.status,
+                  title: wishlist.title || '',
+                  price: wishlist.price || 0,
+                  images: wishlist.images || [],
+                  status: wishlist.status || 'available',
                   view_count: wishlist.view_count,
-                  condition_level: wishlist.condition_level,
-                  location: wishlist.location,
+                  condition_level: wishlist.condition_level || 'good',
+                  location: wishlist.location || '',
                   username: wishlist.seller_name,
                   credit_score: wishlist.credit_score,
-                  category_name: wishlist.category_name
+                  category_name: wishlist.category_name,
+                  user_id: 0,
+                  category_id: 0,
+                  description: ''
                 }"
                 @click="viewItem(wishlist.item_id)"
               >
@@ -447,24 +448,16 @@ const loadMyItems = async (forceReload = false) => {
 const loadOrders = async (forceReload = false) => {
   if (!currentUser.value) return
 
-  // 如果已经有数据且不是强制刷新，则跳过
-  if (!forceReload && (buyerOrders.value.length > 0 || sellerOrders.value.length > 0)) {
-    return
-  }
-
   ordersLoading.value = true
   try {
-    // 修复：正确传递 userId 作为第一个参数
-    const response = await orderAPI.getUserOrders(currentUser.value.user_id, {})
-    const orders = response.orders || []
+    // 并行加载买家订单和卖家订单
+    const [buyerResponse, sellerResponse] = await Promise.all([
+      orderAPI.getUserOrders(currentUser.value.user_id, { role: 'buyer' }),
+      orderAPI.getUserOrders(currentUser.value.user_id, { role: 'seller' })
+    ])
 
-    // 分离买家和卖家订单
-    buyerOrders.value = orders.filter(
-      (order: Order) => order.buyer_id === currentUser.value?.user_id
-    )
-    sellerOrders.value = orders.filter(
-      (order: Order) => order.seller_id === currentUser.value?.user_id
-    )
+    buyerOrders.value = buyerResponse.orders || []
+    sellerOrders.value = sellerResponse.orders || []
   } catch (error) {
     console.error('Failed to load orders:', error)
     ElMessage.error('加载订单失败')
@@ -676,6 +669,14 @@ onMounted(() => {
   initUserForm()
   loadStats()
   loadWishlist() // 加载收藏以获取数量
+
+  // 从URL参数读取tab参数
+  const tabParam = router.currentRoute.value.query.tab as string
+  if (tabParam && ['info', 'items', 'orders', 'wishlist', 'addresses'].includes(tabParam)) {
+    activeTab.value = tabParam
+    // 根据tab加载对应数据
+    handleTabChange(tabParam)
+  }
 })
 </script>
 
@@ -793,66 +794,80 @@ onMounted(() => {
 }
 
 .orders-list {
-  display: grid;
-  gap: var(--spacing-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
 }
 
-.order-card {
+.order-item-wrapper {
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
-.order-card:hover {
-  transform: translateY(-2px);
+.order-item-wrapper:hover .order-item-card {
   box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
-.order-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-3);
-  padding-bottom: var(--spacing-3);
-  border-bottom: 1px solid var(--color-border-light);
-}
-
-.order-number {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-.order-body {
-  display: flex;
+.order-item-card {
+  display: grid;
+  grid-template-columns: 100px 1fr auto auto;
   gap: var(--spacing-4);
+  align-items: center;
+  padding: var(--spacing-4);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  transition: all 0.2s ease;
 }
 
-.order-image {
+.order-item-image {
   width: 100px;
   height: 100px;
   border-radius: var(--radius-base);
   flex-shrink: 0;
 }
 
-.order-info {
+.order-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
   flex: 1;
 }
 
-.order-title {
+.order-item-title {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
-  margin-bottom: var(--spacing-2);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.order-price {
-  color: var(--color-price);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
-  margin-bottom: var(--spacing-2);
-}
-
-.order-time {
+.order-item-number {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
+}
+
+.order-item-time {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.order-item-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 100px;
+}
+
+.order-item-price {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-price);
+  text-align: right;
+  min-width: 120px;
 }
 
 /* 地址列表 */
@@ -923,13 +938,22 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
 
-  .order-body {
-    flex-direction: column;
+  .order-item-card {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-3);
   }
 
-  .order-image {
+  .order-item-image {
     width: 100%;
     height: 200px;
+  }
+
+  .order-item-status {
+    justify-content: flex-start;
+  }
+
+  .order-item-price {
+    text-align: left;
   }
 }
 </style>

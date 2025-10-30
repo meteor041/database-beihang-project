@@ -29,33 +29,6 @@
           </div>
         </div>
 
-        <!-- 收货地址 -->
-        <div class="section">
-          <div class="section-header">
-            <h2>收货地址</h2>
-            <button @click="showAddressModal = true" class="btn-link">
-              {{ selectedAddress ? '更换地址' : '选择地址' }}
-            </button>
-          </div>
-
-          <div v-if="selectedAddress" class="address-card">
-            <div class="address-info">
-              <span class="recipient">{{ selectedAddress.recipient_name }}</span>
-              <span class="phone">{{ selectedAddress.phone }}</span>
-            </div>
-            <div class="address-detail">
-              {{ selectedAddress.province }} {{ selectedAddress.city }} {{ selectedAddress.district }} {{ selectedAddress.detailed_address }}
-            </div>
-          </div>
-
-          <div v-else class="no-address">
-            <p>暂无收货地址，请先添加地址</p>
-            <button @click="openAddressModal" class="btn-primary">
-              添加地址
-            </button>
-          </div>
-        </div>
-
         <!-- 支付方式 -->
         <div class="section">
           <h2>支付方式</h2>
@@ -107,6 +80,46 @@
               />
               <span class="delivery-name">快递配送</span>
             </label>
+          </div>
+        </div>
+
+        <!-- 收货地址 / 自取地点 -->
+        <div v-if="deliveryMethod === 'express'" class="section">
+          <div class="section-header">
+            <h2>收货地址</h2>
+            <button @click="showAddressModal = true" class="btn-link">
+              {{ selectedAddress ? '更换地址' : '选择地址' }}
+            </button>
+          </div>
+
+          <div v-if="selectedAddress" class="address-card">
+            <div class="address-info">
+              <span class="recipient">{{ selectedAddress.recipient_name }}</span>
+              <span class="phone">{{ selectedAddress.phone }}</span>
+            </div>
+            <div class="address-detail">
+              {{ selectedAddress.province }} {{ selectedAddress.city }} {{ selectedAddress.district }} {{ selectedAddress.detailed_address }}
+            </div>
+          </div>
+
+          <div v-else class="no-address">
+            <p>暂无收货地址，请先添加地址</p>
+            <button @click="openAddressModal" class="btn-primary">
+              添加地址
+            </button>
+          </div>
+        </div>
+
+        <div v-else class="section">
+          <div class="section-header">
+            <h2>自取地点</h2>
+          </div>
+          <div class="pickup-info">
+            <p class="pickup-location">
+              <span class="label">自取地址：</span>
+              <span class="value">{{ item.location }}</span>
+            </p>
+            <p class="pickup-notice">请与卖家协商具体自取时间</p>
           </div>
         </div>
 
@@ -230,7 +243,12 @@ const addressSaving = ref(false)
 type AddressFormValue = Omit<AddressParams, 'user_id'>
 
 const canSubmit = computed(() => {
-  return selectedAddress.value !== null && paymentMethod.value && deliveryMethod.value
+  // 如果是快递配送，必须选择地址
+  if (deliveryMethod.value === 'express') {
+    return selectedAddress.value !== null && paymentMethod.value
+  }
+  // 如果是自取，不需要地址
+  return paymentMethod.value && deliveryMethod.value
 })
 
 const loadItem = async (): Promise<void> => {
@@ -326,8 +344,14 @@ const handleAddressSave = async (value: AddressFormValue): Promise<void> => {
 }
 
 const submitOrder = async (): Promise<void> => {
-  if (!canSubmit.value || !item.value || !selectedAddress.value || !userStore.currentUser) {
+  if (!canSubmit.value || !item.value || !userStore.currentUser) {
     ElMessage.warning('请完善订单信息')
+    return
+  }
+
+  // 快递配送必须有地址
+  if (deliveryMethod.value === 'express' && !selectedAddress.value) {
+    ElMessage.warning('请选择收货地址')
     return
   }
 
@@ -336,7 +360,7 @@ const submitOrder = async (): Promise<void> => {
     const orderData: CreateOrderParams = {
       buyer_id: userStore.currentUser.user_id,
       item_id: item.value.item_id,
-      address_id: selectedAddress.value.address_id,
+      address_id: deliveryMethod.value === 'express' ? selectedAddress.value!.address_id : undefined,
       payment_method: paymentMethod.value,
       delivery_method: deliveryMethod.value,
       notes: remarks.value.trim() || undefined
@@ -347,7 +371,7 @@ const submitOrder = async (): Promise<void> => {
     if (response.order_id) {
       ElMessage.success('订单创建成功！')
       setTimeout(() => {
-        router.push('/orders')
+        router.push('/profile?tab=orders')
       }, 1500)
     }
   } catch (error) {
@@ -501,6 +525,41 @@ onMounted(() => {
 .no-address p {
   color: var(--color-text-secondary);
   margin-bottom: var(--spacing-md);
+}
+
+/* 自取地点信息 */
+.pickup-info {
+  padding: var(--spacing-md);
+  background: var(--color-bg-hover);
+  border-radius: var(--radius-md);
+}
+
+.pickup-location {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  font-size: var(--font-size-lg);
+}
+
+.pickup-location .label {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.pickup-location .value {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.pickup-notice {
+  color: var(--color-warning);
+  font-size: var(--font-size-sm);
+  margin: 0;
+  padding: var(--spacing-sm);
+  background: var(--color-warning-light);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--color-warning);
 }
 
 /* 支付和配送方式 */

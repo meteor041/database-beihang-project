@@ -3,7 +3,7 @@
     <el-card class="register-card" shadow="always">
       <template #header>
         <div class="card-header">
-          <el-icon :size="48" color="#67c23a"><UserFilled /></el-icon>
+          <el-icon :size="48" color="#409eff"><UserFilled /></el-icon>
           <h2>用户注册</h2>
           <p>加入校内二手交易平台</p>
         </div>
@@ -140,7 +140,7 @@
 
         <el-form-item>
           <el-button
-            type="success"
+            type="primary"
             :loading="loading"
             native-type="submit"
             style="width: 100%"

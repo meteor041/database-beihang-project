@@ -343,7 +343,8 @@ onMounted(async () => {
 .messages-view {
   width: 100%;
   padding: var(--spacing-4) var(--spacing-6);
-  height: calc(100vh - 2rem);
+  height: calc(100vh - var(--spacing-4) * 2); /* 减去上下 padding */
+  box-sizing: border-box;
 }
 
 /* 消息容器 - 全屏高度 */
@@ -366,6 +367,7 @@ onMounted(async () => {
   flex-direction: column;
   background: var(--color-bg-section);
   height: 100%;
+  min-height: 0; /* 关键：允许 flex 容器收缩 */
 }
 
 .sidebar-header {
@@ -396,6 +398,7 @@ onMounted(async () => {
 .conversation-items {
   flex: 1;
   overflow-y: auto;
+  min-height: 0; /* 关键：允许 flex 容器收缩 */
 }
 
 /* 会话项 */
@@ -478,6 +481,7 @@ onMounted(async () => {
   flex-direction: column;
   background: #f5f7fa;
   height: 100%;
+  min-height: 0; /* 关键：允许 flex 容器收缩 */
 }
 
 .no-selection {
@@ -492,6 +496,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0; /* 关键：允许 flex 容器收缩 */
 }
 
 /* 聊天头部 */
@@ -529,12 +534,14 @@ onMounted(async () => {
   overflow-y: auto;
   padding: var(--spacing-5);
   background: #f5f7fa;
+  min-height: 0; /* 关键：防止 flex 子元素撑大父容器 */
 }
 
 .message-list {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-3);
+  min-height: min-content; /* 确保内容可以正常显示 */
 }
 
 /* 消息气泡 - 现代化设计 */

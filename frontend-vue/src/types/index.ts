@@ -125,7 +125,7 @@ export interface Order {
 export interface CreateOrderParams {
   buyer_id: number
   item_id: number
-  address_id: number
+  address_id?: number  // 可选字段，自取时不需要地址
   payment_method: PaymentMethod
   delivery_method: DeliveryMethod
   notes?: string

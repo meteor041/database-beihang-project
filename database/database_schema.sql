@@ -101,7 +101,7 @@ CREATE TABLE `order` (
     buyer_id INT NOT NULL COMMENT '买家用户ID',
     seller_id INT NOT NULL COMMENT '卖家用户ID',
     item_id INT NOT NULL COMMENT '商品ID',
-    address_id INT NOT NULL COMMENT '收货地址ID',
+    address_id INT DEFAULT NULL COMMENT '收货地址ID(自取时可为空)',
     total_amount DECIMAL(10,2) NOT NULL COMMENT '订单总金额',
     payment_method ENUM('alipay', 'wechat', 'cash') NOT NULL COMMENT '支付方式',
     payment_status ENUM('pending', 'paid', 'refunded') DEFAULT 'pending' COMMENT '支付状态',
