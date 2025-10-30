@@ -1,265 +1,316 @@
 <template>
-  <div class="profile-view">
-    <h1>个人中心</h1>
-    
-    <div class="profile-container">
-      <div class="profile-sidebar">
-        <div class="user-card">
-          <img 
-            :src="currentUser?.avatar || '/default-avatar.png'"
-            :alt="currentUser?.username"
-            class="user-avatar"
+  <div class="profile-container">
+    <!-- 顶部用户卡片 -->
+    <div class="profile-header">
+      <div class="user-banner">
+        <div class="user-avatar-section">
+          <UserAvatar
+            :avatar="currentUser?.avatar || undefined"
+            :username="currentUser?.username"
+            :size="80"
           />
           <div class="user-info">
-            <h2>{{ currentUser?.username }}</h2>
-            <p>{{ currentUser?.real_name }}</p>
-            <div class="credit-score">
-              信用分：{{ currentUser?.credit_score }}
+            <h1>{{ currentUser?.username }}</h1>
+            <p class="real-name">{{ currentUser?.real_name }}</p>
+            <div class="credit-badge">
+              <el-icon><Medal /></el-icon>
+              <span>信用分: {{ currentUser?.credit_score || 100 }}</span>
             </div>
           </div>
         </div>
-
-        <nav class="profile-nav">
-          <button 
-            v-for="tab in tabs"
-            :key="tab.key"
-            :class="['nav-btn', { active: activeTab === tab.key }]"
-            @click="switchTab(tab.key)"
-          >
-            {{ tab.label }}
-          </button>
-        </nav>
+        <div class="stats-overview">
+          <div class="stat-item">
+            <div class="stat-value">{{ stats.seller_stats?.total_sales || 0 }}</div>
+            <div class="stat-label">出售</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">{{ stats.buyer_stats?.total_orders || 0 }}</div>
+            <div class="stat-label">购买</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">{{ wishlistCount }}</div>
+            <div class="stat-label">收藏</div>
+          </div>
+        </div>
       </div>
+    </div>
 
-      <div class="profile-content">
-        <!-- 基本信息 -->
-        <div v-if="activeTab === 'info'" class="tab-content">
-          <h2>基本信息</h2>
-          <form @submit.prevent="updateUserInfo" class="info-form">
-            <div class="form-group">
-              <label>学号</label>
-              <input 
-                v-model="userForm.student_id" 
-                type="text" 
-                disabled
-                class="disabled-input"
-              />
-            </div>
-
-            <div class="form-group">
-              <label>用户名</label>
-              <input 
-                v-model="userForm.username" 
-                type="text" 
-                required
-              />
-            </div>
-
-            <div class="form-group">
-              <label>真实姓名</label>
-              <input 
-                v-model="userForm.real_name" 
-                type="text" 
-                required
-              />
-            </div>
-
-            <div class="form-group">
-              <label>手机号</label>
-              <input 
-                v-model="userForm.phone" 
-                type="tel" 
-                required
-              />
-            </div>
-
-            <div class="form-group">
-              <label>邮箱</label>
-              <input 
-                v-model="userForm.email" 
-                type="email" 
-                required
-              />
-            </div>
-
-            <div v-if="updateMessage" class="message">
-              {{ updateMessage }}
-            </div>
-
-            <button type="submit" :disabled="updating" class="update-btn">
-              {{ updating ? '更新中...' : '更新信息' }}
-            </button>
-          </form>
-        </div>
-
-        <!-- 我的商品 -->
-        <div v-if="activeTab === 'items'" class="tab-content">
-          <div class="section-header">
-            <h2>我的商品</h2>
-            <router-link to="/publish" class="publish-btn">发布新商品</router-link>
-          </div>
-
-          <div class="item-filters">
-            <select v-model="itemStatus" @change="loadMyItems">
-              <option value="available">在售</option>
-              <option value="sold">已售出</option>
-              <option value="removed">已下架</option>
-            </select>
-          </div>
-
-          <div v-if="itemsLoading" class="loading">
-            加载中...
-          </div>
-
-          <div v-else-if="myItems.length === 0" class="no-items">
-            暂无商品
-          </div>
-
-          <div v-else class="items-grid">
-            <div 
-              v-for="item in myItems"
-              :key="item.item_id"
-              class="item-card"
-            >
-              <img 
-                :src="item.images && item.images[0] ? item.images[0] : '/placeholder.png'"
-                :alt="item.title"
-                class="item-image"
-              />
-              <div class="item-info">
-                <h3>{{ item.title }}</h3>
-                <p class="item-price">¥{{ item.price }}</p>
-                <p class="item-status">{{ getStatusText(item.status) }}</p>
-                <p class="item-views">{{ item.view_count }} 次浏览</p>
+    <!-- Tab导航 -->
+    <el-tabs v-model="activeTab" class="profile-tabs" @tab-change="handleTabChange">
+      <!-- 基本信息 -->
+      <el-tab-pane label="基本信息" name="info">
+        <div class="tab-content">
+          <el-card>
+            <template #header>
+              <div class="card-header">
+                <span>个人资料</span>
               </div>
-              <div class="item-actions">
-                <button @click="viewItem(item.item_id)" class="view-btn">
-                  查看
-                </button>
-                <button 
-                  v-if="item.status === 'available'"
-                  @click="editItem(item.item_id)" 
-                  class="edit-btn"
-                >
-                  编辑
-                </button>
-              </div>
-            </div>
-          </div>
+            </template>
+            <el-form :model="userForm" label-width="100px" class="profile-form">
+              <el-form-item label="学号">
+                <el-input v-model="userForm.student_id" disabled />
+              </el-form-item>
+              <el-form-item label="用户名">
+                <el-input v-model="userForm.username" />
+              </el-form-item>
+              <el-form-item label="真实姓名">
+                <el-input v-model="userForm.real_name" />
+              </el-form-item>
+              <el-form-item label="手机号">
+                <el-input v-model="userForm.phone" />
+              </el-form-item>
+              <el-form-item label="邮箱">
+                <el-input v-model="userForm.email" />
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" @click="updateUserInfo" :loading="updating">
+                  保存修改
+                </el-button>
+              </el-form-item>
+            </el-form>
+          </el-card>
         </div>
+      </el-tab-pane>
 
-        <!-- 地址管理 -->
-        <div v-if="activeTab === 'addresses'" class="tab-content">
+      <!-- 我的商品 -->
+      <el-tab-pane label="我的商品" name="items">
+        <div class="tab-content">
           <div class="section-header">
-            <h2>收货地址</h2>
-            <button @click="openCreateAddress" class="add-btn">
+            <el-radio-group v-model="itemStatus" @change="loadMyItems">
+              <el-radio-button value="available">在售</el-radio-button>
+              <el-radio-button value="sold">已售出</el-radio-button>
+              <el-radio-button value="removed">已下架</el-radio-button>
+            </el-radio-group>
+            <el-button type="primary" :icon="Plus" @click="router.push('/publish')">
+              发布商品
+            </el-button>
+          </div>
+
+          <el-skeleton :loading="itemsLoading" :rows="3" animated>
+            <el-empty v-if="myItems.length === 0" description="暂无商品" />
+            <div v-else class="items-grid">
+              <ItemCard
+                v-for="item in myItems"
+                :key="item.item_id"
+                :item="item"
+                @click="viewItem(item.item_id)"
+              >
+                <template #actions>
+                  <el-button
+                    v-if="item.status === 'available'"
+                    size="small"
+                    @click.stop="editItem(item.item_id)"
+                  >
+                    编辑
+                  </el-button>
+                </template>
+              </ItemCard>
+            </div>
+          </el-skeleton>
+        </div>
+      </el-tab-pane>
+
+      <!-- 我的订单 -->
+      <el-tab-pane label="我的订单" name="orders">
+        <div class="tab-content">
+          <el-tabs v-model="orderRole" class="order-tabs">
+            <el-tab-pane label="我买到的" name="buyer">
+              <el-skeleton :loading="ordersLoading" :rows="3" animated>
+                <el-empty v-if="buyerOrders.length === 0" description="暂无订单" />
+                <div v-else class="orders-list">
+                  <el-card
+                    v-for="order in buyerOrders"
+                    :key="order.order_id"
+                    class="order-card"
+                    shadow="hover"
+                    @click="viewOrder(order.order_id)"
+                  >
+                    <div class="order-header">
+                      <span class="order-number">订单号: {{ order.order_number }}</span>
+                      <OrderStatus :status="order.status" />
+                    </div>
+                    <div class="order-body">
+                      <el-image
+                        :src="order.item_images?.[0] || '/placeholder.png'"
+                        class="order-image"
+                        fit="cover"
+                      />
+                      <div class="order-info">
+                        <div class="order-title">{{ order.item_title }}</div>
+                        <div class="order-price">¥{{ order.total_amount }}</div>
+                        <div class="order-time">{{ formatDate(order.create_time) }}</div>
+                      </div>
+                    </div>
+                  </el-card>
+                </div>
+              </el-skeleton>
+            </el-tab-pane>
+
+            <el-tab-pane label="我卖出的" name="seller">
+              <el-skeleton :loading="ordersLoading" :rows="3" animated>
+                <el-empty v-if="sellerOrders.length === 0" description="暂无订单" />
+                <div v-else class="orders-list">
+                  <el-card
+                    v-for="order in sellerOrders"
+                    :key="order.order_id"
+                    class="order-card"
+                    shadow="hover"
+                    @click="viewOrder(order.order_id)"
+                  >
+                    <div class="order-header">
+                      <span class="order-number">订单号: {{ order.order_number }}</span>
+                      <OrderStatus :status="order.status" />
+                    </div>
+                    <div class="order-body">
+                      <el-image
+                        :src="order.item_images?.[0] || '/placeholder.png'"
+                        class="order-image"
+                        fit="cover"
+                      />
+                      <div class="order-info">
+                        <div class="order-title">{{ order.item_title }}</div>
+                        <div class="order-price">¥{{ order.total_amount }}</div>
+                        <div class="order-time">{{ formatDate(order.create_time) }}</div>
+                      </div>
+                    </div>
+                  </el-card>
+                </div>
+              </el-skeleton>
+            </el-tab-pane>
+          </el-tabs>
+        </div>
+      </el-tab-pane>
+
+      <!-- 我的收藏 -->
+      <el-tab-pane label="我的收藏" name="wishlist">
+        <div class="tab-content">
+          <el-skeleton :loading="wishlistLoading" :rows="3" animated>
+            <el-empty v-if="wishlistItems.length === 0" description="暂无收藏" />
+            <div v-else class="items-grid">
+              <ItemCard
+                v-for="wishlist in wishlistItems"
+                :key="wishlist.item_id"
+                :item="{
+                  item_id: wishlist.item_id,
+                  title: wishlist.title,
+                  price: wishlist.price,
+                  images: wishlist.images,
+                  status: wishlist.status,
+                  view_count: wishlist.view_count,
+                  condition_level: wishlist.condition_level,
+                  location: wishlist.location,
+                  username: wishlist.seller_name,
+                  credit_score: wishlist.credit_score,
+                  category_name: wishlist.category_name
+                }"
+                @click="viewItem(wishlist.item_id)"
+              >
+                <template #actions>
+                  <el-button
+                    size="small"
+                    type="danger"
+                    :icon="Delete"
+                    @click.stop="removeFromWishlist(wishlist.item_id)"
+                  >
+                    移除
+                  </el-button>
+                </template>
+              </ItemCard>
+            </div>
+          </el-skeleton>
+        </div>
+      </el-tab-pane>
+
+      <!-- 地址管理 -->
+      <el-tab-pane label="地址管理" name="addresses">
+        <div class="tab-content">
+          <div class="section-header">
+            <span></span>
+            <el-button type="primary" :icon="Plus" @click="openCreateAddress">
               添加地址
-            </button>
+            </el-button>
           </div>
 
-          <div v-if="addressesLoading" class="loading">
-            加载中...
-          </div>
-
-          <div v-else-if="addresses.length === 0" class="no-items">
-            暂无地址
-          </div>
-
-          <div v-else class="addresses-list">
-            <div 
-              v-for="address in addresses"
-              :key="address.address_id"
-              class="address-card"
-            >
-              <div class="address-info">
+          <el-skeleton :loading="addressesLoading" :rows="3" animated>
+            <el-empty v-if="addresses.length === 0" description="暂无地址" />
+            <div v-else class="addresses-list">
+              <el-card
+                v-for="address in addresses"
+                :key="address.address_id"
+                class="address-card"
+                shadow="hover"
+              >
                 <div class="address-header">
                   <span class="recipient">{{ address.recipient_name }}</span>
                   <span class="phone">{{ address.phone }}</span>
-                  <span v-if="address.is_default" class="default-badge">默认</span>
+                  <el-tag v-if="address.is_default" type="success" size="small">
+                    默认地址
+                  </el-tag>
                 </div>
                 <div class="address-detail">
-                  {{ address.province }} {{ address.city }} {{ address.district }} {{ address.detailed_address }}
+                  {{ address.province }} {{ address.city }} {{ address.district }}
+                  {{ address.detailed_address }}
                 </div>
-              </div>
-              <div class="address-actions">
-                <button @click="openEditAddress(address)" class="edit-btn">
-                  编辑
-                </button>
-                <button 
-                  v-if="!address.is_default"
-                  @click="setDefaultAddress(address.address_id)"
-                  class="default-btn"
-                >
-                  设为默认
-                </button>
-                <button 
-                  @click="deleteAddress(address.address_id)"
-                  class="delete-btn"
-                >
-                  删除
-                </button>
-              </div>
+                <div class="address-actions">
+                  <el-button size="small" @click="openEditAddress(address)">编辑</el-button>
+                  <el-button
+                    v-if="!address.is_default"
+                    size="small"
+                    @click="setDefaultAddress(address.address_id)"
+                  >
+                    设为默认
+                  </el-button>
+                  <el-button
+                    size="small"
+                    type="danger"
+                    @click="deleteAddress(address.address_id)"
+                  >
+                    删除
+                  </el-button>
+                </div>
+              </el-card>
             </div>
-          </div>
+          </el-skeleton>
         </div>
+      </el-tab-pane>
+    </el-tabs>
 
-        <!-- 统计信息 -->
-        <div v-if="activeTab === 'stats'" class="tab-content">
-          <h2>统计信息</h2>
-          
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-number">{{ stats.buyer_stats?.total_orders || 0 }}</div>
-              <div class="stat-label">购买订单</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-number">{{ stats.seller_stats?.total_sales || 0 }}</div>
-              <div class="stat-label">销售订单</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-number">¥{{ stats.buyer_stats?.total_spent || 0 }}</div>
-              <div class="stat-label">总消费</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-number">¥{{ stats.seller_stats?.total_earned || 0 }}</div>
-              <div class="stat-label">总收入</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 地址编辑弹窗 -->
-    <div v-if="showAddressModal" class="modal-overlay" @click="closeAddressModal">
-      <div class="modal-content" @click.stop>
-        <h3>{{ addressModalMode === 'edit' ? '编辑地址' : '添加地址' }}</h3>
-        <AddressForm
-          :address="addressInitialValue || undefined"
-          :loading="addressModalLoading"
-          :submit-text="addressModalMode === 'edit' ? '保存修改' : '添加地址'"
-          @save="handleAddressSave"
-          @cancel="closeAddressModal"
-        />
-      </div>
-    </div>
+    <!-- 地址编辑对话框 -->
+    <el-dialog
+      v-model="showAddressModal"
+      :title="addressModalMode === 'edit' ? '编辑地址' : '添加地址'"
+      width="600px"
+    >
+      <AddressForm
+        :address="addressInitialValue || undefined"
+        :loading="addressModalLoading"
+        :submit-text="addressModalMode === 'edit' ? '保存修改' : '添加地址'"
+        @save="handleAddressSave"
+        @cancel="closeAddressModal"
+      />
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { itemAPI, addressAPI, orderAPI } from '@/api'
-import type { Item, Address, AddressParams, OrderStatistics } from '@/types'
-import AddressForm from '@/components/AddressForm.vue'
+import { itemAPI, addressAPI, orderAPI, wishlistAPI } from '@/api'
+import type { Item, Address, AddressParams, Wishlist, Order } from '@/types'
 import { ElMessage } from 'element-plus'
+import { Plus, Delete, Medal } from '@element-plus/icons-vue'
+import UserAvatar from '@/components/UserAvatar.vue'
+import ItemCard from '@/components/ItemCard.vue'
+import OrderStatus from '@/components/OrderStatus.vue'
+import AddressForm from '@/components/AddressForm.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
 
 const activeTab = ref('info')
+const orderRole = ref('buyer')
 const updating = ref(false)
-const updateMessage = ref('')
 
 const userForm = ref({
   student_id: '',
@@ -269,10 +320,22 @@ const userForm = ref({
   email: ''
 })
 
+// 商品相关
 const myItems = ref<Item[]>([])
 const itemsLoading = ref(false)
 const itemStatus = ref('available')
 
+// 订单相关
+const buyerOrders = ref<Order[]>([])
+const sellerOrders = ref<Order[]>([])
+const ordersLoading = ref(false)
+
+// 收藏相关
+const wishlistItems = ref<Wishlist[]>([])
+const wishlistLoading = ref(false)
+const wishlistCount = ref(0)
+
+// 地址相关
 const addresses = ref<Address[]>([])
 const addressesLoading = ref(false)
 const showAddressModal = ref(false)
@@ -280,132 +343,13 @@ const editingAddress = ref<Address | null>(null)
 const addressModalMode = ref<'create' | 'edit'>('create')
 const addressModalLoading = ref(false)
 
-interface Stats {
-  buyer_stats?: {
-    total_orders?: number
-    total_spent?: number
-  }
-  seller_stats?: {
-    total_sales?: number
-    total_earned?: number
-  }
-}
-
+// 统计数据
 const stats = ref<any>({})
 
 const currentUser = computed(() => userStore.currentUser)
 
-const tabs = [
-  { key: 'info', label: '基本信息' },
-  { key: 'items', label: '我的商品' },
-  { key: 'addresses', label: '地址管理' },
-  { key: 'stats', label: '统计信息' }
-]
-
-const statusMap: Record<string, string> = {
-  'available': '在售',
-  'sold': '已售出',
-  'removed': '已下架'
-}
-
-const getStatusText = (status?: string): string => {
-  if (!status) return '未知状态'
-  return statusMap[status] || status
-}
-
-const initUserForm = (): void => {
-  if (currentUser.value) {
-    userForm.value = {
-      student_id: currentUser.value.student_id || '',
-      username: currentUser.value.username || '',
-      real_name: currentUser.value.real_name || '',
-      phone: currentUser.value.phone || '',
-      email: currentUser.value.email || ''
-    }
-  }
-}
-
-const switchTab = (tab: string): void => {
-  activeTab.value = tab
-
-  switch (tab) {
-    case 'items':
-      loadMyItems()
-      break
-    case 'addresses':
-      loadAddresses()
-      break
-    case 'stats':
-      loadStats()
-      break
-  }
-}
-
-const updateUserInfo = async (): Promise<void> => {
-  updating.value = true
-  updateMessage.value = ''
-
-  try {
-    const result = await userStore.updateUserInfo(userForm.value)
-
-    if (result.success) {
-      updateMessage.value = '信息更新成功'
-    } else {
-      updateMessage.value = result.message
-    }
-  } catch {
-    updateMessage.value = '更新失败，请重试'
-  } finally {
-    updating.value = false
-  }
-}
-
-const loadMyItems = async (): Promise<void> => {
-  if (!currentUser.value) return
-
-  itemsLoading.value = true
-  try {
-    const response = await itemAPI.getUserItems(currentUser.value.user_id, {
-      status: itemStatus.value,
-      page: 1,
-      limit: 20
-    })
-    myItems.value = response.items || []
-  } catch (error) {
-    console.error('Failed to load my items:', error)
-  } finally {
-    itemsLoading.value = false
-  }
-}
-
-const viewItem = (itemId: number): void => {
-  router.push(`/items/${itemId}`)
-}
-
-const editItem = (itemId: number): void => {
-  router.push(`/items/${itemId}/edit`)
-}
-
-const loadAddresses = async (): Promise<void> => {
-  if (!currentUser.value) return
-
-  addressesLoading.value = true
-  try {
-    const response = await addressAPI.getUserAddresses(currentUser.value.user_id)
-    addresses.value = response.addresses || []
-  } catch (error) {
-    console.error('Failed to load addresses:', error)
-  } finally {
-    addressesLoading.value = false
-  }
-}
-
-type AddressFormValue = Omit<AddressParams, 'user_id'>
-
-const addressInitialValue = computed<AddressFormValue | null>(() => {
-  if (!editingAddress.value) {
-    return null
-  }
+const addressInitialValue = computed<Omit<AddressParams, 'user_id'> | null>(() => {
+  if (!editingAddress.value) return null
   const address = editingAddress.value
   return {
     recipient_name: address.recipient_name,
@@ -420,28 +364,228 @@ const addressInitialValue = computed<AddressFormValue | null>(() => {
   }
 })
 
-const openCreateAddress = (): void => {
+// 格式化日期
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString)
+  return date.toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  })
+}
+
+// 初始化用户表单
+const initUserForm = () => {
+  if (currentUser.value) {
+    userForm.value = {
+      student_id: currentUser.value.student_id || '',
+      username: currentUser.value.username || '',
+      real_name: currentUser.value.real_name || '',
+      phone: currentUser.value.phone || '',
+      email: currentUser.value.email || ''
+    }
+  }
+}
+
+// Tab切换
+const handleTabChange = (tabName: string) => {
+  switch (tabName) {
+    case 'items':
+      loadMyItems()
+      break
+    case 'orders':
+      loadOrders()
+      break
+    case 'wishlist':
+      loadWishlist()
+      break
+    case 'addresses':
+      loadAddresses()
+      break
+  }
+}
+
+// 更新用户信息
+const updateUserInfo = async () => {
+  updating.value = true
+  try {
+    const result = await userStore.updateUserInfo(userForm.value)
+    if (result.success) {
+      ElMessage.success('信息更新成功')
+    } else {
+      ElMessage.error(result.message)
+    }
+  } catch (error) {
+    ElMessage.error('更新失败，请重试')
+  } finally {
+    updating.value = false
+  }
+}
+
+// 加载我的商品
+const loadMyItems = async (forceReload = false) => {
+  if (!currentUser.value) return
+
+  // 商品需要根据状态筛选，所以每次都要加载
+  itemsLoading.value = true
+  try {
+    const response = await itemAPI.getUserItems(currentUser.value.user_id, {
+      status: itemStatus.value,
+      page: 1,
+      limit: 20
+    })
+    myItems.value = response.items || []
+  } catch (error) {
+    console.error('Failed to load my items:', error)
+    ElMessage.error('加载商品失败')
+  } finally {
+    itemsLoading.value = false
+  }
+}
+
+// 加载订单
+const loadOrders = async (forceReload = false) => {
+  if (!currentUser.value) return
+
+  // 如果已经有数据且不是强制刷新，则跳过
+  if (!forceReload && (buyerOrders.value.length > 0 || sellerOrders.value.length > 0)) {
+    return
+  }
+
+  ordersLoading.value = true
+  try {
+    // 修复：正确传递 userId 作为第一个参数
+    const response = await orderAPI.getUserOrders(currentUser.value.user_id, {})
+    const orders = response.orders || []
+
+    // 分离买家和卖家订单
+    buyerOrders.value = orders.filter(
+      (order: Order) => order.buyer_id === currentUser.value?.user_id
+    )
+    sellerOrders.value = orders.filter(
+      (order: Order) => order.seller_id === currentUser.value?.user_id
+    )
+  } catch (error) {
+    console.error('Failed to load orders:', error)
+    ElMessage.error('加载订单失败')
+  } finally {
+    ordersLoading.value = false
+  }
+}
+
+// 加载收藏
+const loadWishlist = async (forceReload = false) => {
+  if (!currentUser.value) return
+
+  // 如果已经有数据且不是强制刷新，则跳过
+  if (!forceReload && wishlistItems.value.length > 0) {
+    return
+  }
+
+  wishlistLoading.value = true
+  try {
+    const response = await wishlistAPI.getWishlist(currentUser.value.user_id, {
+      page: 1,
+      limit: 20
+    })
+    wishlistItems.value = response.wishlist || []
+    wishlistCount.value = wishlistItems.value.length
+  } catch (error) {
+    console.error('Failed to load wishlist:', error)
+    ElMessage.error('加载收藏失败')
+  } finally {
+    wishlistLoading.value = false
+  }
+}
+
+// 加载地址
+const loadAddresses = async (forceReload = false) => {
+  if (!currentUser.value) return
+
+  // 如果已经有数据且不是强制刷新，则跳过
+  if (!forceReload && addresses.value.length > 0) {
+    return
+  }
+
+  addressesLoading.value = true
+  try {
+    const response = await addressAPI.getUserAddresses(currentUser.value.user_id)
+    addresses.value = response.addresses || []
+  } catch (error) {
+    console.error('Failed to load addresses:', error)
+    ElMessage.error('加载地址失败')
+  } finally {
+    addressesLoading.value = false
+  }
+}
+
+// 加载统计数据
+const loadStats = async () => {
+  if (!currentUser.value) return
+  try {
+    const response = await orderAPI.getOrderStatistics({
+      user_id: currentUser.value.user_id
+    })
+    stats.value = response || {}
+  } catch (error) {
+    console.error('Failed to load stats:', error)
+  }
+}
+
+// 查看商品
+const viewItem = (itemId: number) => {
+  router.push(`/items/${itemId}`)
+}
+
+// 编辑商品
+const editItem = (itemId: number) => {
+  router.push(`/items/${itemId}/edit`)
+}
+
+// 查看订单
+const viewOrder = (orderId: number) => {
+  router.push(`/orders/${orderId}`)
+}
+
+// 从收藏中移除
+const removeFromWishlist = async (itemId: number) => {
+  if (!currentUser.value) return
+  try {
+    await wishlistAPI.removeFromWishlist({
+      user_id: currentUser.value.user_id,
+      item_id: itemId
+    })
+    ElMessage.success('已移除收藏')
+    // 强制刷新收藏列表
+    loadWishlist(true)
+  } catch (error) {
+    console.error('Failed to remove from wishlist:', error)
+    ElMessage.error('移除失败')
+  }
+}
+
+// 地址管理
+const openCreateAddress = () => {
   editingAddress.value = null
   addressModalMode.value = 'create'
   showAddressModal.value = true
 }
 
-const openEditAddress = (address: Address): void => {
+const openEditAddress = (address: Address) => {
   editingAddress.value = address
   addressModalMode.value = 'edit'
   showAddressModal.value = true
 }
 
-const closeAddressModal = (): void => {
+const closeAddressModal = () => {
   showAddressModal.value = false
   addressModalLoading.value = false
   editingAddress.value = null
   addressModalMode.value = 'create'
 }
 
-const handleAddressSave = async (value: AddressFormValue): Promise<void> => {
+const handleAddressSave = async (value: Omit<AddressParams, 'user_id'>) => {
   if (!currentUser.value) return
-
   const payload: AddressParams = {
     ...value,
     user_id: currentUser.value.user_id
@@ -457,7 +601,8 @@ const handleAddressSave = async (value: AddressFormValue): Promise<void> => {
       ElMessage.success('地址添加成功')
     }
     closeAddressModal()
-    loadAddresses()
+    // 强制刷新地址列表
+    loadAddresses(true)
   } catch (error: any) {
     console.error('Failed to save address:', error)
     const backendMessage = error?.response?.data?.error
@@ -467,46 +612,40 @@ const handleAddressSave = async (value: AddressFormValue): Promise<void> => {
   }
 }
 
-const setDefaultAddress = async (addressId: number): Promise<void> => {
+const setDefaultAddress = async (addressId: number) => {
   if (!currentUser.value) return
-
   try {
     await addressAPI.setDefaultAddress(addressId, {
       user_id: currentUser.value.user_id
     })
-    loadAddresses()
+    ElMessage.success('已设为默认地址')
+    // 强制刷新地址列表
+    loadAddresses(true)
   } catch (error) {
     console.error('Failed to set default address:', error)
-    alert('设置默认地址失败，请重试')
+    ElMessage.error('设置失败')
   }
 }
 
-const deleteAddress = async (addressId: number): Promise<void> => {
-  if (!confirm('确定要删除这个地址吗?') || !currentUser.value) {
-    return
-  }
-
+const deleteAddress = async (addressId: number) => {
+  if (!currentUser.value) return
   try {
+    await ElMessage.confirm('确定要删除这个地址吗?', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
     await addressAPI.deleteAddress(addressId, {
       user_id: currentUser.value.user_id
     })
-    loadAddresses()
+    ElMessage.success('地址已删除')
+    // 强制刷新地址列表
+    loadAddresses(true)
   } catch (error) {
-    console.error('Failed to delete address:', error)
-    alert('删除地址失败，请重试')
-  }
-}
-
-const loadStats = async (): Promise<void> => {
-  if (!currentUser.value) return
-
-  try {
-    const response = await orderAPI.getOrderStatistics({
-      user_id: currentUser.value.user_id
-    })
-    stats.value = response || {}
-  } catch (error) {
-    console.error('Failed to load stats:', error)
+    if (error !== 'cancel') {
+      console.error('Failed to delete address:', error)
+      ElMessage.error('删除失败')
+    }
   }
 }
 
@@ -515,377 +654,212 @@ onMounted(() => {
     router.push('/login')
     return
   }
-  
   initUserForm()
+  loadStats()
+  loadWishlist() // 加载收藏以获取数量
 })
 </script>
 
 <style scoped>
-/* 现代扁平化风格 - Twitter/YouTube/Google 风格 */
-
-.profile-view {
-  max-width: var(--container-max-width);
+.profile-container {
+  max-width: 1600px; /* 增加最大宽度 */
   margin: 0 auto;
   padding: var(--spacing-6);
-  background: var(--color-bg-page);
+  width: 100%;
 }
 
-.profile-view h1 {
-  color: var(--color-text-primary);
-  margin-bottom: var(--spacing-8);
-  font-size: var(--font-size-4xl);
+/* 用户头部 */
+.profile-header {
+  margin-bottom: var(--spacing-6);
+}
+
+.user-banner {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-8);
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--shadow-lg);
+}
+
+.user-avatar-section {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-5);
+}
+
+.user-info h1 {
+  margin: 0 0 var(--spacing-2) 0;
+  font-size: var(--font-size-3xl);
   font-weight: var(--font-weight-bold);
 }
 
-.profile-container {
-  display: grid;
-  grid-template-columns: 300px 1fr;
-  gap: var(--spacing-6);
-}
-
-/* 侧边栏 */
-.profile-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-4);
-}
-
-/* 用户卡片 - 扁平带边框 */
-.user-card {
-  background: var(--color-bg-card);
-  padding: var(--spacing-6);
-  border: 1px solid var(--color-border-base);
-  border-radius: var(--radius-lg);
-  text-align: center;
-}
-
-.user-avatar {
-  width: 80px;
-  height: 80px;
-  border-radius: var(--radius-round);
-  object-fit: cover;
-  margin-bottom: var(--spacing-4);
-  border: 3px solid var(--color-border-light);
-}
-
-.user-info h2 {
-  color: var(--color-text-primary);
-  margin: 0 0 var(--spacing-2) 0;
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-semibold);
-}
-
-.user-info p {
-  color: var(--color-text-secondary);
+.real-name {
   margin: 0 0 var(--spacing-3) 0;
-  font-size: var(--font-size-sm);
+  opacity: 0.9;
+  font-size: var(--font-size-base);
 }
 
-.credit-score {
-  background: var(--color-primary-lighter);
-  color: var(--color-primary-dark);
+.credit-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  background: rgba(255, 255, 255, 0.2);
   padding: var(--spacing-2) var(--spacing-3);
   border-radius: var(--radius-full);
   font-weight: var(--font-weight-medium);
   font-size: var(--font-size-sm);
-  display: inline-block;
 }
 
-/* 导航 - 扁平 */
-.profile-nav {
+.stats-overview {
   display: flex;
-  flex-direction: column;
-  gap: var(--spacing-1);
+  gap: var(--spacing-6);
 }
 
-.nav-btn {
-  padding: var(--spacing-3) var(--spacing-4);
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border-base);
-  border-radius: var(--radius-base);
-  text-align: left;
-  cursor: pointer;
-  transition: all var(--transition-base);
-  font-size: var(--font-size-base);
-  color: var(--color-text-primary);
-  font-weight: var(--font-weight-medium);
+.stat-item {
+  text-align: center;
 }
 
-.nav-btn:hover {
-  border-color: var(--color-primary-light);
-  background: var(--color-bg-section);
-}
-
-.nav-btn.active {
-  background: var(--color-primary);
-  color: white;
-  border-color: var(--color-primary);
-}
-
-/* 内容区域 - 扁平带边框 */
-.profile-content {
-  background: var(--color-bg-card);
-  padding: var(--spacing-6);
-  border: 1px solid var(--color-border-base);
-  border-radius: var(--radius-lg);
-  min-height: 500px;
-}
-
-.tab-content h2 {
-  color: var(--color-text-primary);
-  margin-bottom: var(--spacing-6);
-  font-size: var(--font-size-2xl);
+.stat-value {
+  font-size: var(--font-size-3xl);
   font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-1);
+}
+
+.stat-label {
+  font-size: var(--font-size-sm);
+  opacity: 0.9;
+}
+
+/* Tabs */
+.profile-tabs {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-4);
+  box-shadow: var(--shadow-sm);
+}
+
+.tab-content {
+  padding: var(--spacing-4) 0;
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-6);
-}
-
-.section-header h2 {
-  margin: 0;
-}
-
-.publish-btn,
-.add-btn {
-  background: var(--color-primary);
-  color: white;
-  padding: var(--spacing-2) var(--spacing-4);
-  border: none;
-  border-radius: var(--radius-base);
-  text-decoration: none;
-  cursor: pointer;
-  transition: all var(--transition-base);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-}
-
-.publish-btn:hover,
-.add-btn:hover {
-  background: var(--color-primary-dark);
-}
-
-/* 表单样式 - 扁平 */
-.info-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-4);
-  max-width: 500px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-2);
-}
-
-.form-group label {
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-}
-
-.form-group input {
-  padding: var(--spacing-3);
-  border: 1px solid var(--color-border-base);
-  border-radius: var(--radius-base);
-  font-size: var(--font-size-base);
-  transition: border-color var(--transition-fast);
-}
-
-.form-group input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.disabled-input {
-  background: var(--color-bg-section);
-  color: var(--color-text-secondary);
-  cursor: not-allowed;
-}
-
-.update-btn {
-  background: var(--color-success);
-  color: white;
-  padding: var(--spacing-3) var(--spacing-5);
-  border: none;
-  border-radius: var(--radius-base);
-  cursor: pointer;
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-medium);
-  transition: all var(--transition-base);
-}
-
-.update-btn:hover:not(:disabled) {
-  background: #218838;
-}
-
-.update-btn:disabled {
-  background: var(--color-neutral-400);
-  cursor: not-allowed;
-}
-
-.message {
-  padding: var(--spacing-3);
-  border-radius: var(--radius-base);
-  background: var(--color-success-light);
-  color: #155724;
-  border: 1px solid #c3e6cb;
-  font-size: var(--font-size-sm);
-}
-
-/* 筛选器 */
-.item-filters {
   margin-bottom: var(--spacing-4);
 }
 
-.item-filters select {
-  padding: var(--spacing-2) var(--spacing-3);
-  border: 1px solid var(--color-border-base);
-  border-radius: var(--radius-base);
-  font-size: var(--font-size-sm);
-  background: var(--color-bg-card);
-  cursor: pointer;
+/* 表单 */
+.profile-form {
+  max-width: 600px;
 }
 
-/* 加载和空状态 */
-.loading,
-.no-items {
-  text-align: center;
-  padding: var(--spacing-8);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-base);
+.card-header {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
 }
 
-/* 商品网格 */
+/* 商品和收藏网格 */
 .items-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: var(--spacing-4);
 }
 
-.item-card {
-  border: 1px solid var(--color-border-base);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  transition: all var(--transition-base);
-  background: var(--color-bg-card);
+/* 订单列表 */
+.order-tabs {
+  margin-top: var(--spacing-4);
 }
 
-.item-card:hover {
-  border-color: var(--color-border-light);
-  box-shadow: var(--shadow-md);
+.orders-list {
+  display: grid;
+  gap: var(--spacing-4);
+}
+
+.order-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.order-card:hover {
   transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
-.item-image {
-  width: 100%;
-  height: 160px;
-  object-fit: cover;
-  background: var(--color-neutral-100);
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-3);
+  padding-bottom: var(--spacing-3);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
-.item-info {
-  padding: var(--spacing-3);
+.order-number {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
 }
 
-.item-info h3 {
-  color: var(--color-text-primary);
-  margin: 0 0 var(--spacing-2) 0;
+.order-body {
+  display: flex;
+  gap: var(--spacing-4);
+}
+
+.order-image {
+  width: 100px;
+  height: 100px;
+  border-radius: var(--radius-base);
+  flex-shrink: 0;
+}
+
+.order-info {
+  flex: 1;
+}
+
+.order-title {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  margin-bottom: var(--spacing-2);
 }
 
-.item-price {
+.order-price {
   color: var(--color-price);
-  font-weight: var(--font-weight-bold);
-  margin: 0 0 var(--spacing-1) 0;
   font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-2);
 }
 
-.item-status,
-.item-views {
-  color: var(--color-text-secondary);
+.order-time {
   font-size: var(--font-size-xs);
-  margin: 0 0 var(--spacing-1) 0;
-}
-
-.item-actions {
-  display: flex;
-  gap: var(--spacing-2);
-  padding: var(--spacing-3);
-  border-top: 1px solid var(--color-border-light);
-}
-
-.view-btn,
-.edit-btn {
-  flex: 1;
-  padding: var(--spacing-2) var(--spacing-3);
-  border: none;
-  border-radius: var(--radius-base);
-  cursor: pointer;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  transition: all var(--transition-base);
-}
-
-.view-btn {
-  background: var(--color-primary);
-  color: white;
-}
-
-.view-btn:hover {
-  background: var(--color-primary-dark);
-}
-
-.edit-btn {
-  background: var(--color-success);
-  color: white;
-}
-
-.edit-btn:hover {
-  background: #218838;
+  color: var(--color-text-secondary);
 }
 
 /* 地址列表 */
 .addresses-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: var(--spacing-4);
 }
 
 .address-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-4);
-  border: 1px solid var(--color-border-base);
-  border-radius: var(--radius-lg);
-  background: var(--color-bg-card);
-  transition: all var(--transition-base);
+  transition: all 0.3s ease;
 }
 
 .address-card:hover {
-  border-color: var(--color-border-light);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
 }
 
 .address-header {
   display: flex;
   gap: var(--spacing-3);
   align-items: center;
-  margin-bottom: var(--spacing-2);
+  margin-bottom: var(--spacing-3);
 }
 
 .recipient {
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
   font-size: var(--font-size-base);
 }
 
@@ -894,173 +868,50 @@ onMounted(() => {
   font-size: var(--font-size-sm);
 }
 
-.default-badge {
-  background: var(--color-primary);
-  color: white;
-  padding: var(--spacing-1) var(--spacing-2);
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-}
-
 .address-detail {
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
+  margin-bottom: var(--spacing-3);
 }
 
 .address-actions {
   display: flex;
   gap: var(--spacing-2);
-  flex-shrink: 0;
-}
-
-.address-actions button {
-  padding: var(--spacing-2) var(--spacing-3);
-  border: none;
-  border-radius: var(--radius-base);
-  cursor: pointer;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  transition: all var(--transition-base);
-}
-
-.default-btn {
-  background: var(--color-primary);
-  color: white;
-}
-
-.default-btn:hover {
-  background: var(--color-primary-dark);
-}
-
-.delete-btn {
-  background: var(--color-danger);
-  color: white;
-}
-
-.delete-btn:hover {
-  background: #c82333;
-}
-
-/* 统计卡片 - 扁平带边框 */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--spacing-4);
-}
-
-.stat-card {
-  text-align: center;
-  padding: var(--spacing-6);
-  border: 1px solid var(--color-border-base);
-  border-radius: var(--radius-lg);
-  background: var(--color-bg-card);
-  transition: all var(--transition-base);
-}
-
-.stat-card:hover {
-  border-color: var(--color-primary-light);
-  box-shadow: var(--shadow-md);
-}
-
-.stat-number {
-  font-size: var(--font-size-4xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-primary);
-  margin-bottom: var(--spacing-2);
-}
-
-.stat-label {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-/* 弹窗样式 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: var(--z-index-modal);
-}
-
-.modal-content {
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border-base);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-6);
-  width: 90%;
-  max-width: 600px;
-  box-shadow: var(--shadow-2xl);
-}
-
-.modal-content h3 {
-  color: var(--color-text-primary);
-  margin: 0 0 var(--spacing-4) 0;
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
 }
 
 /* 响应式 */
-@media (max-width: 1024px) {
-  .profile-container {
-    grid-template-columns: 250px 1fr;
-  }
-}
-
 @media (max-width: 768px) {
-  .profile-view {
+  .profile-container {
     padding: var(--spacing-4);
   }
 
-  .profile-view h1 {
-    font-size: var(--font-size-3xl);
-    margin-bottom: var(--spacing-6);
-  }
-
-  .profile-container {
-    grid-template-columns: 1fr;
-    gap: var(--spacing-4);
-  }
-
-  .profile-nav {
-    flex-direction: row;
-    overflow-x: auto;
-    gap: var(--spacing-2);
-  }
-
-  .nav-btn {
-    white-space: nowrap;
-  }
-
-  .section-header {
+  .user-banner {
     flex-direction: column;
-    gap: var(--spacing-3);
-    align-items: stretch;
+    gap: var(--spacing-4);
+    text-align: center;
+  }
+
+  .user-avatar-section {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .stats-overview {
+    width: 100%;
+    justify-content: space-around;
   }
 
   .items-grid {
     grid-template-columns: 1fr;
   }
 
-  .address-card {
+  .order-body {
     flex-direction: column;
-    gap: var(--spacing-3);
-    align-items: stretch;
   }
 
-  .address-actions {
-    justify-content: center;
-  }
-
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .order-image {
+    width: 100%;
+    height: 200px;
   }
 }
 </style>

@@ -1,109 +1,122 @@
 <template>
   <div class="items-view">
-    <!-- 页面头部 -->
+    <!-- 页面头部 - 简化现代化 -->
     <div class="page-header">
-      <h1 class="page-title">
-        <el-icon><Goods /></el-icon>
-        商品列表
-      </h1>
-      <p class="page-meta">{{ pagination.total }} 件商品</p>
+      <h1 class="page-title">商品市场</h1>
+      <p class="page-subtitle">发现 {{ pagination.total }} 件优质好物</p>
     </div>
 
-    <!-- 搜索栏 -->
+    <!-- 搜索栏 - 突出显示 -->
     <div class="search-section">
-      <el-input
-        v-model="searchKeyword"
-        placeholder="搜索商品标题、描述..."
-        size="large"
-        clearable
-        @keyup.enter="handleSearch"
-        class="search-input"
-      >
-        <template #prefix>
-          <el-icon><Search /></el-icon>
-        </template>
-        <template #append>
-          <el-button :icon="Search" @click="handleSearch">
-            搜索
+      <div class="search-container">
+        <el-input
+          v-model="searchKeyword"
+          placeholder="搜索你想要的商品..."
+          size="large"
+          clearable
+          @keyup.enter="handleSearch"
+          @clear="handleSearch"
+          class="search-input"
+        >
+          <template #prefix>
+            <el-icon class="search-icon"><Search /></el-icon>
+          </template>
+        </el-input>
+        <el-button type="primary" size="large" :icon="Search" @click="handleSearch">
+          搜索
+        </el-button>
+      </div>
+    </div>
+
+    <!-- 筛选器卡片 - 集中布局 -->
+    <el-card class="filter-card" shadow="never">
+      <div class="filter-grid">
+        <div class="filter-group">
+          <label class="filter-label">
+            <el-icon><Goods /></el-icon>
+            分类
+          </label>
+          <el-select
+            v-model="selectedCategory"
+            placeholder="全部分类"
+            @change="applyFilters"
+            clearable
+            size="default"
+          >
+            <el-option
+              v-for="category in categories"
+              :key="category.category_id"
+              :value="category.category_id"
+              :label="category.category_name"
+            />
+          </el-select>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">
+            <el-icon><Money /></el-icon>
+            价格
+          </label>
+          <div class="price-inputs">
+            <el-input
+              v-model="minPrice"
+              type="number"
+              placeholder="最低"
+              size="default"
+              @change="applyFilters"
+              clearable
+            />
+            <span class="price-divider">-</span>
+            <el-input
+              v-model="maxPrice"
+              type="number"
+              placeholder="最高"
+              size="default"
+              @change="applyFilters"
+              clearable
+            />
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">
+            <el-icon><Sort /></el-icon>
+            排序
+          </label>
+          <div class="sort-controls">
+            <el-select
+              v-model="sortBy"
+              @change="applyFilters"
+              size="default"
+            >
+              <el-option value="publish_date" label="最新发布" />
+              <el-option value="price" label="价格" />
+              <el-option value="view_count" label="热度" />
+            </el-select>
+            <el-select
+              v-model="sortOrder"
+              @change="applyFilters"
+              size="default"
+              style="width: 90px"
+            >
+              <el-option value="DESC" label="↓" />
+              <el-option value="ASC" label="↑" />
+            </el-select>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <el-button
+            @click="resetFilters"
+            size="default"
+            style="margin-top: 24px"
+          >
+            <el-icon><RefreshLeft /></el-icon>
+            重置
           </el-button>
-        </template>
-      </el-input>
-    </div>
-
-    <!-- 筛选栏 -->
-    <div class="filter-bar">
-      <div class="filter-item">
-        <span class="filter-label">分类</span>
-        <el-select
-          v-model="selectedCategory"
-          placeholder="全部"
-          @change="applyFilters"
-          clearable
-          size="default"
-          style="width: 160px"
-        >
-          <el-option
-            v-for="category in categories"
-            :key="category.category_id"
-            :value="category.category_id"
-            :label="category.category_name"
-          />
-        </el-select>
+        </div>
       </div>
-
-      <div class="filter-item">
-        <span class="filter-label">价格范围</span>
-        <el-input
-          v-model="minPrice"
-          type="number"
-          placeholder="最低价"
-          size="default"
-          style="width: 100px"
-          clearable
-        />
-        <span class="filter-divider">-</span>
-        <el-input
-          v-model="maxPrice"
-          type="number"
-          placeholder="最高价"
-          size="default"
-          style="width: 100px"
-          clearable
-        />
-      </div>
-
-      <div class="filter-item">
-        <span class="filter-label">排序</span>
-        <el-select
-          v-model="sortBy"
-          @change="applyFilters"
-          size="default"
-          style="width: 120px"
-        >
-          <el-option value="publish_date" label="发布时间" />
-          <el-option value="price" label="价格" />
-          <el-option value="view_count" label="浏览量" />
-        </el-select>
-        <el-select
-          v-model="sortOrder"
-          @change="applyFilters"
-          size="default"
-          style="width: 90px"
-        >
-          <el-option value="DESC" label="降序" />
-          <el-option value="ASC" label="升序" />
-        </el-select>
-      </div>
-
-      <el-button
-        type="primary"
-        @click="applyFilters"
-        :icon="Filter"
-        class="filter-apply-btn"
-      >
-        应用筛选
-      </el-button>
-    </div>
+    </el-card>
 
     <!-- 加载状态 -->
     <div v-if="loading" class="loading-container" v-loading="loading" element-loading-text="加载中...">
@@ -150,7 +163,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { itemAPI } from '@/api'
 import { ElMessage } from 'element-plus'
-import { Search, Filter, Goods } from '@element-plus/icons-vue'
+import { Search, Goods, Money, Sort, RefreshLeft } from '@element-plus/icons-vue'
 import ItemCard from '@/components/ItemCard.vue'
 import type { Item, Category } from '@/types'
 
@@ -268,6 +281,17 @@ const applyFilters = (): void => {
   handleSearch()
 }
 
+const resetFilters = (): void => {
+  searchKeyword.value = ''
+  selectedCategory.value = ''
+  minPrice.value = ''
+  maxPrice.value = ''
+  sortBy.value = 'publish_date'
+  sortOrder.value = 'DESC'
+  page.value = 1
+  loadItems()
+}
+
 const changePage = (newPage: number): void => {
   if (newPage >= 1 && newPage <= pagination.value.pages) {
     page.value = newPage
@@ -300,94 +324,123 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 现代扁平化风格 - Twitter/YouTube/Google 风格 */
-
 .items-view {
-  max-width: var(--container-max-width);
+  max-width: 1600px;
   margin: 0 auto;
   padding: var(--spacing-6);
   background: var(--color-bg-page);
+  width: 100%;
 }
 
-/* 页面头部 - 扁平简洁 */
+/* 页面头部 - 现代化 */
 .page-header {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-2);
+  text-align: center;
   margin-bottom: var(--spacing-8);
 }
 
 .page-title {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-3);
   font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
-  margin: 0;
+  margin: 0 0 var(--spacing-2) 0;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.page-title .el-icon {
-  color: var(--color-primary);
-}
-
-.page-meta {
+.page-subtitle {
   font-size: var(--font-size-base);
   color: var(--color-text-secondary);
   margin: 0;
 }
 
-/* 搜索栏 - 扁平 */
+/* 搜索区域 - 突出显示 */
 .search-section {
   margin-bottom: var(--spacing-6);
 }
 
+.search-container {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  gap: var(--spacing-3);
+  padding: var(--spacing-6);
+  background: linear-gradient(135deg, rgba(64, 158, 255, 0.05) 0%, rgba(64, 158, 255, 0.02) 100%);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border-light);
+}
+
 .search-input {
-  max-width: 100%;
+  flex: 1;
 }
 
 .search-input :deep(.el-input__wrapper) {
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--color-border-base);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-.search-input :deep(.el-input__wrapper:hover) {
-  border-color: var(--color-primary-light);
+.search-icon {
+  color: var(--color-primary);
+  font-size: 18px;
 }
 
-/* 筛选栏 - 扁平 */
-.filter-bar {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-6);
-  padding: var(--spacing-4);
-  background: var(--color-bg-section);
-  border: 1px solid var(--color-border-base);
-  border-radius: var(--radius-lg);
+/* 筛选卡片 - 集中布局 */
+.filter-card {
   margin-bottom: var(--spacing-6);
-  flex-wrap: wrap;
+  border: 1px solid var(--color-border-base);
 }
 
-.filter-item {
+.filter-card :deep(.el-card__body) {
+  padding: var(--spacing-5);
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-5);
+  align-items: start;
+}
+
+.filter-group {
   display: flex;
-  align-items: center;
-  gap: var(--spacing-3);
+  flex-direction: column;
+  gap: var(--spacing-2);
 }
 
 .filter-label {
   font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
   font-weight: var(--font-weight-medium);
-  white-space: nowrap;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
 }
 
-.filter-divider {
-  color: var(--color-text-placeholder);
-  margin: 0 var(--spacing-1);
+.filter-label .el-icon {
+  color: var(--color-primary);
 }
 
-.filter-apply-btn {
-  margin-left: auto;
+.price-inputs {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.price-inputs .el-input {
+  flex: 1;
+}
+
+.price-divider {
+  color: var(--color-text-secondary);
+}
+
+.sort-controls {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.sort-controls .el-select {
+  flex: 1;
 }
 
 /* 加载状态 */
@@ -401,8 +454,8 @@ onMounted(() => {
 /* 商品网格 */
 .items-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--spacing-4);
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--spacing-5);
   margin-bottom: var(--spacing-8);
 }
 
@@ -423,23 +476,18 @@ onMounted(() => {
     font-size: var(--font-size-3xl);
   }
 
-  .filter-bar {
+  .search-container {
     flex-direction: column;
-    align-items: stretch;
+    padding: var(--spacing-4);
+  }
+
+  .filter-grid {
+    grid-template-columns: 1fr;
     gap: var(--spacing-4);
   }
 
-  .filter-item {
-    justify-content: space-between;
-  }
-
-  .filter-apply-btn {
-    margin-left: 0;
-    width: 100%;
-  }
-
   .items-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: var(--spacing-3);
   }
 }

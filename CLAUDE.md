@@ -171,6 +171,17 @@ sql = f"SELECT * FROM user WHERE user_id = {user_id}"  # NEVER DO THIS
 
 ### Frontend Architecture (Vue 3 Composition API)
 
+**UI Layout - Modern Sidebar Navigation (YouTube/Twitter Style)**:
+- **Collapsible Left Sidebar** - Hover to expand, auto-collapse when mouse leaves
+  - Width: 72px (collapsed) → 240px (expanded)
+  - Smooth cubic-bezier transitions (0.3s)
+  - Fixed position with overflow handling
+- **Main Navigation Items**:
+  1. 首页 (Home) - `/`
+  2. 商品列表 (Items) - `/items`
+  3. 消息 (Messages) - `/messages` (登录后显示，带未读徽章)
+  4. 个人中心 (Profile) - `/profile` (登录后显示，整合订单、收藏、地址、商品管理)
+
 **14 Core Pages** ([frontend-vue/src/views/](frontend-vue/src/views/)):
 1. **HomeView.vue** (`/`) - Item grid with infinite scroll
 2. **ItemsView.vue** (`/items`) - Search with multi-filter sidebar
@@ -178,14 +189,26 @@ sql = f"SELECT * FROM user WHERE user_id = {user_id}"  # NEVER DO THIS
 4. **ItemEditView.vue** (`/item/:id/edit`) - Item editing interface
 5. **PublishView.vue** (`/publish`) - Item creation with image upload (max 9 images)
 6. **CheckoutView.vue** (`/checkout`) - Order confirmation, address/payment selection
-7. **OrdersView.vue** (`/orders`) - Order list with status tabs (buyer/seller views)
+7. **OrdersView.vue** (`/orders`) - ⚠️ 已整合到个人中心，保留路由以向后兼容
 8. **OrderDetailView.vue** (`/order/:id`) - Order timeline, logistics tracking
 9. **MessagesView.vue** (`/messages`) - Split-pane chat interface
-10. **WishlistView.vue** (`/wishlist`) - Favorited items with batch operations
-11. **ProfileView.vue** (`/profile`) - User dashboard with statistics
+10. **WishlistView.vue** (`/wishlist`) - ⚠️ 已整合到个人中心，保留路由以向后兼容
+11. **ProfileView.vue** (`/profile`) - **重构** 整合型用户中心，包含5个Tab:
+    - 基本信息 - 用户资料编辑
+    - 我的商品 - 在售/已售出/已下架商品管理
+    - 我的订单 - 买家订单/卖家订单分类显示
+    - 我的收藏 - 收藏商品列表
+    - 地址管理 - 收货地址CRUD
 12. **LoginView.vue** (`/login`) - Multi-method login (username/student_id/phone)
 13. **RegisterView.vue** (`/register`) - Student registration with validation
 14. **AboutView.vue** (`/about`) - Static info page
+
+**Key Components**:
+- **Sidebar.vue** - 可展开侧边栏导航组件（新增）
+  - 鼠标悬停展开机制
+  - 用户信息展示（头像、用户名、信用分）
+  - 未读消息徽章
+  - 登录/登出功能集成
 
 **State Management** (Pinia stores in [frontend-vue/src/stores/](frontend-vue/src/stores/)):
 - **user.ts** - Authentication state, login/logout actions, user profile data
@@ -414,9 +437,22 @@ This project must fulfill specific Beihang Database Systems course requirements:
    - Route lazy loading for code splitting
    - Image lazy loading in item grids
    - Pagination (default 20 items per page)
+   - **Sidebar动画优化**: cubic-bezier(0.4, 0, 0.2, 1) 缓动函数
+   - **页面切换**: 渐变+平移复合动画（fade + translateY）
 3. **API**:
    - DictCursor for efficient JSON serialization
    - Minimal data transfer (only required fields)
+
+### UI/UX Design Patterns
+
+**现代简约风格 (YouTube/Twitter Inspired)**:
+- **侧边栏导航** - 固定左侧，悬停展开，移动端友好
+- **渐变背景** - 个人中心头部使用主题色渐变 (135deg)
+- **卡片阴影** - 悬停时轻微上浮效果 (translateY(-2px) + shadow-md)
+- **圆角设计** - 统一使用 CSS 变量: `--radius-base`, `--radius-lg`, `--radius-xl`
+- **过渡动画** - 0.2-0.3s 缓动动画，提升交互流畅度
+- **响应式布局** - 768px/1024px 断点，移动端自适应
+- **色彩系统** - 主题色为蓝色，使用 CSS 变量统一管理
 
 ### Common Pitfalls & Mistakes
 
@@ -450,12 +486,7 @@ This project must fulfill specific Beihang Database Systems course requirements:
 
 7. **⚠️ REMEMBER**: The `order` table is called `` `order` `` in SQL (backticks required, it's a MySQL reserved word)
 
-### Git Status
-
-**Current branch**: main
-**Recent changes**:
-- Deleted: `CLAUDE.md`, `test/try_api.py` (in working directory)
-- Recent commits focused on: default images, login optimization, messaging fixes
+### Git Best Practices
 
 **Before committing**:
 - DO NOT commit `config.ini` (credentials)

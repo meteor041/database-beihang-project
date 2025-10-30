@@ -1,78 +1,91 @@
 <template>
   <div class="messages-view">
-    <h1>消息中心</h1>
-    
     <div class="messages-container">
-      <div class="conversations-list">
-        <h2>会话列表</h2>
-        
+      <!-- 左侧会话列表 -->
+      <div class="conversations-sidebar">
+        <div class="sidebar-header">
+          <h2>消息</h2>
+        </div>
+
         <div v-if="conversationsLoading" class="loading">
-          加载中...
+          <el-icon class="is-loading"><Loading /></el-icon>
+          <span>加载中...</span>
         </div>
-        
+
         <div v-else-if="conversations.length === 0" class="no-conversations">
-          暂无会话
+          <el-empty description="暂无会话" :image-size="80" />
         </div>
-        
+
         <div v-else class="conversation-items">
-          <div 
+          <div
             v-for="conversation in conversations"
             :key="`${conversation.other_user_id}-${conversation.item_id}`"
             :class="['conversation-item', { active: isActiveConversation(conversation) }]"
             @click="selectConversation(conversation)"
           >
-            <img 
-              :src="conversation.other_avatar || '/default-avatar.png'"
-              :alt="conversation.other_username"
+            <el-avatar
+              :src="conversation.other_avatar || undefined"
+              :size="48"
               class="user-avatar"
-            />
+            >
+              {{ conversation.other_username?.charAt(0) }}
+            </el-avatar>
             <div class="conversation-info">
               <div class="conversation-header">
                 <span class="username">{{ conversation.other_username }}</span>
                 <span class="time">{{ formatTime(conversation.last_message_time) }}</span>
               </div>
-              <div class="item-title">{{ conversation.item_title }}</div>
+              <div class="item-title">关于: {{ conversation.item_title }}</div>
               <div class="last-message">{{ conversation.last_message }}</div>
             </div>
-            <div v-if="conversation.unread_count > 0" class="unread-badge">
-              {{ conversation.unread_count }}
-            </div>
+            <el-badge
+              v-if="conversation.unread_count > 0"
+              :value="conversation.unread_count"
+              class="unread-badge"
+            />
           </div>
         </div>
       </div>
 
+      <!-- 右侧聊天区域 -->
       <div class="chat-area">
         <div v-if="!selectedConversation" class="no-selection">
-          请选择一个会话开始聊天
+          <el-empty description="选择一个会话开始聊天" :image-size="200">
+            <el-icon :size="80" color="var(--color-primary)"><ChatDotRound /></el-icon>
+          </el-empty>
         </div>
-        
+
         <div v-else class="chat-container">
+          <!-- 聊天头部 -->
           <div class="chat-header">
             <div class="chat-info">
-              <img 
-                :src="selectedConversation.other_avatar || '/default-avatar.png'"
-                :alt="selectedConversation.other_username"
-                class="user-avatar"
-              />
-              <div>
+              <el-avatar
+                :src="selectedConversation.other_avatar || undefined"
+                :size="40"
+              >
+                {{ selectedConversation.other_username?.charAt(0) }}
+              </el-avatar>
+              <div class="chat-user-info">
                 <div class="username">{{ selectedConversation.other_username }}</div>
-                <div class="item-title">{{ selectedConversation.item_title }}</div>
+                <div class="item-title">关于: {{ selectedConversation.item_title }}</div>
               </div>
             </div>
           </div>
 
+          <!-- 消息列表区域 -->
           <div class="messages-area" ref="messagesArea">
             <div v-if="messagesLoading" class="loading">
-              加载消息中...
+              <el-icon class="is-loading"><Loading /></el-icon>
+              <span>加载消息中...</span>
             </div>
-            
+
             <div v-else class="message-list">
-              <div 
+              <div
                 v-for="message in messages"
                 :key="message.message_id"
-                :class="['message-item', { 'own-message': message.sender_id === currentUser?.user_id }]"
+                :class="['message-wrapper', { 'own-message': message.sender_id === currentUser?.user_id }]"
               >
-                <div class="message-content">
+                <div class="message-bubble">
                   <div class="message-text">{{ message.content }}</div>
                   <div class="message-time">{{ formatTime(message.send_time) }}</div>
                 </div>
@@ -80,25 +93,29 @@
             </div>
           </div>
 
+          <!-- 消息输入框 -->
           <div class="message-input">
-            <div class="input-container">
-              <textarea
+            <div class="input-wrapper">
+              <el-input
                 v-model="newMessage"
-                placeholder="输入消息..."
+                type="textarea"
+                :rows="3"
+                placeholder="输入消息... (Enter 发送, Shift+Enter 换行)"
                 @keydown.enter.exact.prevent="sendMessage"
-                @keydown.shift.enter="newMessage += '\n'"
-                rows="3"
-              ></textarea>
-              <button 
+                resize="none"
+                class="message-textarea"
+              />
+              <el-button
+                type="primary"
                 @click="sendMessage"
                 :disabled="!newMessage.trim() || sendingMessage"
-                class="send-btn"
+                :loading="sendingMessage"
+                size="large"
+                class="send-button"
               >
-                {{ sendingMessage ? '发送中...' : '发送' }}
-              </button>
-            </div>
-            <div class="input-hint">
-              按 Enter 发送，Shift + Enter 换行
+                <el-icon v-if="!sendingMessage"><Promotion /></el-icon>
+                发送
+              </el-button>
             </div>
           </div>
         </div>
@@ -113,6 +130,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { messageAPI, userAPI, itemAPI } from '@/api'
 import type { Conversation, Message } from '@/types'
+import { Loading, ChatDotRound, Promotion } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -323,10 +341,11 @@ onMounted(async () => {
 /* 现代扁平化风格 - Twitter/YouTube/Google 风格 */
 
 .messages-view {
-  max-width: var(--container-max-width);
+  max-width: 1800px; /* 增加最大宽度 */
   margin: 0 auto;
   padding: var(--spacing-6);
   background: var(--color-bg-page);
+  width: 100%;
 }
 
 .messages-view h1 {
@@ -339,7 +358,7 @@ onMounted(async () => {
 /* 消息容器 - 扁平带边框 */
 .messages-container {
   display: grid;
-  grid-template-columns: 360px 1fr;
+  grid-template-columns: 380px 1fr; /* 增加左侧列宽度 */
   gap: 0;
   height: 700px;
   background: var(--color-bg-card);
