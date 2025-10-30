@@ -127,7 +127,7 @@
                   >
                     <div class="order-header">
                       <span class="order-number">订单号: {{ order.order_number }}</span>
-                      <OrderStatus :status="order.status" />
+                      <OrderStatus :status="order.order_status" />
                     </div>
                     <div class="order-body">
                       <el-image
@@ -159,7 +159,7 @@
                   >
                     <div class="order-header">
                       <span class="order-number">订单号: {{ order.order_number }}</span>
-                      <OrderStatus :status="order.status" />
+                      <OrderStatus :status="order.order_status" />
                     </div>
                     <div class="order-body">
                       <el-image
@@ -192,13 +192,13 @@
                 :key="wishlist.item_id"
                 :item="{
                   item_id: wishlist.item_id,
-                  title: wishlist.title,
-                  price: wishlist.price,
-                  images: wishlist.images,
-                  status: wishlist.status,
-                  view_count: wishlist.view_count,
-                  condition_level: wishlist.condition_level,
-                  location: wishlist.location,
+                  title: wishlist.title || '未知商品',
+                  price: wishlist.price || 0,
+                  images: wishlist.images || [],
+                  status: wishlist.status || 'available',
+                  view_count: wishlist.view_count || 0,
+                  condition_level: wishlist.condition_level || 'acceptable',
+                  location: wishlist.location || '未知地点',
                   username: wishlist.seller_name,
                   credit_score: wishlist.credit_score,
                   category_name: wishlist.category_name
