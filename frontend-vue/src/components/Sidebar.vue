@@ -14,7 +14,7 @@
           </el-icon>
         </div>
         <transition name="fade">
-          <span v-show="!isCollapsed" class="logo-text">校园二手</span>
+          <span v-show="!isCollapsed" class="logo-text">校内交易平台</span>
         </transition>
       </router-link>
     </div>

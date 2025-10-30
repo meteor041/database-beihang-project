@@ -609,7 +609,14 @@ onMounted(() => {
 
 .actions .el-button {
   width: 100%;
+}
+
+.actions :deep(.el-button > span) {
+  display: flex;
+  align-items: center;
   justify-content: center;
+  gap: var(--spacing-2);
+  width: 100%;
 }
 
 .login-link {
