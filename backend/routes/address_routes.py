@@ -207,22 +207,15 @@ def delete_address(address_id):
         
         if address['user_id'] != user_id:
             return jsonify({'error': 'Permission denied'}), 403
-        
-        # 检查用户是否至少有一个地址
-        count_sql = "SELECT COUNT(*) as count FROM address WHERE user_id = %s"
-        count_result = db_manager.execute_query(count_sql, (user_id,))
-        
-        if count_result and count_result[0]['count'] <= 1:
-            return jsonify({'error': 'Must keep at least one address'}), 400
-        
+
         # 检查是否有未完成的订单使用此地址
         order_check_sql = """
-        SELECT COUNT(*) as count 
-        FROM `order` 
+        SELECT COUNT(*) as count
+        FROM `order`
         WHERE address_id = %s AND order_status NOT IN ('completed', 'cancelled')
         """
         order_result = db_manager.execute_query(order_check_sql, (address_id,))
-        
+
         if order_result and order_result[0]['count'] > 0:
             return jsonify({'error': 'Cannot delete address with pending orders'}), 400
         

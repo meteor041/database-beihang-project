@@ -336,11 +336,10 @@ onMounted(() => {
 
 <style scoped>
 .items-view {
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: var(--spacing-6);
-  background: var(--color-bg-page);
   width: 100%;
+  padding: var(--spacing-6) var(--spacing-8);
+  background: var(--color-bg-page);
+  min-height: 100vh;
 }
 
 /* 页面头部 - 现代化 */
@@ -379,7 +378,7 @@ onMounted(() => {
 }
 
 .search-container {
-  max-width: 800px;
+  max-width: 100%;
   margin: 0 auto;
   display: flex;
   gap: var(--spacing-3);

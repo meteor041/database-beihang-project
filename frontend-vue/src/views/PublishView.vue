@@ -535,10 +535,15 @@ onMounted(() => {
 /* 现代扁平化风格 - Twitter/YouTube/Google 风格 */
 
 .publish-view {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: var(--spacing-6);
+  width: 100%;
+  padding: var(--spacing-6) var(--spacing-8);
   background: var(--color-bg-page);
+  min-height: 100vh;
+}
+
+.publish-view .publish-form {
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 /* 页面头部 - 扁平简洁 */

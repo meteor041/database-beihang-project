@@ -341,11 +341,9 @@ onMounted(async () => {
 /* 现代化消息页面 - 全屏布局 */
 
 .messages-view {
-  max-width: 1800px;
-  margin: 0 auto;
-  padding: var(--spacing-4);
   width: 100%;
-  height: calc(100vh - 2rem); /* 只减去上下 padding，删除底部栏后无需预留额外空间 */
+  padding: var(--spacing-4) var(--spacing-6);
+  height: calc(100vh - 2rem);
 }
 
 /* 消息容器 - 全屏高度 */

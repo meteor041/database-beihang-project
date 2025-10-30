@@ -385,11 +385,11 @@ onMounted(() => {
 .item-edit-view {
   min-height: calc(100vh - 200px);
   background-color: var(--color-bg-page);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-lg) var(--spacing-8);
 }
 
 .edit-container {
-  max-width: 800px;
+  max-width: 1400px;
   margin: 0 auto;
   background: var(--color-bg-card);
   border-radius: var(--radius-lg);

@@ -356,10 +356,10 @@ onMounted(() => {
 /* 现代扁平化风格 - Twitter/YouTube/Google 风格 */
 
 .item-detail {
-  max-width: var(--container-max-width);
-  margin: 0 auto;
-  padding: var(--spacing-6);
+  width: 100%;
+  padding: var(--spacing-6) var(--spacing-8);
   background: var(--color-bg-page);
+  min-height: 100vh;
 }
 
 /* 加载容器 */
@@ -370,12 +370,15 @@ onMounted(() => {
   justify-content: center;
 }
 
-/* 详情容器 */
+/* 详情容器 - 响应式 Grid */
 .detail-container {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-6);
+  grid-template-columns: minmax(400px, 1fr) minmax(400px, 1fr);
+  gap: var(--spacing-8);
   margin-bottom: var(--spacing-8);
+  max-width: 1800px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* 图片区域 */

@@ -374,11 +374,11 @@ onMounted(() => {
 .checkout-view {
   min-height: calc(100vh - 200px);
   background-color: var(--color-bg-page);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-lg) var(--spacing-8);
 }
 
 .checkout-container {
-  max-width: 1000px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 

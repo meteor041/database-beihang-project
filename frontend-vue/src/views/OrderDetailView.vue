@@ -444,11 +444,11 @@ onMounted(() => {
 .order-detail-view {
   min-height: calc(100vh - 200px);
   background-color: var(--color-bg-page);
-  padding: var(--spacing-6);
+  padding: var(--spacing-6) var(--spacing-8);
 }
 
 .detail-container {
-  max-width: 900px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 

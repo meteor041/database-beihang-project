@@ -298,7 +298,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { itemAPI, addressAPI, orderAPI, wishlistAPI } from '@/api'
 import type { Item, Address, AddressParams, Wishlist, Order } from '@/types'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Delete, Medal } from '@element-plus/icons-vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import ItemCard from '@/components/ItemCard.vue'
@@ -630,21 +630,40 @@ const setDefaultAddress = async (addressId: number) => {
 const deleteAddress = async (addressId: number) => {
   if (!currentUser.value) return
   try {
-    await ElMessage.confirm('确定要删除这个地址吗?', '提示', {
+    await ElMessageBox.confirm('确定要删除这个地址吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
     })
+
     await addressAPI.deleteAddress(addressId, {
       user_id: currentUser.value.user_id
     })
+
     ElMessage.success('地址已删除')
     // 强制刷新地址列表
     loadAddresses(true)
-  } catch (error) {
+  } catch (error: any) {
     if (error !== 'cancel') {
       console.error('Failed to delete address:', error)
-      ElMessage.error('删除失败')
+
+      // 显示详细错误信息
+      let errorMessage = '删除失败'
+      if (error?.response?.data?.error) {
+        const backendError = error.response.data.error
+        // 翻译后端错误信息
+        if (backendError.includes('pending orders')) {
+          errorMessage = '该地址有未完成的订单，无法删除'
+        } else if (backendError.includes('not found')) {
+          errorMessage = '地址不存在'
+        } else if (backendError.includes('Permission denied')) {
+          errorMessage = '无权删除该地址'
+        } else {
+          errorMessage = `删除失败：${backendError}`
+        }
+      }
+
+      ElMessage.error(errorMessage)
     }
   }
 }
@@ -662,10 +681,9 @@ onMounted(() => {
 
 <style scoped>
 .profile-container {
-  max-width: 1600px; /* 增加最大宽度 */
-  margin: 0 auto;
-  padding: var(--spacing-6);
   width: 100%;
+  padding: var(--spacing-6) var(--spacing-8);
+  min-height: 100vh;
 }
 
 /* 用户头部 */

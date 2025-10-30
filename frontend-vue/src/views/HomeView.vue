@@ -274,11 +274,10 @@ onMounted(() => {
 /* 现代扁平化风格 - Twitter/YouTube/Google 风格 */
 
 .home {
-  max-width: 1600px; /* 增加最大宽度 */
-  margin: 0 auto;
-  padding: var(--spacing-6);
-  background: var(--color-bg-page);
   width: 100%;
+  padding: var(--spacing-6) var(--spacing-8);
+  background: var(--color-bg-page);
+  min-height: 100vh;
 }
 
 /* 首页横幅 - 扁平简洁 */
