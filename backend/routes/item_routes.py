@@ -76,17 +76,27 @@ def get_items():
         status = request.args.get('status', 'available')
         sort_by = request.args.get('sort_by', 'publish_date')  # publish_date, price, view_count
         sort_order = request.args.get('sort_order', 'DESC')
-        
+        min_price = request.args.get('min_price')
+        max_price = request.args.get('max_price')
+
         offset = (page - 1) * limit
-        
+
         # 构建WHERE条件
         where_conditions = ["i.status = %s"]
         params = [status]
-        
+
         if category_id:
             where_conditions.append("i.category_id = %s")
             params.append(category_id)
-        
+
+        if min_price:
+            where_conditions.append("i.price >= %s")
+            params.append(float(min_price))
+
+        if max_price:
+            where_conditions.append("i.price <= %s")
+            params.append(float(max_price))
+
         where_clause = " AND ".join(where_conditions)
         
         # 验证排序字段
