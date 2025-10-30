@@ -194,7 +194,7 @@
                   price: wishlist.price || 0,
                   images: wishlist.images || [],
                   status: wishlist.status || 'available',
-                  view_count: wishlist.view_count,
+                  view_count: wishlist.view_count || 0,
                   condition_level: wishlist.condition_level || 'good',
                   location: wishlist.location || '',
                   username: wishlist.seller_name,

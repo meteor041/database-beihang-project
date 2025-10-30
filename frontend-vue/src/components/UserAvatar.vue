@@ -29,7 +29,7 @@
 import { computed } from 'vue'
 
 interface Props {
-  avatar?: string
+  avatar?: string | null
   username?: string
   creditScore?: number
   showCreditScore?: boolean
