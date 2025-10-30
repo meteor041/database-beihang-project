@@ -8,9 +8,11 @@
     <!-- Logo区域 -->
     <div class="sidebar-logo">
       <router-link to="/" class="logo-link">
-        <el-icon :size="24" class="logo-icon">
-          <ShoppingBag />
-        </el-icon>
+        <div class="logo-icon-wrapper">
+          <el-icon :size="24" class="logo-icon">
+            <ShoppingBag />
+          </el-icon>
+        </div>
         <transition name="fade">
           <span v-show="!isCollapsed" class="logo-text">校园二手</span>
         </transition>
@@ -44,39 +46,30 @@
     <!-- 用户区域 -->
     <div class="sidebar-user">
       <template v-if="isLoggedIn">
-        <el-dropdown trigger="click" placement="top-start" @command="handleCommand">
-          <div class="user-info">
-            <UserAvatar
-              :avatar="currentUser?.avatar || undefined"
-              :username="currentUser?.username"
-              :size="40"
-            />
-            <transition name="fade">
-              <div v-show="!isCollapsed" class="user-details">
-                <div class="username">{{ currentUser?.username }}</div>
-                <div class="user-credit">信用分: {{ currentUser?.credit_score || 100 }}</div>
-              </div>
-            </transition>
-            <transition name="fade">
-              <el-icon v-show="!isCollapsed" class="dropdown-icon">
-                <ArrowDown />
-              </el-icon>
-            </transition>
-          </div>
-
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="profile">
-                <el-icon><User /></el-icon>
-                个人中心
-              </el-dropdown-item>
-              <el-dropdown-item divided command="logout">
-                <el-icon><SwitchButton /></el-icon>
-                退出登录
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
+        <div class="user-info">
+          <UserAvatar
+            :avatar="currentUser?.avatar || undefined"
+            :username="currentUser?.username"
+            :size="40"
+          />
+          <transition name="fade">
+            <div v-show="!isCollapsed" class="user-details">
+              <div class="username">{{ currentUser?.username }}</div>
+              <div class="user-credit">信用分: {{ currentUser?.credit_score || 100 }}</div>
+            </div>
+          </transition>
+        </div>
+        <transition name="fade">
+          <el-button
+            v-show="!isCollapsed"
+            circle
+            @click="handleLogout"
+            class="logout-btn"
+            title="退出登录"
+          >
+            <el-icon><ArrowLeft /></el-icon>
+          </el-button>
+        </transition>
       </template>
 
       <template v-else>
@@ -106,8 +99,7 @@ import {
   ChatDotRound,
   User,
   ShoppingBag,
-  ArrowDown,
-  SwitchButton
+  ArrowLeft
 } from '@element-plus/icons-vue'
 import UserAvatar from './UserAvatar.vue'
 
@@ -123,7 +115,7 @@ const currentUser = computed(() => userStore.currentUser)
 
 // 菜单项配置
 const menuItems = computed(() => {
-  const items = [
+  const items: Array<{ path: string; label: string; icon: any; badge?: boolean }> = [
     { path: '/', label: '首页', icon: HomeFilled },
     { path: '/items', label: '商品列表', icon: Goods },
   ]
@@ -156,26 +148,19 @@ const handleMouseLeave = () => {
   isCollapsed.value = true
 }
 
-// 处理用户菜单命令
-const handleCommand = async (command: string) => {
-  switch (command) {
-    case 'profile':
-      router.push('/profile')
-      break
-    case 'logout':
-      try {
-        await ElMessageBox.confirm('确定要退出登录吗?', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        })
-        userStore.logout()
-        ElMessage.success('退出登录成功')
-        router.push('/')
-      } catch {
-        // 用户取消操作
-      }
-      break
+// 处理退出登录
+const handleLogout = async () => {
+  try {
+    await ElMessageBox.confirm('确定要退出登录吗?', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    userStore.logout()
+    ElMessage.success('退出登录成功')
+    router.push('/')
+  } catch {
+    // 用户取消操作
   }
 }
 </script>
@@ -203,7 +188,7 @@ const handleCommand = async (command: string) => {
 
 /* Logo区域 */
 .sidebar-logo {
-  padding: 0 var(--spacing-4);
+  padding: 0 var(--spacing-2);
   margin-bottom: var(--spacing-6);
   height: 48px;
   display: flex;
@@ -220,10 +205,23 @@ const handleCommand = async (command: string) => {
   font-weight: var(--font-weight-bold);
   transition: color 0.2s;
   white-space: nowrap;
+  width: 100%;
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-lg);
 }
 
 .logo-link:hover {
   color: var(--color-primary);
+  background: var(--color-bg-hover);
+}
+
+.logo-icon-wrapper {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .logo-icon {
@@ -297,21 +295,20 @@ const handleCommand = async (command: string) => {
   padding: var(--spacing-4);
   border-top: 1px solid var(--color-border-light);
   margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
 }
 
 .user-info {
+  flex: 1;
   display: flex;
   align-items: center;
   gap: var(--spacing-3);
   padding: var(--spacing-2);
   border-radius: var(--radius-lg);
-  cursor: pointer;
-  transition: background 0.2s;
   white-space: nowrap;
-}
-
-.user-info:hover {
-  background: var(--color-bg-hover);
+  min-width: 0;
 }
 
 .user-details {
@@ -334,15 +331,31 @@ const handleCommand = async (command: string) => {
   color: var(--color-text-secondary);
 }
 
-.dropdown-icon {
+.logout-btn {
   flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border-base);
+  background: var(--color-bg-card);
   color: var(--color-text-secondary);
+  transition: all 0.2s;
+}
+
+.logout-btn:hover {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+  background: var(--color-bg-hover);
 }
 
 .auth-buttons {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-2);
+  width: 100%;
 }
 
 .auth-buttons .el-button {

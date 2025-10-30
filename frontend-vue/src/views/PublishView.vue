@@ -535,7 +535,7 @@ onMounted(() => {
 /* 现代扁平化风格 - Twitter/YouTube/Google 风格 */
 
 .publish-view {
-  max-width: 900px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: var(--spacing-6);
   background: var(--color-bg-page);

@@ -18,19 +18,30 @@
       <div class="item-images-section">
         <el-card class="images-card" :body-style="{ padding: '0' }">
           <div class="main-image">
+            <!-- 有图片时显示 -->
             <el-image
-              :src="currentImage || '/placeholder.png'"
+              v-if="currentImage"
+              :src="currentImage"
               :alt="item.title"
               fit="contain"
               :preview-src-list="item.images"
               :initial-index="item.images?.indexOf(currentImage)"
             >
               <template #error>
-                <div class="image-error">
-                  <el-icon :size="80"><Picture /></el-icon>
+                <div class="image-placeholder">
+                  <div class="placeholder-icon">
+                    <el-icon><ShoppingBag /></el-icon>
+                  </div>
                 </div>
               </template>
             </el-image>
+
+            <!-- 无图片时显示占位图 -->
+            <div v-else class="image-placeholder">
+              <div class="placeholder-icon">
+                <el-icon><ShoppingBag /></el-icon>
+              </div>
+            </div>
 
             <!-- 状态标签 -->
             <el-tag v-if="item.status === 'sold'" class="status-badge" type="danger" size="large">
@@ -195,7 +206,7 @@ import { itemAPI, wishlistAPI } from '@/api'
 import { ElMessage } from 'element-plus'
 import {
   Picture, InfoFilled, Grid, Location, View, Clock, User, Medal,
-  Star, StarFilled, ChatDotRound, ShoppingCart, Document
+  Star, StarFilled, ChatDotRound, ShoppingCart, Document, ShoppingBag
 } from '@element-plus/icons-vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import type { Item, ConditionLevel } from '@/types'
@@ -395,13 +406,65 @@ onMounted(() => {
   height: 100%;
 }
 
-.image-error {
+/* 占位图样式 - 与 ItemCard 保持一致 */
+.image-placeholder {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8edf3 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 添加装饰性几何图形 */
+.image-placeholder::before,
+.image-placeholder::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.1;
+}
+
+.image-placeholder::before {
+  width: 300px;
+  height: 300px;
+  background: var(--el-color-primary);
+  top: -120px;
+  right: -120px;
+}
+
+.image-placeholder::after {
+  width: 250px;
+  height: 250px;
+  background: var(--el-color-primary);
+  bottom: -100px;
+  left: -100px;
+}
+
+.image-placeholder .placeholder-icon {
+  position: relative;
+  z-index: 1;
+  width: 140px;
+  height: 140px;
+  background: white;
+  border-radius: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 100%;
-  color: var(--color-text-placeholder);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  transition: transform var(--transition-base);
+}
+
+.image-placeholder .placeholder-icon:hover {
+  transform: scale(1.05);
+}
+
+.image-placeholder .placeholder-icon .el-icon {
+  font-size: 72px;
+  color: var(--el-color-primary);
 }
 
 .status-badge {

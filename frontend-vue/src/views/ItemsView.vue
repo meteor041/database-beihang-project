@@ -2,8 +2,13 @@
   <div class="items-view">
     <!-- 页面头部 - 简化现代化 -->
     <div class="page-header">
-      <h1 class="page-title">商品市场</h1>
-      <p class="page-subtitle">发现 {{ pagination.total }} 件优质好物</p>
+      <div class="header-text">
+        <h1 class="page-title">商品市场</h1>
+        <p class="page-subtitle">发现 {{ pagination.total }} 件优质好物</p>
+      </div>
+      <el-button type="primary" size="large" @click="router.push('/publish')" :icon="Plus">
+        发布商品
+      </el-button>
     </div>
 
     <!-- 搜索栏 - 突出显示 -->
@@ -163,7 +168,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { itemAPI } from '@/api'
 import { ElMessage } from 'element-plus'
-import { Search, Goods, Money, Sort, RefreshLeft } from '@element-plus/icons-vue'
+import { Search, Goods, Money, Sort, RefreshLeft, Plus } from '@element-plus/icons-vue'
 import ItemCard from '@/components/ItemCard.vue'
 import type { Item, Category } from '@/types'
 
@@ -228,6 +233,12 @@ const loadItems = async () => {
 
     if (selectedCategory.value) {
       params.category_id = selectedCategory.value
+    }
+    if (minPrice.value) {
+      params.min_price = minPrice.value
+    }
+    if (maxPrice.value) {
+      params.max_price = maxPrice.value
     }
 
     const response = await itemAPI.getItems(params)
@@ -334,8 +345,15 @@ onMounted(() => {
 
 /* 页面头部 - 现代化 */
 .page-header {
-  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: var(--spacing-8);
+  gap: var(--spacing-4);
+}
+
+.header-text {
+  flex: 1;
 }
 
 .page-title {
@@ -470,6 +488,16 @@ onMounted(() => {
 @media (max-width: 768px) {
   .items-view {
     padding: var(--spacing-4);
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-3);
+  }
+
+  .page-header .el-button {
+    width: 100%;
   }
 
   .page-title {

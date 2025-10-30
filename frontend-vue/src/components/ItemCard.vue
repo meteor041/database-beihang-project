@@ -7,18 +7,29 @@
   >
     <!-- 商品图片 -->
     <div class="item-image">
+      <!-- 有图片时显示图片 -->
       <el-image
-        :src="item.images && item.images[0] ? item.images[0] : '/placeholder.png'"
+        v-if="item.images && item.images[0]"
+        :src="item.images[0]"
         :alt="item.title"
         fit="cover"
         lazy
       >
         <template #error>
           <div class="image-slot">
-            <el-icon><Picture /></el-icon>
+            <div class="placeholder-icon">
+              <el-icon><ShoppingBag /></el-icon>
+            </div>
           </div>
         </template>
       </el-image>
+
+      <!-- 无图片时显示占位图 -->
+      <div v-else class="image-slot">
+        <div class="placeholder-icon">
+          <el-icon><ShoppingBag /></el-icon>
+        </div>
+      </div>
 
       <!-- 商品状态标签 -->
       <el-tag
@@ -82,6 +93,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { ShoppingBag } from '@element-plus/icons-vue'
 import type { Item, ConditionLevel } from '@/types'
 
 interface Props {
@@ -187,16 +199,62 @@ const handleClick = () => {
 
 .image-slot {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   width: 100%;
   height: 100%;
-  background-color: var(--color-neutral-100);
-  color: var(--color-text-placeholder);
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8edf3 100%);
+  position: relative;
+  overflow: hidden;
 }
 
-.image-slot .el-icon {
-  font-size: 40px;
+/* 添加装饰性几何图形 */
+.image-slot::before,
+.image-slot::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.1;
+}
+
+.image-slot::before {
+  width: 200px;
+  height: 200px;
+  background: var(--el-color-primary);
+  top: -80px;
+  right: -80px;
+}
+
+.image-slot::after {
+  width: 150px;
+  height: 150px;
+  background: var(--el-color-primary);
+  bottom: -60px;
+  left: -60px;
+}
+
+.placeholder-icon {
+  position: relative;
+  z-index: 1;
+  width: 90px;
+  height: 90px;
+  background: white;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: transform var(--transition-base);
+}
+
+.item-card:hover .placeholder-icon {
+  transform: scale(1.05);
+}
+
+.placeholder-icon .el-icon {
+  font-size: 48px;
+  color: var(--el-color-primary);
 }
 
 .status-tag {

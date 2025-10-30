@@ -54,7 +54,7 @@
             shadow="hover"
             @click="goToCategory(category.category_id)"
           >
-            <div class="category-icon">📱</div>
+            <div class="category-icon">{{ getCategoryIcon(category.category_name) }}</div>
             <h3>{{ category.category_name }}</h3>
             <p>{{ category.item_count || 0 }} 件商品</p>
           </el-card>
@@ -205,6 +205,53 @@ const loadLatestItems = async () => {
   } finally {
     itemsLoading.value = false
   }
+}
+
+// 根据分类名称获取对应图标
+const getCategoryIcon = (categoryName: string): string => {
+  const iconMap: Record<string, string> = {
+    '电子产品': '💻',
+    '图书教材': '📚',
+    '生活用品': '🛋️',
+    '服装配饰': '👔',
+    '运动户外': '⚽',
+    '其他': '🎁',
+    // 更多匹配
+    '手机': '📱',
+    '电脑': '💻',
+    '平板': '📱',
+    '耳机': '🎧',
+    '相机': '📷',
+    '书籍': '📚',
+    '教材': '📖',
+    '文具': '✏️',
+    '家具': '🛋️',
+    '家电': '🔌',
+    '日用品': '🧴',
+    '服装': '👕',
+    '鞋子': '👟',
+    '包包': '🎒',
+    '配饰': '⌚',
+    '运动': '🏀',
+    '户外': '🏕️',
+    '健身': '💪',
+    '自行车': '🚲'
+  }
+
+  // 尝试精确匹配
+  if (iconMap[categoryName]) {
+    return iconMap[categoryName]
+  }
+
+  // 尝试模糊匹配
+  for (const [key, icon] of Object.entries(iconMap)) {
+    if (categoryName.includes(key) || key.includes(categoryName)) {
+      return icon
+    }
+  }
+
+  // 默认图标
+  return '🏷️'
 }
 
 // 跳转到分类页面
