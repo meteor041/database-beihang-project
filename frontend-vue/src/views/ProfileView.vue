@@ -661,11 +661,15 @@ const deleteAddress = async (addressId: number) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (!userStore.isLoggedIn) {
     router.push('/login')
     return
   }
+
+  // 刷新用户信息以获取最新信用分
+  await userStore.refreshUserInfo()
+
   initUserForm()
   loadStats()
   loadWishlist() // 加载收藏以获取数量

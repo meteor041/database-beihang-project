@@ -14,6 +14,7 @@ from routes.order_routes import order_bp
 from routes.message_routes import message_bp
 from routes.wishlist_routes import wishlist_bp
 from routes.address_routes import address_bp
+from routes.review_routes import review_bp
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False  # 支持中文字符
@@ -32,6 +33,7 @@ app.register_blueprint(order_bp, url_prefix='/api/orders')
 app.register_blueprint(message_bp, url_prefix='/api/messages')
 app.register_blueprint(wishlist_bp, url_prefix='/api/wishlist')
 app.register_blueprint(address_bp, url_prefix='/api/addresses')
+app.register_blueprint(review_bp, url_prefix='/api/reviews')
 
 @app.route('/')
 def index():

@@ -259,4 +259,46 @@ export const addressAPI = {
     api.get(`/addresses/statistics/${userId}`)
 }
 
+// 评价相关API
+export interface Review {
+  review_id: number
+  order_id: number
+  reviewer_id: number
+  reviewee_id: number
+  rating: number
+  content: string
+  review_time: string
+  reviewer_name?: string
+  reviewer_avatar?: string
+  reviewee_name?: string
+}
+
+export interface ReviewStats {
+  total_reviews: number
+  average_rating: number
+  five_star: number
+  four_star: number
+  three_star: number
+  two_star: number
+  one_star: number
+}
+
+export const reviewAPI = {
+  // 创建评价
+  createReview: (data: { order_id: number; reviewer_id: number; rating: number; content?: string }): Promise<ApiResponse<{ review_id: number }>> =>
+    api.post('/reviews/', data),
+
+  // 获取订单的评价
+  getOrderReviews: (orderId: number): Promise<{ reviews: Review[] }> =>
+    api.get(`/reviews/order/${orderId}`),
+
+  // 获取用户收到的评价
+  getUserReviews: (userId: number, params?: { page?: number; limit?: number }): Promise<{ reviews: Review[]; stats: ReviewStats }> =>
+    api.get(`/reviews/user/${userId}`, { params }),
+
+  // 检查是否已评价
+  checkReviewStatus: (params: { order_id: number; user_id: number }): Promise<{ has_reviewed: boolean; review?: Review }> =>
+    api.get('/reviews/check', { params })
+}
+
 export default api

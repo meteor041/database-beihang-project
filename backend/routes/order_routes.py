@@ -100,7 +100,9 @@ def get_order(order_id):
         SELECT o.*,
                i.title as item_title, i.images as item_images, i.location as item_location,
                buyer.username as buyer_name, buyer.phone as buyer_phone,
+               buyer.credit_score as buyer_credit_score, buyer.avatar as buyer_avatar,
                seller.username as seller_name, seller.phone as seller_phone,
+               seller.credit_score as seller_credit_score, seller.avatar as seller_avatar,
                a.recipient_name, a.phone as address_phone, a.province, a.city,
                a.district, a.detailed_address
         FROM `order` o

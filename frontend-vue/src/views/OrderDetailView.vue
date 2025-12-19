@@ -127,14 +127,30 @@
         <!-- 交易双方 -->
         <div class="section">
           <h3>交易信息</h3>
-          <div class="info-list">
-            <div class="info-item">
-              <span class="label">卖家：</span>
-              <span class="value">{{ order.seller_name }}</span>
+          <div class="trade-parties">
+            <div class="party-card">
+              <div class="party-header">
+                <span class="party-role">卖家</span>
+              </div>
+              <div class="party-info">
+                <span class="party-name">{{ order.seller_name }}</span>
+                <span class="party-credit">
+                  <span class="credit-icon">⭐</span>
+                  信用分: {{ order.seller_credit_score ?? '-' }}
+                </span>
+              </div>
             </div>
-            <div class="info-item">
-              <span class="label">买家：</span>
-              <span class="value">{{ order.buyer_name }}</span>
+            <div class="party-card">
+              <div class="party-header">
+                <span class="party-role">买家</span>
+              </div>
+              <div class="party-info">
+                <span class="party-name">{{ order.buyer_name }}</span>
+                <span class="party-credit">
+                  <span class="credit-icon">⭐</span>
+                  信用分: {{ order.buyer_credit_score ?? '-' }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -151,6 +167,79 @@
               <span>实付金额：</span>
               <span class="amount">¥{{ order.total_amount }}</span>
             </div>
+          </div>
+        </div>
+
+        <!-- 评价区域 - 仅订单完成后显示 -->
+        <div v-if="order.order_status === 'completed'" class="section review-section">
+          <h3>交易评价</h3>
+
+          <!-- 已有评价展示 -->
+          <div v-if="orderReviews.length > 0" class="existing-reviews">
+            <div v-for="review in orderReviews" :key="review.review_id" class="review-item">
+              <div class="review-header">
+                <span class="reviewer-name">{{ review.reviewer_name }}</span>
+                <span class="review-target">评价了 {{ review.reviewee_name }}</span>
+                <span class="review-time">{{ formatDate(review.review_time) }}</span>
+              </div>
+              <div class="review-rating">
+                <span v-for="i in 5" :key="i" class="star" :class="{ filled: i <= review.rating }">
+                  {{ i <= review.rating ? '★' : '☆' }}
+                </span>
+                <span class="rating-text">{{ review.rating }}分</span>
+              </div>
+              <div v-if="review.content" class="review-content">
+                {{ review.content }}
+              </div>
+            </div>
+          </div>
+
+          <!-- 评价表单 - 未评价时显示 -->
+          <div v-if="canReview && !hasReviewed" class="review-form">
+            <div class="form-title">
+              评价{{ isBuyer ? '卖家' : '买家' }}
+            </div>
+            <div class="rating-input">
+              <span class="rating-label">评分：</span>
+              <div class="stars-input">
+                <span
+                  v-for="i in 5"
+                  :key="i"
+                  class="star clickable"
+                  :class="{ filled: i <= reviewForm.rating, hover: i <= hoverRating }"
+                  @click="reviewForm.rating = i"
+                  @mouseenter="hoverRating = i"
+                  @mouseleave="hoverRating = 0"
+                >
+                  {{ i <= (hoverRating || reviewForm.rating) ? '★' : '☆' }}
+                </span>
+              </div>
+              <span class="rating-desc">{{ getRatingDesc(reviewForm.rating) }}</span>
+            </div>
+            <div class="content-input">
+              <textarea
+                v-model="reviewForm.content"
+                placeholder="请输入评价内容（选填，最多200字）"
+                maxlength="200"
+                rows="3"
+              ></textarea>
+              <span class="char-count">{{ reviewForm.content.length }}/200</span>
+            </div>
+            <div class="form-actions">
+              <button
+                @click="submitReview"
+                class="btn-primary"
+                :disabled="reviewForm.rating === 0 || submittingReview"
+              >
+                {{ submittingReview ? '提交中...' : '提交评价' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- 已评价提示 -->
+          <div v-if="hasReviewed" class="reviewed-tip">
+            <span class="tip-icon">✅</span>
+            <span>您已完成评价</span>
           </div>
         </div>
 
@@ -172,6 +261,13 @@
             class="btn-primary"
           >
             立即支付
+          </button>
+          <button
+            v-if="canShip"
+            @click="handleShip"
+            class="btn-primary"
+          >
+            确认发货
           </button>
           <button
             v-if="canConfirm"
@@ -197,7 +293,8 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { orderAPI } from '@/api'
+import { orderAPI, reviewAPI } from '@/api'
+import type { Review } from '@/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { Order, OrderStatus } from '@/types'
 
@@ -220,8 +317,22 @@ type OrderDetail = Order & {
 const order = ref<OrderDetail | null>(null)
 const loading = ref(false)
 
+// 评价相关状态
+const orderReviews = ref<Review[]>([])
+const hasReviewed = ref(false)
+const submittingReview = ref(false)
+const hoverRating = ref(0)
+const reviewForm = ref({
+  rating: 0,
+  content: ''
+})
+
 const isBuyer = computed(() => {
   return Boolean(order.value && userStore.currentUser && order.value.buyer_id === userStore.currentUser.user_id)
+})
+
+const isSeller = computed(() => {
+  return Boolean(order.value && userStore.currentUser && order.value.seller_id === userStore.currentUser.user_id)
 })
 
 const canCancel = computed(() => order.value?.order_status === 'pending_payment')
@@ -229,6 +340,12 @@ const canCancel = computed(() => order.value?.order_status === 'pending_payment'
 const canPay = computed(() => isBuyer.value && order.value?.order_status === 'pending_payment')
 
 const canConfirm = computed(() => isBuyer.value && order.value?.order_status === 'shipped')
+
+const canShip = computed(() => isSeller.value && order.value?.order_status === 'paid')
+
+const canReview = computed(() => {
+  return order.value?.order_status === 'completed' && (isBuyer.value || isSeller.value)
+})
 
 const canContact = computed(() => {
   if (!order.value) return false
@@ -347,6 +464,11 @@ const loadOrder = async (): Promise<void> => {
     }
 
     order.value = detail
+
+    // 如果订单已完成，加载评价信息
+    if (detail.order_status === 'completed') {
+      await Promise.all([loadReviews(), checkReviewStatus()])
+    }
   } catch (error) {
     console.error('Failed to load order:', error)
     ElMessage.error('加载订单失败')
@@ -396,6 +518,31 @@ const handlePay = async (): Promise<void> => {
   }
 }
 
+const handleShip = async (): Promise<void> => {
+  if (!order.value || !userStore.currentUser) return
+
+  try {
+    await ElMessageBox.confirm('确认已发货？', '提示', {
+      confirmButtonText: '确认发货',
+      cancelButtonText: '取消',
+      type: 'info'
+    })
+
+    await orderAPI.updateOrderStatus(order.value.order_id, {
+      user_id: userStore.currentUser.user_id,
+      status: 'shipped'
+    })
+
+    ElMessage.success('发货成功！')
+    loadOrder()
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('Failed to ship order:', error)
+      ElMessage.error('发货失败')
+    }
+  }
+}
+
 const handleConfirm = async (): Promise<void> => {
   if (!order.value || !userStore.currentUser) return
 
@@ -428,11 +575,90 @@ const handleContact = (): void => {
   router.push(`/messages?user_id=${targetUserId}&item_id=${order.value.item_id}`)
 }
 
-onMounted(() => {
+// 评价相关方法
+const getRatingDesc = (rating: number): string => {
+  const descs: Record<number, string> = {
+    0: '请选择评分',
+    1: '非常差',
+    2: '较差',
+    3: '一般',
+    4: '良好',
+    5: '非常好'
+  }
+  return descs[rating] || ''
+}
+
+const loadReviews = async (): Promise<void> => {
+  if (!order.value) return
+
+  try {
+    const response = await reviewAPI.getOrderReviews(order.value.order_id)
+    orderReviews.value = response.reviews || []
+  } catch (error) {
+    console.error('Failed to load reviews:', error)
+  }
+}
+
+const checkReviewStatus = async (): Promise<void> => {
+  if (!order.value || !userStore.currentUser) return
+
+  try {
+    const response = await reviewAPI.checkReviewStatus({
+      order_id: order.value.order_id,
+      user_id: userStore.currentUser.user_id
+    })
+    hasReviewed.value = response.has_reviewed
+  } catch (error) {
+    console.error('Failed to check review status:', error)
+  }
+}
+
+const submitReview = async (): Promise<void> => {
+  if (!order.value || !userStore.currentUser) return
+
+  if (reviewForm.value.rating === 0) {
+    ElMessage.warning('请选择评分')
+    return
+  }
+
+  submittingReview.value = true
+
+  try {
+    await reviewAPI.createReview({
+      order_id: order.value.order_id,
+      reviewer_id: userStore.currentUser.user_id,
+      rating: reviewForm.value.rating,
+      content: reviewForm.value.content
+    })
+
+    ElMessage.success('评价提交成功！')
+    hasReviewed.value = true
+
+    // 重新加载评价列表
+    await loadReviews()
+
+    // 刷新用户信息以更新信用分显示
+    await userStore.refreshUserInfo()
+
+    // 重置表单
+    reviewForm.value = { rating: 0, content: '' }
+  } catch (error: any) {
+    console.error('Failed to submit review:', error)
+    const errorMsg = error?.response?.data?.error || '评价提交失败'
+    ElMessage.error(errorMsg)
+  } finally {
+    submittingReview.value = false
+  }
+}
+
+onMounted(async () => {
   if (!userStore.isLoggedIn) {
     router.push('/login')
     return
   }
+
+  // 刷新用户信息以获取最新信用分
+  await userStore.refreshUserInfo()
 
   loadOrder()
 })
@@ -698,6 +924,58 @@ onMounted(() => {
   font-size: var(--font-size-sm);
 }
 
+/* 交易双方卡片 */
+.trade-parties {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-4);
+}
+
+.party-card {
+  padding: var(--spacing-4);
+  background: var(--color-bg-section);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+}
+
+.party-header {
+  margin-bottom: var(--spacing-3);
+}
+
+.party-role {
+  display: inline-block;
+  padding: var(--spacing-1) var(--spacing-3);
+  background: var(--color-primary-lighter);
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-base);
+}
+
+.party-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.party-name {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.party-credit {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.credit-icon {
+  font-size: var(--font-size-sm);
+}
+
 /* 费用明细 - 扁平带边框 */
 .summary-section {
   background: var(--color-warning-lighter);
@@ -724,6 +1002,172 @@ onMounted(() => {
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
   color: var(--color-price);
+}
+
+/* 评价区域样式 */
+.review-section {
+  background: var(--color-bg-card);
+}
+
+.existing-reviews {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+}
+
+.review-item {
+  padding: var(--spacing-4);
+  background: var(--color-bg-section);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-base);
+}
+
+.review-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-2);
+  font-size: var(--font-size-sm);
+}
+
+.reviewer-name {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.review-target {
+  color: var(--color-text-secondary);
+}
+
+.review-time {
+  color: var(--color-text-placeholder);
+  margin-left: auto;
+}
+
+.review-rating {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin-bottom: var(--spacing-2);
+}
+
+.star {
+  font-size: var(--font-size-lg);
+  color: var(--color-border-base);
+}
+
+.star.filled {
+  color: #f5a623;
+}
+
+.star.clickable {
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.star.clickable:hover {
+  transform: scale(1.2);
+}
+
+.star.hover {
+  color: #f5a623;
+}
+
+.rating-text {
+  margin-left: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.review-content {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-regular);
+  line-height: var(--line-height-relaxed);
+}
+
+.review-form {
+  padding: var(--spacing-4);
+  background: var(--color-bg-section);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-base);
+}
+
+.form-title {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-4);
+}
+
+.rating-input {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
+}
+
+.rating-label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.stars-input {
+  display: flex;
+  gap: var(--spacing-1);
+}
+
+.rating-desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.content-input {
+  position: relative;
+  margin-bottom: var(--spacing-4);
+}
+
+.content-input textarea {
+  width: 100%;
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-base);
+  font-size: var(--font-size-sm);
+  resize: vertical;
+  font-family: inherit;
+}
+
+.content-input textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.char-count {
+  position: absolute;
+  bottom: var(--spacing-2);
+  right: var(--spacing-3);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-placeholder);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.reviewed-tip {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-4);
+  background: var(--color-success-light);
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius-base);
+  color: var(--color-success);
+  font-size: var(--font-size-sm);
+}
+
+.tip-icon {
+  font-size: var(--font-size-lg);
 }
 
 /* 操作按钮 - 扁平 */
@@ -826,6 +1270,10 @@ onMounted(() => {
   .item-image {
     width: 100%;
     height: 200px;
+  }
+
+  .trade-parties {
+    grid-template-columns: 1fr;
   }
 }
 </style>

@@ -81,65 +81,75 @@ def get_items():
 
         offset = (page - 1) * limit
 
-        # 构建WHERE条件
-        where_conditions = ["i.status = %s"]
+        # 构建WHERE条件（用于子查询和计数查询）
+        where_conditions = ["status = %s"]
         params = [status]
 
         if category_id:
-            where_conditions.append("i.category_id = %s")
+            where_conditions.append("category_id = %s")
             params.append(category_id)
 
         if min_price:
-            where_conditions.append("i.price >= %s")
+            where_conditions.append("price >= %s")
             params.append(float(min_price))
 
         if max_price:
-            where_conditions.append("i.price <= %s")
+            where_conditions.append("price <= %s")
             params.append(float(max_price))
 
         where_clause = " AND ".join(where_conditions)
-        
+
         # 验证排序字段
         valid_sort_fields = ['publish_date', 'price', 'view_count']
         if sort_by not in valid_sort_fields:
             sort_by = 'publish_date'
-        
+
         if sort_order.upper() not in ['ASC', 'DESC']:
             sort_order = 'DESC'
-        
-        # 查询商品列表（JOIN用户和分类表）
+
+        # 查询商品列表（使用子查询优化，减少排序时的内存使用）
+        # 使用USE INDEX强制使用索引排序，避免内存排序
+        index_hint = ""
+        if sort_by == 'publish_date':
+            index_hint = "USE INDEX (idx_publish_date)"
+        elif sort_by == 'status':
+            index_hint = "USE INDEX (idx_status)"
+
         sql = f"""
         SELECT i.item_id, i.title, i.description, i.price, i.original_price,
                i.condition_level, i.images, i.location, i.publish_date, i.view_count,
+               i.user_id, i.category_id,
                u.username, u.avatar, u.credit_score,
                c.category_name
-        FROM item i
+        FROM (
+            SELECT * FROM item {index_hint}
+            WHERE {where_clause}
+            ORDER BY {sort_by} {sort_order}
+            LIMIT %s OFFSET %s
+        ) i
         JOIN user u ON i.user_id = u.user_id
         JOIN category c ON i.category_id = c.category_id
-        WHERE {where_clause}
-        ORDER BY i.{sort_by} {sort_order}
-        LIMIT %s OFFSET %s
         """
-        
-        params.extend([limit, offset])
-        items = db_manager.execute_query(sql, params)
-        
+
+        query_params = params + [limit, offset]
+        items = db_manager.execute_query(sql, query_params)
+
         # 处理图片JSON
         for item in items:
             if item['images']:
                 item['images'] = json.loads(item['images'])
             else:
                 item['images'] = []
-        
-        # 获取总数
+
+        # 获取总数（使用相同的WHERE条件，不需要limit和offset）
         count_sql = f"""
         SELECT COUNT(*) as total
-        FROM item i
+        FROM item
         WHERE {where_clause}
         """
-        count_result = db_manager.execute_query(count_sql, params[:-2])  # 排除limit和offset参数
+        count_result = db_manager.execute_query(count_sql, params)
         total = count_result[0]['total']
-        
+
         return jsonify({
             'items': items,
             'pagination': {
@@ -149,7 +159,7 @@ def get_items():
                 'pages': (total + limit - 1) // limit
             }
         }), 200
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -200,22 +210,35 @@ def search_items():
         valid_sort_fields = ['publish_date', 'price', 'view_count']
         if sort_by not in valid_sort_fields:
             sort_by = 'publish_date'
-        
+
         if sort_order.upper() not in ['ASC', 'DESC']:
             sort_order = 'DESC'
-        
-        # 搜索查询
+
+        # 使用子查询优化，避免内存排序问题
+        index_hint = ""
+        if sort_by == 'publish_date':
+            index_hint = "USE INDEX (idx_publish_date)"
+
+        # 搜索查询 - 先在子查询中过滤和分页，再JOIN其他表
         sql = f"""
         SELECT i.item_id, i.title, i.description, i.price, i.original_price,
                i.condition_level, i.images, i.location, i.publish_date, i.view_count,
+               i.user_id, i.category_id,
                u.username, u.avatar, u.credit_score,
                c.category_name
-        FROM item i
+        FROM (
+            SELECT * FROM item {index_hint}
+            WHERE status = 'available'
+            {'AND (title LIKE %s OR description LIKE %s)' if keyword else ''}
+            {'AND category_id = %s' if category_id else ''}
+            {'AND price >= %s' if min_price else ''}
+            {'AND price <= %s' if max_price else ''}
+            {'AND condition_level = %s' if condition_level else ''}
+            ORDER BY {sort_by} {sort_order}
+            LIMIT %s OFFSET %s
+        ) i
         JOIN user u ON i.user_id = u.user_id
         JOIN category c ON i.category_id = c.category_id
-        WHERE {where_clause}
-        ORDER BY i.{sort_by} {sort_order}
-        LIMIT %s OFFSET %s
         """
         
         params.extend([limit, offset])
