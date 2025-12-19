@@ -5,9 +5,20 @@
       <div class="conversations-sidebar">
         <div class="sidebar-header">
           <h2>消息</h2>
+          <div class="header-actions">
+            <el-tooltip content="刷新" placement="bottom">
+              <el-button
+                :icon="Refresh"
+                circle
+                size="small"
+                @click="loadConversations"
+                :loading="conversationsLoading"
+              />
+            </el-tooltip>
+          </div>
         </div>
 
-        <div v-if="conversationsLoading" class="loading">
+        <div v-if="conversationsLoading && conversations.length === 0" class="loading">
           <el-icon class="is-loading"><Loading /></el-icon>
           <span>加载中...</span>
         </div>
@@ -40,7 +51,7 @@
             </div>
             <el-badge
               v-if="conversation.unread_count > 0"
-              :value="conversation.unread_count"
+              :value="conversation.unread_count > 99 ? '99+' : conversation.unread_count"
               class="unread-badge"
             />
           </div>
@@ -50,15 +61,23 @@
       <!-- 右侧聊天区域 -->
       <div class="chat-area">
         <div v-if="!selectedConversation" class="no-selection">
-          <el-empty description="选择一个会话开始聊天" :image-size="200">
+          <div class="no-selection-content">
             <el-icon :size="80" color="var(--color-primary)"><ChatDotRound /></el-icon>
-          </el-empty>
+            <p>选择一个会话开始聊天</p>
+          </div>
         </div>
 
         <div v-else class="chat-container">
           <!-- 聊天头部 -->
           <div class="chat-header">
             <div class="chat-info">
+              <el-button
+                class="back-button"
+                :icon="ArrowLeft"
+                circle
+                size="small"
+                @click="selectedConversation = null"
+              />
               <el-avatar
                 :src="selectedConversation.other_avatar || undefined"
                 :size="40"
@@ -66,30 +85,102 @@
                 {{ selectedConversation.other_username?.charAt(0) }}
               </el-avatar>
               <div class="chat-user-info">
-                <div class="username">{{ selectedConversation.other_username }}</div>
-                <div class="item-title">关于: {{ selectedConversation.item_title }}</div>
+                <div class="username">
+                  {{ selectedConversation.other_username }}
+                </div>
+                <div class="item-title" @click="goToItem">
+                  <el-icon><Goods /></el-icon>
+                  {{ selectedConversation.item_title }}
+                </div>
               </div>
+            </div>
+            <div class="header-actions">
+              <el-tooltip content="刷新消息" placement="bottom">
+                <el-button
+                  :icon="Refresh"
+                  circle
+                  size="small"
+                  @click="loadMessages"
+                  :loading="messagesLoading"
+                />
+              </el-tooltip>
             </div>
           </div>
 
           <!-- 消息列表区域 -->
           <div class="messages-area" ref="messagesArea">
-            <div v-if="messagesLoading" class="loading">
+            <div v-if="messagesLoading && messages.length === 0" class="loading">
               <el-icon class="is-loading"><Loading /></el-icon>
               <span>加载消息中...</span>
             </div>
 
             <div v-else class="message-list">
-              <div
-                v-for="message in messages"
-                :key="message.message_id"
-                :class="['message-wrapper', { 'own-message': message.sender_id === currentUser?.user_id }]"
-              >
-                <div class="message-bubble">
-                  <div class="message-text">{{ message.content }}</div>
-                  <div class="message-time">{{ formatTime(message.send_time) }}</div>
+              <!-- 时间分割线 -->
+              <template v-for="(message, index) in messages" :key="message.message_id">
+                <div
+                  v-if="shouldShowDateDivider(index)"
+                  class="date-divider"
+                >
+                  <span>{{ formatDateDivider(message.send_time) }}</span>
                 </div>
-              </div>
+
+                <div
+                  :class="[
+                    'message-wrapper',
+                    {
+                      'own-message': message.sender_id === currentUser?.user_id,
+                      'withdrawn': message.is_withdrawn
+                    }
+                  ]"
+                  @contextmenu.prevent="showContextMenu($event, message)"
+                >
+                  <!-- 对方头像（非自己的消息显示） -->
+                  <el-avatar
+                    v-if="message.sender_id !== currentUser?.user_id"
+                    :src="selectedConversation.other_avatar || undefined"
+                    :size="32"
+                    class="message-avatar"
+                  >
+                    {{ selectedConversation.other_username?.charAt(0) }}
+                  </el-avatar>
+
+                  <div class="message-content">
+                    <!-- 已撤回的消息 -->
+                    <div v-if="message.is_withdrawn" class="message-withdrawn">
+                      <el-icon><InfoFilled /></el-icon>
+                      {{ message.sender_id === currentUser?.user_id ? '你撤回了一条消息' : '对方撤回了一条消息' }}
+                    </div>
+
+                    <!-- 正常消息 -->
+                    <div v-else class="message-bubble">
+                      <div class="message-text">{{ message.content }}</div>
+
+                      <!-- 消息底部：时间 + 状态 -->
+                      <div class="message-footer">
+                        <span class="message-time">{{ formatMessageTime(message.send_time) }}</span>
+                        <!-- 自己发送的消息显示状态 -->
+                        <span v-if="message.sender_id === currentUser?.user_id" class="message-status">
+                          <!-- 发送中 -->
+                          <el-icon v-if="message.sending" class="is-loading status-sending"><Loading /></el-icon>
+                          <!-- 发送失败 -->
+                          <el-icon v-else-if="message.failed" class="status-failed" @click="retrySend(message)">
+                            <WarningFilled />
+                          </el-icon>
+                          <!-- 已读 -->
+                          <span v-else-if="message.is_read" class="status-read">
+                            <el-icon><Check /></el-icon>
+                            <el-icon><Check /></el-icon>
+                          </span>
+                          <!-- 已送达 -->
+                          <span v-else class="status-sent">
+                            <el-icon><Check /></el-icon>
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </template>
             </div>
           </div>
 
@@ -104,6 +195,8 @@
                 @keydown.enter.exact.prevent="sendMessage"
                 resize="none"
                 class="message-textarea"
+                :maxlength="500"
+                show-word-limit
               />
               <el-button
                 type="primary"
@@ -121,23 +214,63 @@
         </div>
       </div>
     </div>
+
+    <!-- 右键菜单 -->
+    <div
+      v-if="contextMenu.visible"
+      class="context-menu"
+      :style="{ top: contextMenu.y + 'px', left: contextMenu.x + 'px' }"
+      @click.stop
+    >
+      <div
+        v-if="contextMenu.message?.sender_id === currentUser?.user_id && canWithdraw(contextMenu.message)"
+        class="context-menu-item"
+        @click="withdrawMessage"
+      >
+        <el-icon><RefreshLeft /></el-icon>
+        撤回
+      </div>
+      <div class="context-menu-item" @click="copyMessage">
+        <el-icon><DocumentCopy /></el-icon>
+        复制
+      </div>
+    </div>
+
+    <!-- 点击其他区域关闭右键菜单 -->
+    <div
+      v-if="contextMenu.visible"
+      class="context-menu-overlay"
+      @click="closeContextMenu"
+    ></div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, nextTick, watch } from 'vue'
+import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { messageAPI, userAPI, itemAPI } from '@/api'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import type { Conversation, Message } from '@/types'
-import { Loading, ChatDotRound, Promotion } from '@element-plus/icons-vue'
+import {
+  Loading, ChatDotRound, Promotion, Refresh, ArrowLeft, Goods,
+  Check, WarningFilled, RefreshLeft, DocumentCopy, InfoFilled
+} from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
+// 扩展 Message 类型
+interface ExtendedMessage extends Message {
+  sending?: boolean
+  failed?: boolean
+  is_withdrawn?: boolean
+  tempId?: string
+}
+
 const conversations = ref<Conversation[]>([])
-const messages = ref<Message[]>([])
+const messages = ref<ExtendedMessage[]>([])
 const selectedConversation = ref<Conversation | null>(null)
 const newMessage = ref('')
 
@@ -147,22 +280,114 @@ const sendingMessage = ref(false)
 
 const messagesArea = ref<HTMLElement | null>(null)
 
+// 轮询相关
+let pollingTimer: ReturnType<typeof setInterval> | null = null
+const POLLING_INTERVAL = 5000 // 5秒轮询一次
+
+// 右键菜单
+const contextMenu = ref({
+  visible: false,
+  x: 0,
+  y: 0,
+  message: null as ExtendedMessage | null
+})
+
 const currentUser = computed(() => userStore.currentUser)
 
+// 格式化本地时间为服务器格式 (YYYY-MM-DD HH:MM:SS)
+const formatLocalTime = (date: Date): string => {
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+}
+
+// 解析时间字符串（处理多种格式）
+const parseTime = (timeString: string): Date => {
+  if (!timeString) return new Date()
+
+  // 如果是 ISO 格式带 Z（UTC时间），直接解析
+  if (timeString.endsWith('Z')) {
+    return new Date(timeString)
+  }
+
+  // 处理 "YYYY-MM-DD HH:MM:SS" 格式（服务器返回的本地时间）
+  // 替换空格为T，但不加Z，这样会被解析为本地时间
+  const normalized = timeString.replace(' ', 'T')
+  const date = new Date(normalized)
+
+  if (isNaN(date.getTime())) {
+    console.warn('Failed to parse time:', timeString)
+    return new Date()
+  }
+
+  return date
+}
+
+// 格式化时间（会话列表）
 const formatTime = (timeString: string): string => {
-  const date = new Date(timeString)
+  const date = parseTime(timeString)
   const now = new Date()
   const diff = now.getTime() - date.getTime()
 
-  if (diff < 60000) {
+  // 处理时间差为负数的情况（时区问题或时钟不同步）
+  if (diff < -60000) {
+    // 超过1分钟的未来时间，显示具体时间
+    return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  } else if (diff < 60000) {
     return '刚刚'
   } else if (diff < 3600000) {
     return `${Math.floor(diff / 60000)}分钟前`
   } else if (diff < 86400000) {
     return `${Math.floor(diff / 3600000)}小时前`
+  } else if (diff < 172800000) {
+    return '昨天'
   } else {
-    return date.toLocaleDateString('zh-CN')
+    return date.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })
   }
+}
+
+// 格式化消息时间（聊天气泡）
+const formatMessageTime = (timeString: string): string => {
+  const date = parseTime(timeString)
+  return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+}
+
+// 格式化日期分割线
+const formatDateDivider = (timeString: string): string => {
+  const date = parseTime(timeString)
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const diff = today.getTime() - messageDate.getTime()
+  const days = Math.floor(diff / 86400000)
+
+  // 处理负数天数（未来日期，可能是时区问题）
+  if (days < 0) {
+    return date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })
+  }
+  if (days === 0) return '今天'
+  if (days === 1) return '昨天'
+  if (days < 7) return `${days}天前`
+  return date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+// 是否显示日期分割线
+const shouldShowDateDivider = (index: number): boolean => {
+  if (index === 0) return true
+  const currentMsg = messages.value[index]
+  const previousMsg = messages.value[index - 1]
+  if (!currentMsg || !previousMsg) return false
+  const current = parseTime(currentMsg.send_time)
+  const previous = parseTime(previousMsg.send_time)
+  // 如果日期不同，显示分割线
+  return current.toDateString() !== previous.toDateString()
+}
+
+// 判断是否可以撤回（2分钟内）
+const canWithdraw = (message: ExtendedMessage | null): boolean => {
+  if (!message) return false
+  const sendTime = parseTime(message.send_time).getTime()
+  const now = Date.now()
+  return now - sendTime < 2 * 60 * 1000 // 2分钟
 }
 
 const isActiveConversation = (conversation: Conversation): boolean => {
@@ -188,10 +413,13 @@ const loadConversations = async (): Promise<void> => {
   }
 }
 
-const loadMessages = async (): Promise<void> => {
+const loadMessages = async (silent = false): Promise<void> => {
   if (!selectedConversation.value || !currentUser.value) return
 
-  messagesLoading.value = true
+  if (!silent) {
+    messagesLoading.value = true
+  }
+
   try {
     const response = await messageAPI.getConversationMessages({
       user_id: currentUser.value.user_id,
@@ -200,12 +428,34 @@ const loadMessages = async (): Promise<void> => {
       page: 1,
       limit: 50
     })
-    
-    messages.value = (response.messages || []).reverse()
 
-    nextTick(() => {
-      scrollToBottom()
-    })
+    const newMessages = (response.messages || []).reverse()
+
+    // 保留正在发送的消息
+    const sendingMessages = messages.value.filter(m => m.sending)
+
+    // 合并消息，避免重复
+    const existingIds = new Set(newMessages.map(m => m.message_id))
+    const filteredSending = sendingMessages.filter(m => !existingIds.has(m.message_id))
+
+    messages.value = [...newMessages, ...filteredSending]
+
+    if (!silent) {
+      nextTick(() => {
+        scrollToBottom()
+      })
+    }
+
+    // 更新会话的未读数
+    if (selectedConversation.value) {
+      const conv = conversations.value.find(c =>
+        c.other_user_id === selectedConversation.value!.other_user_id &&
+        c.item_id === selectedConversation.value!.item_id
+      )
+      if (conv) {
+        conv.unread_count = 0
+      }
+    }
   } catch (error) {
     console.error('Failed to load messages:', error)
   } finally {
@@ -216,6 +466,12 @@ const loadMessages = async (): Promise<void> => {
 const selectConversation = (conversation: Conversation): void => {
   selectedConversation.value = conversation
   loadMessages()
+  startPolling()
+}
+
+// 生成临时ID
+const generateTempId = (): string => {
+  return `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 }
 
 const sendMessage = async (): Promise<void> => {
@@ -224,11 +480,33 @@ const sendMessage = async (): Promise<void> => {
   }
 
   const messageContent = newMessage.value.trim()
+  const tempId = generateTempId()
+
+  // 乐观更新：立即显示消息
+  const optimisticMessage: ExtendedMessage = {
+    message_id: -1, // 临时ID
+    tempId,
+    sender_id: currentUser.value.user_id,
+    receiver_id: selectedConversation.value.other_user_id,
+    item_id: selectedConversation.value.item_id,
+    content: messageContent,
+    message_type: 'text',
+    send_time: formatLocalTime(new Date()),
+    is_read: false,
+    sending: true
+  }
+
+  messages.value.push(optimisticMessage)
   newMessage.value = ''
+
+  nextTick(() => {
+    scrollToBottom()
+  })
+
   sendingMessage.value = true
 
   try {
-    await messageAPI.sendMessage({
+    const response = await messageAPI.sendMessage({
       sender_id: currentUser.value.user_id,
       receiver_id: selectedConversation.value.other_user_id,
       item_id: selectedConversation.value.item_id,
@@ -236,19 +514,149 @@ const sendMessage = async (): Promise<void> => {
       message_type: 'text'
     })
 
-    loadMessages()
+    // 更新乐观消息为真实消息
+    const index = messages.value.findIndex(m => m.tempId === tempId)
+    if (index !== -1 && messages.value[index]) {
+      const msg = messages.value[index]
+      msg.message_id = response.message_id
+      msg.sending = false
+      msg.failed = false
+    }
+
+    // 刷新会话列表以更新最后消息
     loadConversations()
   } catch (error) {
     console.error('Failed to send message:', error)
-    alert('发送失败，请重试')
+    // 标记发送失败
+    const index = messages.value.findIndex(m => m.tempId === tempId)
+    if (index !== -1 && messages.value[index]) {
+      const msg = messages.value[index]
+      msg.sending = false
+      msg.failed = true
+    }
+    ElMessage.error('发送失败，点击重试')
   } finally {
     sendingMessage.value = false
+  }
+}
+
+// 重新发送失败的消息
+const retrySend = async (message: ExtendedMessage): Promise<void> => {
+  if (!selectedConversation.value || !currentUser.value) return
+
+  message.sending = true
+  message.failed = false
+
+  try {
+    const response = await messageAPI.sendMessage({
+      sender_id: currentUser.value.user_id,
+      receiver_id: selectedConversation.value.other_user_id,
+      item_id: selectedConversation.value.item_id,
+      content: message.content,
+      message_type: message.message_type
+    })
+
+    message.message_id = response.message_id
+    message.sending = false
+    loadConversations()
+  } catch (error) {
+    console.error('Failed to resend message:', error)
+    message.sending = false
+    message.failed = true
+    ElMessage.error('发送失败')
+  }
+}
+
+// 右键菜单
+const showContextMenu = (event: MouseEvent, message: ExtendedMessage): void => {
+  if (message.is_withdrawn || message.sending) return
+
+  contextMenu.value = {
+    visible: true,
+    x: event.clientX,
+    y: event.clientY,
+    message
+  }
+}
+
+const closeContextMenu = (): void => {
+  contextMenu.value.visible = false
+  contextMenu.value.message = null
+}
+
+// 撤回消息
+const withdrawMessage = async (): Promise<void> => {
+  const message = contextMenu.value.message
+  if (!message || !currentUser.value) return
+
+  try {
+    await messageAPI.deleteMessage(message.message_id, {
+      user_id: currentUser.value.user_id
+    })
+
+    // 标记为已撤回
+    message.is_withdrawn = true
+    ElMessage.success('消息已撤回')
+    loadConversations()
+  } catch (error: any) {
+    console.error('Failed to withdraw message:', error)
+    if (error.response?.data?.error?.includes('2 minutes')) {
+      ElMessage.error('超过2分钟的消息无法撤回')
+    } else {
+      ElMessage.error('撤回失败')
+    }
+  } finally {
+    closeContextMenu()
+  }
+}
+
+// 复制消息
+const copyMessage = async (): Promise<void> => {
+  const message = contextMenu.value.message
+  if (!message || message.message_type !== 'text') {
+    ElMessage.warning('只能复制文本消息')
+    closeContextMenu()
+    return
+  }
+
+  try {
+    await navigator.clipboard.writeText(message.content)
+    ElMessage.success('已复制到剪贴板')
+  } catch (error) {
+    console.error('Failed to copy:', error)
+    ElMessage.error('复制失败')
+  }
+  closeContextMenu()
+}
+
+// 跳转到商品详情
+const goToItem = (): void => {
+  if (selectedConversation.value) {
+    router.push(`/items/${selectedConversation.value.item_id}`)
   }
 }
 
 const scrollToBottom = (): void => {
   if (messagesArea.value) {
     messagesArea.value.scrollTop = messagesArea.value.scrollHeight
+  }
+}
+
+// 轮询
+const startPolling = (): void => {
+  stopPolling()
+  pollingTimer = setInterval(() => {
+    if (selectedConversation.value) {
+      loadMessages(true) // 静默刷新
+    }
+    loadConversations() // 刷新会话列表
+  }, POLLING_INTERVAL)
+}
+
+const stopPolling = (): void => {
+  if (pollingTimer) {
+    clearInterval(pollingTimer)
+    pollingTimer = null
   }
 }
 
@@ -272,18 +680,15 @@ const handleQueryParams = async () => {
   )
 
   if (existingConversation) {
-    // 找到已存在的会话，直接选中
     selectConversation(existingConversation)
   } else {
-    // 没找到会话，创建临时会话（第一次联系卖家的场景）
+    // 没找到会话，创建临时会话
     try {
-      // 并行获取用户信息和商品信息
       const [userResponse, itemResponse] = await Promise.all([
         userAPI.getUser(userIdNum),
         itemAPI.getItem(itemIdNum)
       ])
 
-      // 创建临时会话对象
       const tempConversation: Conversation = {
         other_user_id: userIdNum,
         other_username: userResponse.user.username,
@@ -291,19 +696,17 @@ const handleQueryParams = async () => {
         item_id: itemIdNum,
         item_title: itemResponse.item.title,
         item_images: itemResponse.item.images || [],
-        last_message_time: new Date().toISOString(),
+        last_message_time: formatLocalTime(new Date()),
         last_message: '',
         unread_count: 0
       }
 
-      // 自动选中这个临时会话
       selectedConversation.value = tempConversation
-      messages.value = [] // 清空消息列表（因为是第一次联系）
-
-      console.log('创建临时会话成功，可以开始发送消息')
+      messages.value = []
+      startPolling()
     } catch (error) {
       console.error('Failed to create temporary conversation:', error)
-      alert('无法加载会话信息，请稍后重试')
+      ElMessage.error('无法加载会话信息')
     }
   }
 }
@@ -314,7 +717,6 @@ watch(() => route.query, () => {
   }
 }, { immediate: false })
 
-// 会话列表加载完成后，检查URL参数
 watch(conversations, () => {
   if (route.query.user_id && route.query.item_id) {
     handleQueryParams()
@@ -327,13 +729,18 @@ onMounted(async () => {
     return
   }
 
-  // 先加载会话列表
   await loadConversations()
 
-  // 如果URL有参数（从商品详情页跳转过来），处理自动打开会话
   if (route.query.user_id && route.query.item_id) {
     await handleQueryParams()
   }
+
+  // 开始轮询会话列表
+  startPolling()
+})
+
+onUnmounted(() => {
+  stopPolling()
 })
 </script>
 
@@ -343,7 +750,7 @@ onMounted(async () => {
 .messages-view {
   width: 100%;
   padding: var(--spacing-4) var(--spacing-6);
-  height: calc(100vh - var(--spacing-4) * 2); /* 减去上下 padding */
+  height: calc(100vh - var(--spacing-4) * 2);
   box-sizing: border-box;
 }
 
@@ -367,20 +774,28 @@ onMounted(async () => {
   flex-direction: column;
   background: var(--color-bg-section);
   height: 100%;
-  min-height: 0; /* 关键：允许 flex 容器收缩 */
+  min-height: 0;
 }
 
 .sidebar-header {
-  padding: var(--spacing-5);
+  padding: var(--spacing-4) var(--spacing-5);
   border-bottom: 1px solid var(--color-border-light);
   background: var(--color-bg-card);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .sidebar-header h2 {
   margin: 0;
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
+}
+
+.header-actions {
+  display: flex;
+  gap: var(--spacing-2);
 }
 
 /* 加载和空状态 */
@@ -398,7 +813,7 @@ onMounted(async () => {
 .conversation-items {
   flex: 1;
   overflow-y: auto;
-  min-height: 0; /* 关键：允许 flex 容器收缩 */
+  min-height: 0;
 }
 
 /* 会话项 */
@@ -421,10 +836,6 @@ onMounted(async () => {
 .conversation-item.active {
   background: var(--color-primary-lighter);
   border-left: 3px solid var(--color-primary);
-}
-
-.user-avatar {
-  flex-shrink: 0;
 }
 
 .conversation-info {
@@ -459,6 +870,14 @@ onMounted(async () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  cursor: pointer;
+}
+
+.item-title:hover {
+  color: var(--color-primary);
 }
 
 .last-message {
@@ -469,10 +888,15 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
+.withdrawn-hint {
+  color: var(--color-text-placeholder);
+  font-style: italic;
+}
+
 .unread-badge {
   position: absolute;
-  top: var(--spacing-4);
-  right: var(--spacing-4);
+  top: var(--spacing-3);
+  right: var(--spacing-3);
 }
 
 /* 右侧聊天区域 */
@@ -481,7 +905,7 @@ onMounted(async () => {
   flex-direction: column;
   background: #f5f7fa;
   height: 100%;
-  min-height: 0; /* 关键：允许 flex 容器收缩 */
+  min-height: 0;
 }
 
 .no-selection {
@@ -489,22 +913,34 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   height: 100%;
+}
+
+.no-selection-content {
+  text-align: center;
   color: var(--color-text-secondary);
+}
+
+.no-selection-content p {
+  margin-top: var(--spacing-4);
+  font-size: var(--font-size-lg);
 }
 
 .chat-container {
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-height: 0; /* 关键：允许 flex 容器收缩 */
+  min-height: 0;
 }
 
 /* 聊天头部 */
 .chat-header {
-  padding: var(--spacing-4) var(--spacing-5);
+  padding: var(--spacing-3) var(--spacing-5);
   border-bottom: 1px solid var(--color-border-light);
   background: var(--color-bg-card);
   flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .chat-info {
@@ -513,14 +949,18 @@ onMounted(async () => {
   gap: var(--spacing-3);
 }
 
+.back-button {
+  display: none;
+}
+
 .chat-user-info {
   flex: 1;
 }
 
 .chat-user-info .username {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
-  margin-bottom: var(--spacing-1);
+  margin-bottom: 2px;
 }
 
 .chat-user-info .item-title {
@@ -534,20 +974,38 @@ onMounted(async () => {
   overflow-y: auto;
   padding: var(--spacing-5);
   background: #f5f7fa;
-  min-height: 0; /* 关键：防止 flex 子元素撑大父容器 */
+  min-height: 0;
 }
 
 .message-list {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-3);
-  min-height: min-content; /* 确保内容可以正常显示 */
+  min-height: min-content;
 }
 
-/* 消息气泡 - 现代化设计 */
+/* 日期分割线 */
+.date-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: var(--spacing-4) 0;
+}
+
+.date-divider span {
+  background: var(--color-bg-section);
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-placeholder);
+}
+
+/* 消息气泡 */
 .message-wrapper {
   display: flex;
   justify-content: flex-start;
+  align-items: flex-end;
+  gap: var(--spacing-2);
   animation: messageSlideIn 0.3s ease;
 }
 
@@ -555,8 +1013,15 @@ onMounted(async () => {
   justify-content: flex-end;
 }
 
-.message-bubble {
+.message-avatar {
+  flex-shrink: 0;
+}
+
+.message-content {
   max-width: 70%;
+}
+
+.message-bubble {
   padding: var(--spacing-3) var(--spacing-4);
   border-radius: var(--radius-lg);
   background: white;
@@ -569,22 +1034,68 @@ onMounted(async () => {
   color: white;
 }
 
+/* 已撤回消息 */
+.message-withdrawn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-2) var(--spacing-3);
+  color: var(--color-text-placeholder);
+  font-size: var(--font-size-sm);
+  font-style: italic;
+}
+
 .message-text {
   font-size: var(--font-size-base);
   line-height: var(--line-height-relaxed);
   word-wrap: break-word;
   white-space: pre-wrap;
-  margin-bottom: var(--spacing-1);
+}
+
+.message-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-1);
 }
 
 .message-time {
-  font-size: var(--font-size-xs);
+  font-size: 10px;
   color: var(--color-text-placeholder);
-  text-align: right;
 }
 
 .own-message .message-time {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* 消息状态 */
+.message-status {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+}
+
+.status-sending {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.status-failed {
+  color: #ff4d4f;
+  cursor: pointer;
+}
+
+.status-sent {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.status-read {
+  color: #52c41a;
+  display: flex;
+}
+
+.status-read .el-icon:last-child {
+  margin-left: -6px;
 }
 
 @keyframes messageSlideIn {
@@ -600,7 +1111,7 @@ onMounted(async () => {
 
 /* 消息输入框 */
 .message-input {
-  padding: var(--spacing-4) var(--spacing-5);
+  padding: var(--spacing-3) var(--spacing-5);
   border-top: 1px solid var(--color-border-light);
   background: var(--color-bg-card);
   flex-shrink: 0;
@@ -625,6 +1136,40 @@ onMounted(async () => {
 .send-button {
   border-radius: var(--radius-lg);
   padding: var(--spacing-3) var(--spacing-5);
+}
+
+/* 右键菜单 */
+.context-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+}
+
+.context-menu {
+  position: fixed;
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--spacing-2) 0;
+  min-width: 120px;
+  z-index: 1000;
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  transition: background 0.2s;
+}
+
+.context-menu-item:hover {
+  background: var(--color-bg-hover);
 }
 
 /* 滚动条美化 */
@@ -671,11 +1216,19 @@ onMounted(async () => {
     display: none;
   }
 
+  .conversations-sidebar.show-mobile {
+    display: flex;
+  }
+
   .chat-area {
     display: flex;
   }
 
-  .message-bubble {
+  .back-button {
+    display: flex;
+  }
+
+  .message-content {
     max-width: 85%;
   }
 }

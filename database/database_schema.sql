@@ -141,17 +141,18 @@ CREATE TABLE message (
     message_type ENUM('text', 'image') DEFAULT 'text' COMMENT '消息类型',
     send_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '发送时间',
     is_read BOOLEAN DEFAULT FALSE COMMENT '是否已读',
+    is_withdrawn BOOLEAN DEFAULT FALSE COMMENT '是否已撤回',
     reply_to INT DEFAULT NULL COMMENT '回复的消息ID',
-    
+
     -- 约束
     CONSTRAINT chk_sender_receiver CHECK (sender_id != receiver_id),
-    
+
     -- 外键约束
     FOREIGN KEY (sender_id) REFERENCES user(user_id) ON DELETE CASCADE,
     FOREIGN KEY (receiver_id) REFERENCES user(user_id) ON DELETE CASCADE,
     FOREIGN KEY (item_id) REFERENCES item(item_id) ON DELETE CASCADE,
     FOREIGN KEY (reply_to) REFERENCES message(message_id) ON DELETE SET NULL,
-    
+
     -- 索引
     INDEX idx_sender_id (sender_id),
     INDEX idx_receiver_id (receiver_id),

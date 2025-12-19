@@ -74,65 +74,120 @@ def get_items():
         limit = int(request.args.get('limit', 20))
         category_id = request.args.get('category_id')
         status = request.args.get('status', 'available')
-        sort_by = request.args.get('sort_by', 'publish_date')  # publish_date, price, view_count
+        sort_by = request.args.get('sort_by', 'publish_date')  # publish_date, price, view_count, wishlist_count
         sort_order = request.args.get('sort_order', 'DESC')
         min_price = request.args.get('min_price')
         max_price = request.args.get('max_price')
 
         offset = (page - 1) * limit
 
-        # 构建WHERE条件（用于子查询和计数查询）
-        where_conditions = ["status = %s"]
+        # 构建WHERE条件
+        where_conditions = ["i.status = %s"]
         params = [status]
 
         if category_id:
-            where_conditions.append("category_id = %s")
+            where_conditions.append("i.category_id = %s")
             params.append(category_id)
 
         if min_price:
-            where_conditions.append("price >= %s")
+            where_conditions.append("i.price >= %s")
             params.append(float(min_price))
 
         if max_price:
-            where_conditions.append("price <= %s")
+            where_conditions.append("i.price <= %s")
             params.append(float(max_price))
 
         where_clause = " AND ".join(where_conditions)
 
         # 验证排序字段
-        valid_sort_fields = ['publish_date', 'price', 'view_count']
+        valid_sort_fields = ['publish_date', 'price', 'view_count', 'wishlist_count']
         if sort_by not in valid_sort_fields:
             sort_by = 'publish_date'
 
         if sort_order.upper() not in ['ASC', 'DESC']:
             sort_order = 'DESC'
 
-        # 查询商品列表（使用子查询优化，减少排序时的内存使用）
-        # 使用USE INDEX强制使用索引排序，避免内存排序
-        index_hint = ""
-        if sort_by == 'publish_date':
-            index_hint = "USE INDEX (idx_publish_date)"
-        elif sort_by == 'status':
-            index_hint = "USE INDEX (idx_status)"
-
-        sql = f"""
-        SELECT i.item_id, i.title, i.description, i.price, i.original_price,
-               i.condition_level, i.images, i.location, i.publish_date, i.view_count,
-               i.user_id, i.category_id,
-               u.username, u.avatar, u.credit_score,
-               c.category_name
-        FROM (
-            SELECT * FROM item {index_hint}
+        # 按收藏数排序需要特殊处理
+        if sort_by == 'wishlist_count':
+            # 使用两步查询避免内存排序问题
+            # 第一步：获取排序后的item_id列表
+            id_sql = f"""
+            SELECT i.item_id,
+                   (SELECT COUNT(*) FROM wishlist w WHERE w.item_id = i.item_id) as wishlist_count
+            FROM item i
             WHERE {where_clause}
+            ORDER BY wishlist_count {sort_order}, i.item_id DESC
+            LIMIT %s OFFSET %s
+            """
+            id_params = params + [limit, offset]
+            id_result = db_manager.execute_query(id_sql, id_params)
+
+            if not id_result:
+                return jsonify({
+                    'items': [],
+                    'pagination': {'page': page, 'limit': limit, 'total': 0, 'pages': 0}
+                }), 200
+
+            item_ids = [row['item_id'] for row in id_result]
+            wishlist_counts = {row['item_id']: row['wishlist_count'] for row in id_result}
+            placeholders = ','.join(['%s'] * len(item_ids))
+
+            # 第二步：获取完整信息
+            sql = f"""
+            SELECT i.item_id, i.title, i.description, i.price, i.original_price,
+                   i.condition_level, i.images, i.location, i.publish_date, i.view_count,
+                   i.user_id, i.category_id,
+                   u.username, u.avatar, u.credit_score,
+                   c.category_name
+            FROM item i
+            JOIN user u ON i.user_id = u.user_id
+            JOIN category c ON i.category_id = c.category_id
+            WHERE i.item_id IN ({placeholders})
+            """
+            items = db_manager.execute_query(sql, tuple(item_ids))
+
+            # 添加wishlist_count并按原顺序排序
+            for item in items:
+                item['wishlist_count'] = wishlist_counts.get(item['item_id'], 0)
+            items.sort(key=lambda x: item_ids.index(x['item_id']))
+        else:
+            # 其他排序使用优化的子查询方式
+            # 第一步：获取ID列表
+            id_sql = f"""
+            SELECT item_id FROM item
+            WHERE {where_clause.replace('i.', '')}
             ORDER BY {sort_by} {sort_order}
             LIMIT %s OFFSET %s
-        ) i
-        JOIN user u ON i.user_id = u.user_id
-        JOIN category c ON i.category_id = c.category_id
-        """
+            """
+            id_params = params + [limit, offset]
+            id_result = db_manager.execute_query(id_sql, id_params)
 
-        query_params = params + [limit, offset]
-        items = db_manager.execute_query(sql, query_params)
+            if not id_result:
+                return jsonify({
+                    'items': [],
+                    'pagination': {'page': page, 'limit': limit, 'total': 0, 'pages': 0}
+                }), 200
+
+            item_ids = [row['item_id'] for row in id_result]
+            placeholders = ','.join(['%s'] * len(item_ids))
+
+            # 第二步：获取完整信息
+            sql = f"""
+            SELECT i.item_id, i.title, i.description, i.price, i.original_price,
+                   i.condition_level, i.images, i.location, i.publish_date, i.view_count,
+                   i.user_id, i.category_id,
+                   u.username, u.avatar, u.credit_score,
+                   c.category_name,
+                   (SELECT COUNT(*) FROM wishlist w WHERE w.item_id = i.item_id) as wishlist_count
+            FROM item i
+            JOIN user u ON i.user_id = u.user_id
+            JOIN category c ON i.category_id = c.category_id
+            WHERE i.item_id IN ({placeholders})
+            """
+            items = db_manager.execute_query(sql, tuple(item_ids))
+
+            # 按原顺序排序（GaussDB不支持FIELD函数）
+            items.sort(key=lambda x: item_ids.index(x['item_id']))
 
         # 处理图片JSON
         for item in items:
@@ -141,10 +196,10 @@ def get_items():
             else:
                 item['images'] = []
 
-        # 获取总数（使用相同的WHERE条件，不需要limit和offset）
+        # 获取总数
         count_sql = f"""
         SELECT COUNT(*) as total
-        FROM item
+        FROM item i
         WHERE {where_clause}
         """
         count_result = db_manager.execute_query(count_sql, params)
@@ -176,83 +231,154 @@ def search_items():
         limit = int(request.args.get('limit', 20))
         sort_by = request.args.get('sort_by', 'publish_date')
         sort_order = request.args.get('sort_order', 'DESC')
-        
+
         offset = (page - 1) * limit
-        
+
         # 构建WHERE条件
         where_conditions = ["i.status = 'available'"]
         params = []
-        
+
         if keyword:
             where_conditions.append("(i.title LIKE %s OR i.description LIKE %s)")
             keyword_pattern = f"%{keyword}%"
             params.extend([keyword_pattern, keyword_pattern])
-        
+
         if category_id:
             where_conditions.append("i.category_id = %s")
             params.append(category_id)
-        
+
         if min_price:
             where_conditions.append("i.price >= %s")
             params.append(float(min_price))
-        
+
         if max_price:
             where_conditions.append("i.price <= %s")
             params.append(float(max_price))
-        
+
         if condition_level:
             where_conditions.append("i.condition_level = %s")
             params.append(condition_level)
-        
+
         where_clause = " AND ".join(where_conditions)
-        
+
         # 验证排序字段
-        valid_sort_fields = ['publish_date', 'price', 'view_count']
+        valid_sort_fields = ['publish_date', 'price', 'view_count', 'wishlist_count']
         if sort_by not in valid_sort_fields:
             sort_by = 'publish_date'
 
         if sort_order.upper() not in ['ASC', 'DESC']:
             sort_order = 'DESC'
 
-        # 使用子查询优化，避免内存排序问题
-        index_hint = ""
-        if sort_by == 'publish_date':
-            index_hint = "USE INDEX (idx_publish_date)"
+        # 按收藏数排序需要特殊处理
+        if sort_by == 'wishlist_count':
+            # 第一步：获取排序后的item_id列表
+            id_sql = f"""
+            SELECT i.item_id,
+                   (SELECT COUNT(*) FROM wishlist w WHERE w.item_id = i.item_id) as wishlist_count
+            FROM item i
+            WHERE {where_clause}
+            ORDER BY wishlist_count {sort_order}, i.item_id DESC
+            LIMIT %s OFFSET %s
+            """
+            id_params = params + [limit, offset]
+            id_result = db_manager.execute_query(id_sql, id_params)
 
-        # 搜索查询 - 先在子查询中过滤和分页，再JOIN其他表
-        sql = f"""
-        SELECT i.item_id, i.title, i.description, i.price, i.original_price,
-               i.condition_level, i.images, i.location, i.publish_date, i.view_count,
-               i.user_id, i.category_id,
-               u.username, u.avatar, u.credit_score,
-               c.category_name
-        FROM (
-            SELECT * FROM item {index_hint}
-            WHERE status = 'available'
-            {'AND (title LIKE %s OR description LIKE %s)' if keyword else ''}
-            {'AND category_id = %s' if category_id else ''}
-            {'AND price >= %s' if min_price else ''}
-            {'AND price <= %s' if max_price else ''}
-            {'AND condition_level = %s' if condition_level else ''}
+            if not id_result:
+                return jsonify({'items': []}), 200
+
+            item_ids = [row['item_id'] for row in id_result]
+            wishlist_counts = {row['item_id']: row['wishlist_count'] for row in id_result}
+            placeholders = ','.join(['%s'] * len(item_ids))
+
+            # 第二步：获取完整信息
+            sql = f"""
+            SELECT i.item_id, i.title, i.description, i.price, i.original_price,
+                   i.condition_level, i.images, i.location, i.publish_date, i.view_count,
+                   i.user_id, i.category_id,
+                   u.username, u.avatar, u.credit_score,
+                   c.category_name
+            FROM item i
+            JOIN user u ON i.user_id = u.user_id
+            JOIN category c ON i.category_id = c.category_id
+            WHERE i.item_id IN ({placeholders})
+            """
+            items = db_manager.execute_query(sql, tuple(item_ids))
+
+            # 添加wishlist_count并按原顺序排序
+            for item in items:
+                item['wishlist_count'] = wishlist_counts.get(item['item_id'], 0)
+            items.sort(key=lambda x: item_ids.index(x['item_id']))
+        else:
+            # 其他排序使用两步查询方式
+            # 构建子查询的WHERE条件（不带表别名）
+            sub_where_conditions = ["status = 'available'"]
+            sub_params = []
+
+            if keyword:
+                sub_where_conditions.append("(title LIKE %s OR description LIKE %s)")
+                sub_params.extend([keyword_pattern, keyword_pattern])
+
+            if category_id:
+                sub_where_conditions.append("category_id = %s")
+                sub_params.append(category_id)
+
+            if min_price:
+                sub_where_conditions.append("price >= %s")
+                sub_params.append(float(min_price))
+
+            if max_price:
+                sub_where_conditions.append("price <= %s")
+                sub_params.append(float(max_price))
+
+            if condition_level:
+                sub_where_conditions.append("condition_level = %s")
+                sub_params.append(condition_level)
+
+            sub_where_clause = " AND ".join(sub_where_conditions)
+
+            # 第一步：获取ID列表
+            id_sql = f"""
+            SELECT item_id FROM item
+            WHERE {sub_where_clause}
             ORDER BY {sort_by} {sort_order}
             LIMIT %s OFFSET %s
-        ) i
-        JOIN user u ON i.user_id = u.user_id
-        JOIN category c ON i.category_id = c.category_id
-        """
-        
-        params.extend([limit, offset])
-        items = db_manager.execute_query(sql, params)
-        
+            """
+            id_params = sub_params + [limit, offset]
+            id_result = db_manager.execute_query(id_sql, id_params)
+
+            if not id_result:
+                return jsonify({'items': []}), 200
+
+            item_ids = [row['item_id'] for row in id_result]
+            placeholders = ','.join(['%s'] * len(item_ids))
+
+            # 第二步：获取完整信息
+            sql = f"""
+            SELECT i.item_id, i.title, i.description, i.price, i.original_price,
+                   i.condition_level, i.images, i.location, i.publish_date, i.view_count,
+                   i.user_id, i.category_id,
+                   u.username, u.avatar, u.credit_score,
+                   c.category_name,
+                   (SELECT COUNT(*) FROM wishlist w WHERE w.item_id = i.item_id) as wishlist_count
+            FROM item i
+            JOIN user u ON i.user_id = u.user_id
+            JOIN category c ON i.category_id = c.category_id
+            WHERE i.item_id IN ({placeholders})
+            """
+            items = db_manager.execute_query(sql, tuple(item_ids))
+
+            # 按原顺序排序（GaussDB不支持FIELD函数）
+            items.sort(key=lambda x: item_ids.index(x['item_id']))
+
         # 处理图片JSON
         for item in items:
             if item['images']:
                 item['images'] = json.loads(item['images'])
             else:
                 item['images'] = []
-        
+
         return jsonify({'items': items}), 200
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -263,32 +389,33 @@ def get_item(item_id):
         # 增加浏览次数
         update_view_sql = "UPDATE item SET view_count = view_count + 1 WHERE item_id = %s"
         db_manager.execute_update(update_view_sql, (item_id,))
-        
+
         # 获取商品详情
         sql = """
         SELECT i.*, u.username, u.avatar, u.credit_score, u.phone,
-               c.category_name
+               c.category_name,
+               (SELECT COUNT(*) FROM wishlist w WHERE w.item_id = i.item_id) as wishlist_count
         FROM item i
         JOIN user u ON i.user_id = u.user_id
         JOIN category c ON i.category_id = c.category_id
         WHERE i.item_id = %s
         """
-        
+
         items = db_manager.execute_query(sql, (item_id,))
-        
+
         if not items:
             return jsonify({'error': 'Item not found'}), 404
-        
+
         item = items[0]
-        
+
         # 处理图片JSON
         if item['images']:
             item['images'] = json.loads(item['images'])
         else:
             item['images'] = []
-        
+
         return jsonify({'item': item}), 200
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -428,18 +555,38 @@ def get_user_items(user_id):
         page = int(request.args.get('page', 1))
         limit = int(request.args.get('limit', 20))
         offset = (page - 1) * limit
-        
-        sql = """
-        SELECT i.item_id, i.title, i.price, i.images, i.status, i.publish_date, i.view_count,
-               c.category_name
-        FROM item i
-        JOIN category c ON i.category_id = c.category_id
-        WHERE i.user_id = %s AND i.status = %s
-        ORDER BY i.publish_date DESC
+
+        # 第一步：先获取商品ID列表（使用索引，避免内存排序）
+        id_sql = """
+        SELECT item_id FROM item
+        WHERE user_id = %s AND status = %s
+        ORDER BY item_id DESC
         LIMIT %s OFFSET %s
         """
-        
-        items = db_manager.execute_query(sql, (user_id, status, limit, offset))
+        id_result = db_manager.execute_query(id_sql, (user_id, status, limit, offset))
+
+        if not id_result:
+            return jsonify({'items': []}), 200
+
+        item_ids = [row['item_id'] for row in id_result]
+        placeholders = ','.join(['%s'] * len(item_ids))
+
+        # 第二步：根据ID获取完整信息
+        sql = f"""
+        SELECT i.item_id, i.title, i.description, i.price, i.images, i.status,
+               i.publish_date, i.view_count, i.condition_level, i.location,
+               i.user_id, i.category_id,
+               u.username, u.avatar, u.credit_score,
+               c.category_name,
+               (SELECT COUNT(*) FROM wishlist w WHERE w.item_id = i.item_id) as wishlist_count
+        FROM item i
+        JOIN user u ON i.user_id = u.user_id
+        JOIN category c ON i.category_id = c.category_id
+        WHERE i.item_id IN ({placeholders})
+        ORDER BY i.item_id DESC
+        """
+
+        items = db_manager.execute_query(sql, tuple(item_ids))
         
         # 处理图片JSON
         for item in items:

@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify
+from flask.json.provider import DefaultJSONProvider
 from flask_cors import CORS
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, date
+from decimal import Decimal
 
 # 添加当前目录到Python路径
 sys.path.append(os.path.dirname(__file__))
@@ -16,7 +18,20 @@ from routes.wishlist_routes import wishlist_bp
 from routes.address_routes import address_bp
 from routes.review_routes import review_bp
 
+# 自定义JSON编码器，统一处理datetime格式
+class CustomJSONProvider(DefaultJSONProvider):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            # 返回ISO格式字符串，不带时区（假设服务器和客户端在同一时区）
+            return obj.strftime('%Y-%m-%d %H:%M:%S')
+        if isinstance(obj, date):
+            return obj.strftime('%Y-%m-%d')
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super().default(obj)
+
 app = Flask(__name__)
+app.json = CustomJSONProvider(app)  # 使用自定义JSON编码器
 app.config['JSON_AS_ASCII'] = False  # 支持中文字符
 
 # 配置CORS,允许所有来源(开发环境)

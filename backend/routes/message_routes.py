@@ -118,39 +118,61 @@ def get_conversation_messages():
         item_id = request.args.get('item_id')
         page = int(request.args.get('page', 1))
         limit = int(request.args.get('limit', 50))
-        
+
         if not all([user_id, other_user_id, item_id]):
             return jsonify({'error': 'user_id, other_user_id and item_id are required'}), 400
-        
+
         offset = (page - 1) * limit
-        
-        sql = """
-        SELECT m.message_id, m.sender_id, m.receiver_id, m.content, m.message_type,
-               m.send_time, m.is_read, m.reply_to,
-               u.username as sender_name, u.avatar as sender_avatar
-        FROM message m
-        JOIN user u ON m.sender_id = u.user_id
-        WHERE ((m.sender_id = %s AND m.receiver_id = %s) OR 
-               (m.sender_id = %s AND m.receiver_id = %s))
-          AND m.item_id = %s
-        ORDER BY m.send_time DESC
-        LIMIT %s OFFSET %s
-        """
-        
+
+        # 检查是否存在 is_withdrawn 字段（向后兼容）
+        try:
+            check_sql = "SELECT is_withdrawn FROM message LIMIT 1"
+            db_manager.execute_query(check_sql)
+            has_withdrawn_field = True
+        except:
+            has_withdrawn_field = False
+
+        if has_withdrawn_field:
+            sql = """
+            SELECT m.message_id, m.sender_id, m.receiver_id, m.content, m.message_type,
+                   m.send_time, m.is_read, m.reply_to, m.is_withdrawn,
+                   u.username as sender_name, u.avatar as sender_avatar
+            FROM message m
+            JOIN user u ON m.sender_id = u.user_id
+            WHERE ((m.sender_id = %s AND m.receiver_id = %s) OR
+                   (m.sender_id = %s AND m.receiver_id = %s))
+              AND m.item_id = %s
+            ORDER BY m.send_time DESC
+            LIMIT %s OFFSET %s
+            """
+        else:
+            sql = """
+            SELECT m.message_id, m.sender_id, m.receiver_id, m.content, m.message_type,
+                   m.send_time, m.is_read, m.reply_to, FALSE as is_withdrawn,
+                   u.username as sender_name, u.avatar as sender_avatar
+            FROM message m
+            JOIN user u ON m.sender_id = u.user_id
+            WHERE ((m.sender_id = %s AND m.receiver_id = %s) OR
+                   (m.sender_id = %s AND m.receiver_id = %s))
+              AND m.item_id = %s
+            ORDER BY m.send_time DESC
+            LIMIT %s OFFSET %s
+            """
+
         messages = db_manager.execute_query(sql, (
             user_id, other_user_id, other_user_id, user_id, item_id, limit, offset
         ))
-        
+
         # 标记消息为已读
         mark_read_sql = """
-        UPDATE message 
-        SET is_read = TRUE 
+        UPDATE message
+        SET is_read = TRUE
         WHERE receiver_id = %s AND sender_id = %s AND item_id = %s AND is_read = FALSE
         """
         db_manager.execute_update(mark_read_sql, (user_id, other_user_id, item_id))
-        
+
         return jsonify({'messages': messages}), 200
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -249,38 +271,51 @@ def search_messages():
 
 @message_bp.route('/<int:message_id>', methods=['DELETE'])
 def delete_message(message_id):
-    """删除消息（仅发送者可删除）"""
+    """撤回消息（仅发送者可撤回，2分钟内）"""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
-        
+
         if not user_id:
             return jsonify({'error': 'user_id is required'}), 400
-        
+
+        # 检查是否存在 is_withdrawn 字段
+        try:
+            check_sql = "SELECT is_withdrawn FROM message LIMIT 1"
+            db_manager.execute_query(check_sql)
+            has_withdrawn_field = True
+        except:
+            has_withdrawn_field = False
+
         # 验证是否为消息发送者
         check_sql = "SELECT sender_id, send_time FROM message WHERE message_id = %s"
         result = db_manager.execute_query(check_sql, (message_id,))
-        
+
         if not result:
             return jsonify({'error': 'Message not found'}), 404
-        
+
         message = result[0]
-        
+
         if message['sender_id'] != user_id:
             return jsonify({'error': 'Permission denied'}), 403
-        
+
         # 检查是否在2分钟内（撤回时间限制）
         send_time = message['send_time']
         time_diff = datetime.now() - send_time
         if time_diff.total_seconds() > 120:  # 2分钟
-            return jsonify({'error': 'Message can only be deleted within 2 minutes'}), 400
-        
-        # 删除消息
-        delete_sql = "DELETE FROM message WHERE message_id = %s"
-        db_manager.execute_update(delete_sql, (message_id,))
-        
-        return jsonify({'message': 'Message deleted successfully'}), 200
-        
+            return jsonify({'error': 'Message can only be withdrawn within 2 minutes'}), 400
+
+        if has_withdrawn_field:
+            # 标记消息为已撤回（不删除，保留记录）
+            withdraw_sql = "UPDATE message SET is_withdrawn = TRUE WHERE message_id = %s"
+            db_manager.execute_update(withdraw_sql, (message_id,))
+        else:
+            # 如果没有 is_withdrawn 字段，直接删除
+            delete_sql = "DELETE FROM message WHERE message_id = %s"
+            db_manager.execute_update(delete_sql, (message_id,))
+
+        return jsonify({'message': 'Message withdrawn successfully'}), 200
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

@@ -63,6 +63,7 @@ export interface Item {
   update_date?: string
   status?: 'available' | 'sold' | 'removed'
   view_count?: number
+  wishlist_count?: number
   username?: string
   avatar?: string | null
   credit_score?: number
@@ -75,7 +76,7 @@ export interface ItemsParams {
   limit?: number
   category_id?: number | string
   status?: 'available' | 'sold' | 'removed'
-  sort_by?: 'publish_date' | 'price' | 'view_count'
+  sort_by?: 'publish_date' | 'price' | 'view_count' | 'wishlist_count'
   sort_order?: 'ASC' | 'DESC'
 }
 
@@ -85,7 +86,7 @@ export interface SearchParams {
   min_price?: number
   max_price?: number
   condition_level?: ConditionLevel
-  sort_by?: 'publish_date' | 'price' | 'view_count'
+  sort_by?: 'publish_date' | 'price' | 'view_count' | 'wishlist_count'
   sort_order?: 'ASC' | 'DESC'
   page?: number
   limit?: number
@@ -156,6 +157,7 @@ export interface Message {
   message_type: 'text' | 'image'
   send_time: string
   is_read: boolean
+  is_withdrawn?: boolean
   reply_to?: number | null
   sender_name?: string
   sender_avatar?: string | null

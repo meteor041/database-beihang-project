@@ -310,11 +310,19 @@ const getStatusText = (status: string): string => {
 
 const formatDate = (dateString?: string): string => {
   if (!dateString) return '-'
-  const date = new Date(dateString)
+
+  // 处理服务器返回的时间格式 "YYYY-MM-DD HH:MM:SS"
+  const normalized = dateString.replace(' ', 'T')
+  const date = new Date(normalized)
+
+  if (isNaN(date.getTime())) return '-'
+
   const now = new Date()
   const diff = now.getTime() - date.getTime()
   const days = Math.floor(diff / (1000 * 60 * 60 * 24))
 
+  // 处理负数天数（时区问题）
+  if (days < 0) return date.toLocaleDateString('zh-CN')
   if (days === 0) return '今天'
   if (days === 1) return '昨天'
   if (days < 7) return `${days}天前`

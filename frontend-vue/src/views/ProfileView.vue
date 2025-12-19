@@ -93,6 +93,8 @@
                 v-for="item in myItems"
                 :key="item.item_id"
                 :item="item"
+                :show-wishlist-count="true"
+                :wishlist-count="(item as any).wishlist_count || 0"
                 @click="viewItem(item.item_id)"
               >
                 <template #actions>
@@ -102,6 +104,14 @@
                     @click.stop="editItem(item.item_id)"
                   >
                     编辑
+                  </el-button>
+                  <el-button
+                    v-if="item.status === 'available'"
+                    size="small"
+                    type="danger"
+                    @click.stop="removeItem(item.item_id)"
+                  >
+                    下架
                   </el-button>
                 </template>
               </ItemCard>
@@ -533,6 +543,32 @@ const viewItem = (itemId: number) => {
 // 编辑商品
 const editItem = (itemId: number) => {
   router.push(`/items/${itemId}/edit`)
+}
+
+// 下架商品
+const removeItem = async (itemId: number) => {
+  if (!currentUser.value) return
+
+  try {
+    await ElMessageBox.confirm('确定要下架这个商品吗？下架后可以在"已下架"中查看。', '提示', {
+      confirmButtonText: '确定下架',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+
+    await itemAPI.deleteItem(itemId, {
+      user_id: currentUser.value.user_id
+    })
+
+    ElMessage.success('商品已下架')
+    // 刷新商品列表
+    loadMyItems(true)
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('Failed to remove item:', error)
+      ElMessage.error('下架失败，请重试')
+    }
+  }
 }
 
 // 查看订单

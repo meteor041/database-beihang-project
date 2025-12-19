@@ -89,7 +89,12 @@
             :md="8"
             :lg="6"
           >
-            <ItemCard :item="item" @click="goToItem(item.item_id)" />
+            <ItemCard
+              :item="item"
+              :show-wishlist-count="true"
+              :wishlist-count="(item as any).wishlist_count || 0"
+              @click="goToItem(item.item_id)"
+            />
           </el-col>
         </el-row>
 

@@ -96,7 +96,8 @@
             >
               <el-option value="publish_date" label="最新发布" />
               <el-option value="price" label="价格" />
-              <el-option value="view_count" label="热度" />
+              <el-option value="view_count" label="浏览量" />
+              <el-option value="wishlist_count" label="收藏数" />
             </el-select>
             <el-select
               v-model="sortOrder"
@@ -145,6 +146,8 @@
         v-for="item in items"
         :key="item.item_id"
         :item="item"
+        :show-wishlist-count="true"
+        :wishlist-count="(item as any).wishlist_count || 0"
         @click="goToItem(item.item_id)"
       />
     </div>

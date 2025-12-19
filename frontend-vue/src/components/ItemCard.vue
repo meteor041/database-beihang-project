@@ -81,11 +81,16 @@
             <el-icon><View /></el-icon>
             {{ item.view_count || 0 }}
           </span>
-          <span v-if="showWishlistCount && wishlistCount > 0" class="stat-item">
+          <span v-if="showWishlistCount" class="stat-item">
             <el-icon><Star /></el-icon>
             {{ wishlistCount }}
           </span>
         </div>
+      </div>
+
+      <!-- 操作按钮插槽 -->
+      <div v-if="$slots.actions" class="item-actions">
+        <slot name="actions"></slot>
       </div>
     </div>
   </el-card>
@@ -93,7 +98,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { ShoppingBag } from '@element-plus/icons-vue'
+import { ShoppingBag, View, Star } from '@element-plus/icons-vue'
 import type { Item, ConditionLevel } from '@/types'
 
 interface Props {
@@ -366,6 +371,16 @@ const handleClick = () => {
 
 .stat-item .el-icon {
   font-size: 14px;
+}
+
+/* 操作按钮区域 */
+.item-actions {
+  padding-top: var(--spacing-3);
+  margin-top: var(--spacing-3);
+  border-top: 1px solid var(--color-border-light);
+  display: flex;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
 }
 
 /* 响应式 */

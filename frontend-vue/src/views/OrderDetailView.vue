@@ -410,7 +410,11 @@ const isStatusActive = (status: OrderStatus): boolean => {
 
 const formatDate = (dateString?: string | null): string => {
   if (!dateString) return '-'
-  return new Date(dateString).toLocaleString('zh-CN')
+  // 处理服务器返回的时间格式 "YYYY-MM-DD HH:MM:SS"
+  const normalized = dateString.replace(' ', 'T')
+  const date = new Date(normalized)
+  if (isNaN(date.getTime())) return '-'
+  return date.toLocaleString('zh-CN')
 }
 
 const normaliseImages = (images: unknown): string[] => {
