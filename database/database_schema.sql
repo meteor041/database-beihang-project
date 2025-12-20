@@ -226,3 +226,209 @@ INSERT INTO category (category_name, parent_category_id, description, sort_order
 ('手机', 2, '智能手机及配件', 1),
 ('电脑', 2, '笔记本电脑、台式机等', 2),
 ('数码配件', 2, '耳机、充电器、数据线等', 3);
+
+-- ============================================
+-- 存储过程 (Stored Procedures)
+-- ============================================
+
+-- 存储过程1: 完成订单
+-- 功能: 将订单状态改为completed，并给买卖双方各加5分信用分
+DELIMITER //
+CREATE PROCEDURE sp_complete_order(IN p_order_id INT)
+BEGIN
+    DECLARE v_buyer_id INT;
+    DECLARE v_seller_id INT;
+    DECLARE v_current_status VARCHAR(20);
+
+    -- 获取订单信息
+    SELECT buyer_id, seller_id, order_status
+    INTO v_buyer_id, v_seller_id, v_current_status
+    FROM `order` WHERE order_id = p_order_id;
+
+    -- 检查订单状态是否为shipped（只有已发货的订单才能完成）
+    IF v_current_status != 'shipped' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '只有已发货的订单才能确认收货';
+    END IF;
+
+    -- 更新订单状态为已完成
+    UPDATE `order`
+    SET order_status = 'completed', complete_time = NOW()
+    WHERE order_id = p_order_id;
+
+    -- 给买家加5分信用分（不超过100）
+    UPDATE user
+    SET credit_score = LEAST(100, credit_score + 5)
+    WHERE user_id = v_buyer_id;
+
+    -- 给卖家加5分信用分（不超过100）
+    UPDATE user
+    SET credit_score = LEAST(100, credit_score + 5)
+    WHERE user_id = v_seller_id;
+END //
+DELIMITER ;
+
+-- 存储过程2: 取消订单
+-- 功能: 取消订单并将商品状态恢复为available
+DELIMITER //
+CREATE PROCEDURE sp_cancel_order(IN p_order_id INT)
+BEGIN
+    DECLARE v_item_id INT;
+    DECLARE v_current_status VARCHAR(20);
+
+    -- 获取订单信息
+    SELECT item_id, order_status
+    INTO v_item_id, v_current_status
+    FROM `order` WHERE order_id = p_order_id;
+
+    -- 检查订单状态（已完成的订单不能取消）
+    IF v_current_status = 'completed' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '已完成的订单无法取消';
+    END IF;
+
+    -- 更新订单状态为已取消
+    UPDATE `order`
+    SET order_status = 'cancelled'
+    WHERE order_id = p_order_id;
+
+    -- 恢复商品状态为可购买
+    UPDATE item
+    SET status = 'available'
+    WHERE item_id = v_item_id;
+END //
+DELIMITER ;
+
+-- 存储过程3: 获取用户统计信息
+-- 功能: 返回用户的商品数、订单数、收藏数等统计信息
+DELIMITER //
+CREATE PROCEDURE sp_get_user_statistics(IN p_user_id INT)
+BEGIN
+    SELECT
+        (SELECT COUNT(*) FROM item WHERE user_id = p_user_id AND status = 'available') AS active_items,
+        (SELECT COUNT(*) FROM item WHERE user_id = p_user_id AND status = 'sold') AS sold_items,
+        (SELECT COUNT(*) FROM `order` WHERE buyer_id = p_user_id) AS buy_orders,
+        (SELECT COUNT(*) FROM `order` WHERE seller_id = p_user_id) AS sell_orders,
+        (SELECT COUNT(*) FROM wishlist WHERE user_id = p_user_id) AS wishlist_count,
+        (SELECT AVG(rating) FROM review WHERE reviewee_id = p_user_id) AS avg_rating;
+END //
+DELIMITER ;
+
+-- 存储过程4: 批量标记消息已读
+-- 功能: 将某个会话中的所有未读消息标记为已读
+DELIMITER //
+CREATE PROCEDURE sp_mark_messages_read(
+    IN p_user_id INT,
+    IN p_other_user_id INT,
+    IN p_item_id INT
+)
+BEGIN
+    UPDATE message
+    SET is_read = TRUE
+    WHERE receiver_id = p_user_id
+      AND sender_id = p_other_user_id
+      AND item_id = p_item_id
+      AND is_read = FALSE;
+END //
+DELIMITER ;
+
+-- ============================================
+-- 触发器 (Triggers)
+-- ============================================
+
+-- 触发器1: 订单创建后自动更新商品状态为sold
+DELIMITER //
+CREATE TRIGGER trg_after_order_insert
+AFTER INSERT ON `order`
+FOR EACH ROW
+BEGIN
+    UPDATE item
+    SET status = 'sold'
+    WHERE item_id = NEW.item_id;
+END //
+DELIMITER ;
+
+-- 触发器2: 订单取消后自动恢复商品状态为available
+DELIMITER //
+CREATE TRIGGER trg_after_order_cancel
+AFTER UPDATE ON `order`
+FOR EACH ROW
+BEGIN
+    -- 当订单状态从非cancelled变为cancelled时，恢复商品状态
+    IF OLD.order_status != 'cancelled' AND NEW.order_status = 'cancelled' THEN
+        UPDATE item
+        SET status = 'available'
+        WHERE item_id = NEW.item_id;
+    END IF;
+END //
+DELIMITER ;
+
+-- 触发器3: 评价创建后自动更新被评价者信用分
+DELIMITER //
+CREATE TRIGGER trg_after_review_insert
+AFTER INSERT ON review
+FOR EACH ROW
+BEGIN
+    DECLARE v_credit_change INT;
+
+    -- 根据评分计算信用分变化
+    SET v_credit_change = CASE NEW.rating
+        WHEN 5 THEN 3   -- 5星好评 +3分
+        WHEN 4 THEN 1   -- 4星好评 +1分
+        WHEN 3 THEN 0   -- 3星中评 不变
+        WHEN 2 THEN -2  -- 2星差评 -2分
+        WHEN 1 THEN -5  -- 1星差评 -5分
+        ELSE 0
+    END;
+
+    -- 更新被评价者的信用分（保持在0-100范围内）
+    UPDATE user
+    SET credit_score = LEAST(100, GREATEST(0, credit_score + v_credit_change))
+    WHERE user_id = NEW.reviewee_id;
+END //
+DELIMITER ;
+
+-- 触发器4: 用户注册时自动设置初始信用分
+-- (虽然有DEFAULT值，但触发器可以处理更复杂的初始化逻辑)
+DELIMITER //
+CREATE TRIGGER trg_before_user_insert
+BEFORE INSERT ON user
+FOR EACH ROW
+BEGIN
+    -- 确保新用户信用分为100
+    IF NEW.credit_score IS NULL THEN
+        SET NEW.credit_score = 100;
+    END IF;
+
+    -- 设置注册时间
+    IF NEW.registration_date IS NULL THEN
+        SET NEW.registration_date = NOW();
+    END IF;
+END //
+DELIMITER ;
+
+-- 触发器5: 地址设为默认时，自动取消其他默认地址
+DELIMITER //
+CREATE TRIGGER trg_before_address_update
+BEFORE UPDATE ON address
+FOR EACH ROW
+BEGIN
+    -- 如果将地址设为默认，取消该用户其他地址的默认状态
+    IF NEW.is_default = TRUE AND OLD.is_default = FALSE THEN
+        UPDATE address
+        SET is_default = FALSE
+        WHERE user_id = NEW.user_id AND address_id != NEW.address_id;
+    END IF;
+END //
+DELIMITER ;
+
+-- ============================================
+-- 推荐索引 (建议添加以提升查询性能)
+-- ============================================
+
+-- 优化未读消息查询
+ALTER TABLE message ADD INDEX idx_receiver_unread (receiver_id, is_read);
+
+-- 优化订单状态+时间组合查询
+ALTER TABLE `order` ADD INDEX idx_status_time (order_status, create_time);
+
+-- 优化评价统计查询
+ALTER TABLE review ADD INDEX idx_reviewee_rating (reviewee_id, rating);
