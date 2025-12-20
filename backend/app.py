@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from flask.json.provider import DefaultJSONProvider
+from flask.json import JSONEncoder
 from flask_cors import CORS
 import os
 import sys
@@ -84,8 +84,8 @@ def order_timeout_checker():
             print(f"[订单超时] 检查任务异常: {e}")
 
 
-# 自定义JSON编码器，统一处理datetime格式
-class CustomJSONProvider(DefaultJSONProvider):
+# 自定义JSON编码器，统一处理datetime格式（兼容Flask 2.0.x / Python 3.6）
+class CustomJSONEncoder(JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime):
             # 返回ISO格式字符串，不带时区（假设服务器和客户端在同一时区）
@@ -97,7 +97,7 @@ class CustomJSONProvider(DefaultJSONProvider):
         return super().default(obj)
 
 app = Flask(__name__)
-app.json = CustomJSONProvider(app)  # 使用自定义JSON编码器
+app.json_encoder = CustomJSONEncoder  # 旧版Flask写法
 app.config['JSON_AS_ASCII'] = False  # 支持中文字符
 
 # 配置CORS,允许所有来源(开发环境)
