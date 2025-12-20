@@ -23,6 +23,25 @@
               <p class="status-time">{{ formatDate(order.create_time) }}</p>
             </div>
           </div>
+
+          <!-- 超时倒计时提醒 - 仅待支付订单显示 -->
+          <div v-if="order.order_status === 'pending_payment'" class="timeout-warning">
+            <div class="timeout-icon">⏰</div>
+            <div class="timeout-content">
+              <div v-if="timeoutRemaining > 0" class="timeout-text">
+                <span class="warning-label">请尽快完成支付！</span>
+                <span class="countdown">
+                  剩余时间：<strong>{{ formatCountdown(timeoutRemaining) }}</strong>
+                </span>
+              </div>
+              <div v-else class="timeout-expired">
+                <span class="expired-label">订单即将被系统自动取消</span>
+              </div>
+              <div class="timeout-hint">
+                超过1小时未支付，订单将自动取消
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- 订单进度 -->
@@ -290,7 +309,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { orderAPI, reviewAPI } from '@/api'
@@ -326,6 +345,79 @@ const reviewForm = ref({
   rating: 0,
   content: ''
 })
+
+// 超时倒计时相关
+const ORDER_TIMEOUT_MINUTES = 60 // 1小时超时
+const timeoutRemaining = ref(0) // 剩余秒数
+let countdownTimer: ReturnType<typeof setInterval> | null = null
+
+// 计算并更新剩余时间
+const updateTimeoutRemaining = () => {
+  if (!order.value || order.value.order_status !== 'pending_payment') {
+    timeoutRemaining.value = 0
+    return
+  }
+
+  const createTime = order.value.create_time
+  if (!createTime) {
+    timeoutRemaining.value = 0
+    return
+  }
+
+  // 解析创建时间
+  const normalized = createTime.replace(' ', 'T')
+  const createDate = new Date(normalized)
+  if (isNaN(createDate.getTime())) {
+    timeoutRemaining.value = 0
+    return
+  }
+
+  // 计算超时时间点
+  const timeoutDate = new Date(createDate.getTime() + ORDER_TIMEOUT_MINUTES * 60 * 1000)
+  const now = new Date()
+
+  // 计算剩余秒数
+  const remainingMs = timeoutDate.getTime() - now.getTime()
+  timeoutRemaining.value = Math.max(0, Math.floor(remainingMs / 1000))
+}
+
+// 格式化倒计时显示
+const formatCountdown = (seconds: number): string => {
+  if (seconds <= 0) return '00:00'
+
+  const minutes = Math.floor(seconds / 60)
+  const secs = seconds % 60
+
+  return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+}
+
+// 启动倒计时
+const startCountdown = () => {
+  stopCountdown()
+  updateTimeoutRemaining()
+
+  if (timeoutRemaining.value > 0) {
+    countdownTimer = setInterval(() => {
+      updateTimeoutRemaining()
+      // 如果时间到了，停止计时并刷新订单状态
+      if (timeoutRemaining.value <= 0) {
+        stopCountdown()
+        // 延迟几秒后刷新订单，让后端有时间处理
+        setTimeout(() => {
+          loadOrder()
+        }, 3000)
+      }
+    }, 1000)
+  }
+}
+
+// 停止倒计时
+const stopCountdown = () => {
+  if (countdownTimer) {
+    clearInterval(countdownTimer)
+    countdownTimer = null
+  }
+}
 
 const isBuyer = computed(() => {
   return Boolean(order.value && userStore.currentUser && order.value.buyer_id === userStore.currentUser.user_id)
@@ -468,6 +560,11 @@ const loadOrder = async (): Promise<void> => {
     }
 
     order.value = detail
+
+    // 如果是待支付订单，启动倒计时
+    if (detail.order_status === 'pending_payment') {
+      startCountdown()
+    }
 
     // 如果订单已完成，加载评价信息
     if (detail.order_status === 'completed') {
@@ -666,6 +763,11 @@ onMounted(async () => {
 
   loadOrder()
 })
+
+// 组件卸载时清理定时器
+onUnmounted(() => {
+  stopCountdown()
+})
 </script>
 
 <style scoped>
@@ -787,6 +889,88 @@ onMounted(async () => {
 .status-time {
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
+}
+
+/* 超时倒计时提醒 */
+.timeout-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-5);
+  padding: var(--spacing-4);
+  background: linear-gradient(135deg, #fff7e6 0%, #fff2d9 100%);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-lg);
+  animation: pulse-warning 2s ease-in-out infinite;
+}
+
+@keyframes pulse-warning {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(250, 173, 20, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(250, 173, 20, 0);
+  }
+}
+
+.timeout-icon {
+  font-size: var(--font-size-3xl);
+  flex-shrink: 0;
+  animation: shake 1s ease-in-out infinite;
+}
+
+@keyframes shake {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-10deg); }
+  75% { transform: rotate(10deg); }
+}
+
+.timeout-content {
+  flex: 1;
+}
+
+.timeout-text {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--spacing-2);
+}
+
+.warning-label {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-warning-dark, #d48806);
+}
+
+.countdown {
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+}
+
+.countdown strong {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-danger);
+  font-family: 'Courier New', monospace;
+  background: rgba(255, 77, 79, 0.1);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-base);
+}
+
+.timeout-expired {
+  margin-bottom: var(--spacing-2);
+}
+
+.expired-label {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-danger);
+}
+
+.timeout-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
 }
 
 /* 时间线 - 扁平 */
