@@ -377,7 +377,23 @@ def search_items():
             else:
                 item['images'] = []
 
-        return jsonify({'items': items}), 200
+        # 获取总数用于分页
+        count_sql = f"""
+        SELECT COUNT(*) as total FROM item i
+        WHERE {where_clause}
+        """
+        count_result = db_manager.execute_query(count_sql, params)
+        total = count_result[0]['total'] if count_result else 0
+
+        return jsonify({
+            'items': items,
+            'pagination': {
+                'page': page,
+                'limit': limit,
+                'total': total,
+                'pages': (total + limit - 1) // limit
+            }
+        }), 200
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500

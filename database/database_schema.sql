@@ -507,6 +507,16 @@ ALTER TABLE `order` ADD INDEX idx_status_time (order_status, create_time);
 -- 优化评价统计查询
 ALTER TABLE review ADD INDEX idx_reviewee_rating (reviewee_id, rating);
 
+-- 优化用户搜索查询（按状态筛选活跃用户）
+ALTER TABLE user ADD INDEX idx_status (status);
+
+-- 优化商品列表查询（状态+价格组合筛选）
+ALTER TABLE item ADD INDEX idx_status_price (status, price);
+
+-- 优化收藏数统计查询（在wishlist表按item_id快速聚合）
+-- 注意：idx_item_id已存在，组合索引可加速COUNT查询
+ALTER TABLE wishlist ADD INDEX idx_item_count (item_id, user_id);
+
 -- ============================================
 -- 定时事件 (Scheduled Events)
 -- ============================================

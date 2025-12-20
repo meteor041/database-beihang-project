@@ -183,8 +183,27 @@ def get_user_orders(user_id):
                 order['item_images'] = json.loads(order['item_images'])
             else:
                 order['item_images'] = []
-        
-        return jsonify({'orders': orders}), 200
+
+        # 获取总数用于分页
+        count_sql = f"""
+        SELECT COUNT(*) as total
+        FROM `order` o
+        WHERE {where_clause}
+        """
+        # 移除limit和offset参数，只保留条件参数
+        count_params = params[:-2]  # params结构: [条件参数..., limit, offset]
+        count_result = db_manager.execute_query(count_sql, count_params)
+        total = count_result[0]['total'] if count_result else 0
+
+        return jsonify({
+            'orders': orders,
+            'pagination': {
+                'page': page,
+                'limit': limit,
+                'total': total,
+                'pages': (total + limit - 1) // limit
+            }
+        }), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500

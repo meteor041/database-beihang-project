@@ -145,6 +145,7 @@ export interface OrderStatistics {
     pending_sales: number
     total_earned: number
   }
+  wishlist_count?: number
 }
 
 // 消息相关类型

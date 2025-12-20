@@ -253,24 +253,45 @@ def search_users():
         if keyword:
             sql = """
             SELECT user_id, username, real_name, avatar, credit_score
-            FROM user 
+            FROM user
             WHERE (username LIKE %s OR real_name LIKE %s) AND status = 'active'
             ORDER BY credit_score DESC
             LIMIT %s OFFSET %s
             """
             keyword_pattern = f"%{keyword}%"
             users = db_manager.execute_query(sql, (keyword_pattern, keyword_pattern, limit, offset))
+
+            # 获取总数
+            count_sql = """
+            SELECT COUNT(*) as total FROM user
+            WHERE (username LIKE %s OR real_name LIKE %s) AND status = 'active'
+            """
+            count_result = db_manager.execute_query(count_sql, (keyword_pattern, keyword_pattern))
         else:
             sql = """
             SELECT user_id, username, real_name, avatar, credit_score
-            FROM user 
+            FROM user
             WHERE status = 'active'
             ORDER BY registration_date DESC
             LIMIT %s OFFSET %s
             """
             users = db_manager.execute_query(sql, (limit, offset))
-        
-        return jsonify({'users': users}), 200
+
+            # 获取总数
+            count_sql = "SELECT COUNT(*) as total FROM user WHERE status = 'active'"
+            count_result = db_manager.execute_query(count_sql)
+
+        total = count_result[0]['total'] if count_result else 0
+
+        return jsonify({
+            'users': users,
+            'pagination': {
+                'page': page,
+                'limit': limit,
+                'total': total,
+                'pages': (total + limit - 1) // limit
+            }
+        }), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
