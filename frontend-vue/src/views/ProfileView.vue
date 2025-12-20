@@ -335,11 +335,13 @@ const userForm = ref({
 const myItems = ref<Item[]>([])
 const itemsLoading = ref(false)
 const itemStatus = ref('available')
+const lastLoadedItemStatus = ref<string | null>(null) // 缓存上次加载的状态
 
 // 订单相关
 const buyerOrders = ref<Order[]>([])
 const sellerOrders = ref<Order[]>([])
 const ordersLoading = ref(false)
+const ordersLoaded = ref(false) // 订单是否已加载
 
 // 收藏相关
 const wishlistItems = ref<Wishlist[]>([])
@@ -437,7 +439,11 @@ const updateUserInfo = async () => {
 const loadMyItems = async (forceReload = false) => {
   if (!currentUser.value) return
 
-  // 商品需要根据状态筛选，所以每次都要加载
+  // 如果状态没变且不是强制刷新，使用缓存
+  if (!forceReload && lastLoadedItemStatus.value === itemStatus.value && myItems.value.length > 0) {
+    return
+  }
+
   itemsLoading.value = true
   try {
     const response = await itemAPI.getUserItems(currentUser.value.user_id, {
@@ -446,6 +452,7 @@ const loadMyItems = async (forceReload = false) => {
       limit: 20
     })
     myItems.value = response.items || []
+    lastLoadedItemStatus.value = itemStatus.value // 记录已加载的状态
   } catch (error) {
     console.error('Failed to load my items:', error)
     ElMessage.error('加载商品失败')
@@ -458,6 +465,11 @@ const loadMyItems = async (forceReload = false) => {
 const loadOrders = async (forceReload = false) => {
   if (!currentUser.value) return
 
+  // 如果已加载且不是强制刷新，使用缓存
+  if (!forceReload && ordersLoaded.value) {
+    return
+  }
+
   ordersLoading.value = true
   try {
     // 并行加载买家订单和卖家订单
@@ -468,6 +480,7 @@ const loadOrders = async (forceReload = false) => {
 
     buyerOrders.value = buyerResponse.orders || []
     sellerOrders.value = sellerResponse.orders || []
+    ordersLoaded.value = true // 标记已加载
   } catch (error) {
     console.error('Failed to load orders:', error)
     ElMessage.error('加载订单失败')
@@ -522,7 +535,7 @@ const loadAddresses = async (forceReload = false) => {
   }
 }
 
-// 加载统计数据
+// 加载统计数据（包含收藏数）
 const loadStats = async () => {
   if (!currentUser.value) return
   try {
@@ -530,6 +543,8 @@ const loadStats = async () => {
       user_id: currentUser.value.user_id
     })
     stats.value = response || {}
+    // 使用统计接口返回的收藏数，避免额外API调用
+    wishlistCount.value = response.wishlist_count || 0
   } catch (error) {
     console.error('Failed to load stats:', error)
   }
@@ -707,8 +722,7 @@ onMounted(async () => {
   await userStore.refreshUserInfo()
 
   initUserForm()
-  loadStats()
-  loadWishlist() // 加载收藏以获取数量
+  loadStats() // 统计接口已包含收藏数，无需单独调用loadWishlist
 
   // 从URL参数读取tab参数
   const tabParam = router.currentRoute.value.query.tab as string

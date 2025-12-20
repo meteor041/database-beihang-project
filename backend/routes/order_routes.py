@@ -355,42 +355,60 @@ def cancel_order(order_id):
 
 @order_bp.route('/statistics', methods=['GET'])
 def get_order_statistics():
-    """订单统计"""
+    """订单统计 - 优化为单次查询，包含收藏数"""
     try:
         user_id = request.args.get('user_id')
-        
+
         if not user_id:
             return jsonify({'error': 'user_id is required'}), 400
-        
-        # 买家统计
-        buyer_stats_sql = """
-        SELECT 
-            COUNT(*) as total_orders,
-            COUNT(CASE WHEN order_status = 'completed' THEN 1 END) as completed_orders,
-            COUNT(CASE WHEN order_status = 'pending_payment' THEN 1 END) as pending_orders,
-            COALESCE(SUM(CASE WHEN order_status = 'completed' THEN total_amount END), 0) as total_spent
+
+        # 合并买家和卖家统计为单次查询
+        combined_stats_sql = """
+        SELECT
+            SUM(CASE WHEN buyer_id = %s THEN 1 ELSE 0 END) as buyer_total_orders,
+            SUM(CASE WHEN buyer_id = %s AND order_status = 'completed' THEN 1 ELSE 0 END) as buyer_completed_orders,
+            SUM(CASE WHEN buyer_id = %s AND order_status = 'pending_payment' THEN 1 ELSE 0 END) as buyer_pending_orders,
+            COALESCE(SUM(CASE WHEN buyer_id = %s AND order_status = 'completed' THEN total_amount ELSE 0 END), 0) as total_spent,
+            SUM(CASE WHEN seller_id = %s THEN 1 ELSE 0 END) as seller_total_sales,
+            SUM(CASE WHEN seller_id = %s AND order_status = 'completed' THEN 1 ELSE 0 END) as seller_completed_sales,
+            SUM(CASE WHEN seller_id = %s AND order_status = 'pending_payment' THEN 1 ELSE 0 END) as seller_pending_sales,
+            COALESCE(SUM(CASE WHEN seller_id = %s AND order_status = 'completed' THEN total_amount ELSE 0 END), 0) as total_earned
         FROM `order`
-        WHERE buyer_id = %s
+        WHERE buyer_id = %s OR seller_id = %s
         """
-        
-        # 卖家统计
-        seller_stats_sql = """
-        SELECT 
-            COUNT(*) as total_sales,
-            COUNT(CASE WHEN order_status = 'completed' THEN 1 END) as completed_sales,
-            COUNT(CASE WHEN order_status = 'pending_payment' THEN 1 END) as pending_sales,
-            COALESCE(SUM(CASE WHEN order_status = 'completed' THEN total_amount END), 0) as total_earned
-        FROM `order`
-        WHERE seller_id = %s
-        """
-        
-        buyer_stats = db_manager.execute_query(buyer_stats_sql, (user_id,))
-        seller_stats = db_manager.execute_query(seller_stats_sql, (user_id,))
-        
+
+        # 传递10个参数（用户ID重复使用）
+        params = (user_id, user_id, user_id, user_id, user_id, user_id, user_id, user_id, user_id, user_id)
+        result = db_manager.execute_query(combined_stats_sql, params)
+
+        # 获取收藏数（单独查询，但只需一次）
+        wishlist_sql = "SELECT COUNT(*) as wishlist_count FROM wishlist WHERE user_id = %s"
+        wishlist_result = db_manager.execute_query(wishlist_sql, (user_id,))
+        wishlist_count = wishlist_result[0]['wishlist_count'] if wishlist_result else 0
+
+        if result and result[0]:
+            row = result[0]
+            return jsonify({
+                'buyer_stats': {
+                    'total_orders': row['buyer_total_orders'] or 0,
+                    'completed_orders': row['buyer_completed_orders'] or 0,
+                    'pending_orders': row['buyer_pending_orders'] or 0,
+                    'total_spent': float(row['total_spent'] or 0)
+                },
+                'seller_stats': {
+                    'total_sales': row['seller_total_sales'] or 0,
+                    'completed_sales': row['seller_completed_sales'] or 0,
+                    'pending_sales': row['seller_pending_sales'] or 0,
+                    'total_earned': float(row['total_earned'] or 0)
+                },
+                'wishlist_count': wishlist_count
+            }), 200
+
         return jsonify({
-            'buyer_stats': buyer_stats[0] if buyer_stats else {},
-            'seller_stats': seller_stats[0] if seller_stats else {}
+            'buyer_stats': {'total_orders': 0, 'completed_orders': 0, 'pending_orders': 0, 'total_spent': 0},
+            'seller_stats': {'total_sales': 0, 'completed_sales': 0, 'pending_sales': 0, 'total_earned': 0},
+            'wishlist_count': wishlist_count
         }), 200
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
