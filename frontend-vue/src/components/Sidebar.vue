@@ -28,16 +28,23 @@
         class="nav-item"
         :class="{ active: isActive(item.path) }"
       >
-        <el-icon :size="24" class="nav-icon">
-          <component :is="item.icon" />
-        </el-icon>
+        <div class="nav-icon-wrapper">
+          <el-icon :size="24" class="nav-icon">
+            <component :is="item.icon" />
+          </el-icon>
+          <!-- 收起状态下的小红点 -->
+          <span
+            v-if="item.badge && unreadCount > 0 && isCollapsed"
+            class="nav-badge-dot"
+          ></span>
+        </div>
         <transition name="fade">
           <span v-show="!isCollapsed" class="nav-text">{{ item.label }}</span>
         </transition>
+        <!-- 展开状态下的数字角标 -->
         <el-badge
-          v-if="item.badge && unreadCount > 0"
+          v-if="item.badge && unreadCount > 0 && !isCollapsed"
           :value="unreadCount"
-          :hidden="isCollapsed"
           class="nav-badge"
         />
       </router-link>
@@ -89,9 +96,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { messageAPI } from '@/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   HomeFilled,
@@ -108,10 +116,57 @@ const route = useRoute()
 const userStore = useUserStore()
 
 const isCollapsed = ref(true)
-const unreadCount = ref(0) // TODO: 从API获取
+const unreadCount = ref(0)
+let unreadTimer: ReturnType<typeof setInterval> | null = null
 
 const isLoggedIn = computed(() => userStore.isLoggedIn)
 const currentUser = computed(() => userStore.currentUser)
+
+// 获取未读消息数
+const fetchUnreadCount = async () => {
+  if (!isLoggedIn.value || !currentUser.value?.user_id) {
+    unreadCount.value = 0
+    return
+  }
+
+  try {
+    const response = await messageAPI.getUnreadCount(currentUser.value.user_id)
+    unreadCount.value = response.unread_count || 0
+  } catch (error) {
+    console.error('获取未读消息数失败:', error)
+  }
+}
+
+// 监听登录状态变化
+watch(isLoggedIn, (newVal) => {
+  if (newVal) {
+    fetchUnreadCount()
+    // 登录后每30秒刷新一次未读消息数
+    unreadTimer = setInterval(fetchUnreadCount, 30000)
+  } else {
+    unreadCount.value = 0
+    if (unreadTimer) {
+      clearInterval(unreadTimer)
+      unreadTimer = null
+    }
+  }
+}, { immediate: true })
+
+// 组件挂载时开始轮询
+onMounted(() => {
+  if (isLoggedIn.value) {
+    fetchUnreadCount()
+    unreadTimer = setInterval(fetchUnreadCount, 30000)
+  }
+})
+
+// 组件卸载时清理定时器
+onUnmounted(() => {
+  if (unreadTimer) {
+    clearInterval(unreadTimer)
+    unreadTimer = null
+  }
+})
 
 // 菜单项配置
 const menuItems = computed(() => {
@@ -277,8 +332,27 @@ const handleLogout = async () => {
   font-weight: var(--font-weight-semibold);
 }
 
+.nav-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .nav-icon {
   flex-shrink: 0;
+}
+
+/* 收起状态下的小红点 */
+.nav-badge-dot {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  background: var(--color-danger, #f56c6c);
+  border-radius: 50%;
+  border: 2px solid var(--color-bg-card);
 }
 
 .nav-text {

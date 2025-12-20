@@ -895,8 +895,9 @@ onUnmounted(() => {
 
 .unread-badge {
   position: absolute;
-  top: var(--spacing-3);
+  top: 50%;
   right: var(--spacing-3);
+  transform: translateY(-50%);
 }
 
 /* 右侧聊天区域 */

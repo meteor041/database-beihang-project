@@ -330,6 +330,80 @@ BEGIN
 END //
 DELIMITER ;
 
+-- 存储过程5: 自动取消超时订单
+-- 功能: 取消超过指定时间未支付的订单，恢复商品状态
+-- 默认超时时间为1小时（60分钟）
+DELIMITER //
+CREATE PROCEDURE sp_cancel_timeout_orders(IN p_timeout_minutes INT)
+BEGIN
+    DECLARE v_timeout INT;
+
+    -- 默认1小时
+    SET v_timeout = IFNULL(p_timeout_minutes, 60);
+
+    -- 创建临时表存储需要取消的订单
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_timeout_orders (
+        order_id INT,
+        item_id INT
+    );
+
+    -- 清空临时表
+    TRUNCATE TABLE temp_timeout_orders;
+
+    -- 找出超时的待支付订单
+    INSERT INTO temp_timeout_orders (order_id, item_id)
+    SELECT order_id, item_id
+    FROM `order`
+    WHERE order_status = 'pending_payment'
+      AND TIMESTAMPDIFF(MINUTE, create_time, NOW()) > v_timeout;
+
+    -- 更新订单状态为已取消
+    UPDATE `order` o
+    INNER JOIN temp_timeout_orders t ON o.order_id = t.order_id
+    SET o.order_status = 'cancelled',
+        o.notes = CONCAT(IFNULL(o.notes, ''), ' [系统自动取消：超时未支付]');
+
+    -- 恢复商品状态为可购买
+    UPDATE item i
+    INNER JOIN temp_timeout_orders t ON i.item_id = t.item_id
+    SET i.status = 'available';
+
+    -- 返回被取消的订单数
+    SELECT COUNT(*) as cancelled_count FROM temp_timeout_orders;
+
+    -- 清理临时表
+    DROP TEMPORARY TABLE IF EXISTS temp_timeout_orders;
+END //
+DELIMITER ;
+
+-- 存储过程6: 获取超时订单列表（用于通知）
+DELIMITER //
+CREATE PROCEDURE sp_get_timeout_orders(IN p_timeout_minutes INT)
+BEGIN
+    DECLARE v_timeout INT;
+    SET v_timeout = IFNULL(p_timeout_minutes, 2880);
+
+    SELECT
+        o.order_id,
+        o.order_number,
+        o.buyer_id,
+        o.seller_id,
+        o.item_id,
+        o.total_amount,
+        o.create_time,
+        TIMESTAMPDIFF(MINUTE, o.create_time, NOW()) as minutes_elapsed,
+        buyer.username as buyer_name,
+        seller.username as seller_name,
+        i.title as item_title
+    FROM `order` o
+    JOIN user buyer ON o.buyer_id = buyer.user_id
+    JOIN user seller ON o.seller_id = seller.user_id
+    JOIN item i ON o.item_id = i.item_id
+    WHERE o.order_status = 'pending_payment'
+      AND TIMESTAMPDIFF(MINUTE, o.create_time, NOW()) > v_timeout;
+END //
+DELIMITER ;
+
 -- ============================================
 -- 触发器 (Triggers)
 -- ============================================
@@ -432,3 +506,35 @@ ALTER TABLE `order` ADD INDEX idx_status_time (order_status, create_time);
 
 -- 优化评价统计查询
 ALTER TABLE review ADD INDEX idx_reviewee_rating (reviewee_id, rating);
+
+-- ============================================
+-- 定时事件 (Scheduled Events)
+-- ============================================
+
+-- 注意：需要先启用事件调度器
+-- SET GLOBAL event_scheduler = ON;
+
+-- 事件1: 每小时自动取消超时订单（48小时未支付）
+DELIMITER //
+CREATE EVENT IF NOT EXISTS evt_auto_cancel_orders
+ON SCHEDULE EVERY 1 HOUR
+STARTS CURRENT_TIMESTAMP
+DO
+BEGIN
+    -- 调用存储过程取消超时订单（48小时 = 2880分钟）
+    CALL sp_cancel_timeout_orders(2880);
+END //
+DELIMITER ;
+
+-- 事件2: 每天凌晨清理已撤回超过30天的消息
+DELIMITER //
+CREATE EVENT IF NOT EXISTS evt_cleanup_withdrawn_messages
+ON SCHEDULE EVERY 1 DAY
+STARTS (CURRENT_DATE + INTERVAL 1 DAY + INTERVAL 3 HOUR)
+DO
+BEGIN
+    DELETE FROM message
+    WHERE is_withdrawn = TRUE
+      AND DATEDIFF(NOW(), send_time) > 30;
+END //
+DELIMITER ;
