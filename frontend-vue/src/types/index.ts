@@ -117,10 +117,15 @@ export interface Order {
   notes?: string | null
   item_title?: string
   item_images?: string[]
+  item_location?: string
   buyer_name?: string
   buyer_phone?: string
+  buyer_credit_score?: number
+  buyer_avatar?: string | null
   seller_name?: string
   seller_phone?: string
+  seller_credit_score?: number
+  seller_avatar?: string | null
 }
 
 export interface CreateOrderParams {
