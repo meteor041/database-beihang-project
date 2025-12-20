@@ -5,6 +5,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from db import db_manager
+from media import normalize_images_for_storage, parse_json_array, to_public_url
 
 item_bp = Blueprint('item', __name__)
 
@@ -38,6 +39,7 @@ def create_item():
         images = data.get('images', [])
         if len(images) > 9:
             return jsonify({'error': 'Maximum 9 images allowed'}), 400
+        images = normalize_images_for_storage(images)
         
         # 插入商品
         insert_sql = """
@@ -191,10 +193,8 @@ def get_items():
 
         # 处理图片JSON
         for item in items:
-            if item['images']:
-                item['images'] = json.loads(item['images'])
-            else:
-                item['images'] = []
+            images = parse_json_array(item.get('images'))
+            item['images'] = [to_public_url(img, request.host_url) for img in images]
 
         # 获取总数
         count_sql = f"""
@@ -372,10 +372,8 @@ def search_items():
 
         # 处理图片JSON
         for item in items:
-            if item['images']:
-                item['images'] = json.loads(item['images'])
-            else:
-                item['images'] = []
+            images = parse_json_array(item.get('images'))
+            item['images'] = [to_public_url(img, request.host_url) for img in images]
 
         # 获取总数用于分页
         count_sql = f"""
@@ -425,10 +423,8 @@ def get_item(item_id):
         item = items[0]
 
         # 处理图片JSON
-        if item['images']:
-            item['images'] = json.loads(item['images'])
-        else:
-            item['images'] = []
+        images = parse_json_array(item.get('images'))
+        item['images'] = [to_public_url(img, request.host_url) for img in images]
 
         return jsonify({'item': item}), 200
 
@@ -472,7 +468,8 @@ def update_item(item_id):
                     return jsonify({'error': 'Maximum 9 images allowed'}), 400
                 
                 if field == 'images':
-                    update_data[field] = json.dumps(data[field]) if data[field] else None
+                    normalized = normalize_images_for_storage(data[field])
+                    update_data[field] = json.dumps(normalized) if normalized else None
                 else:
                     update_data[field] = data[field]
         
@@ -593,10 +590,8 @@ def get_user_items(user_id):
 
         # 处理图片JSON
         for item in items:
-            if item['images']:
-                item['images'] = json.loads(item['images'])
-            else:
-                item['images'] = []
+            images = parse_json_array(item.get('images'))
+            item['images'] = [to_public_url(img, request.host_url) for img in images]
 
         return jsonify({'items': items}), 200
 

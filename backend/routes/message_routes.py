@@ -4,6 +4,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from db import db_manager
+from media import parse_json_array, to_public_url
 
 message_bp = Blueprint('message', __name__)
 
@@ -98,11 +99,8 @@ def get_conversations(user_id):
         
         # 处理图片JSON
         for conv in conversations:
-            if conv['item_images']:
-                import json
-                conv['item_images'] = json.loads(conv['item_images'])
-            else:
-                conv['item_images'] = []
+            images = parse_json_array(conv.get('item_images'))
+            conv['item_images'] = [to_public_url(img, request.host_url) for img in images]
         
         return jsonify({'conversations': conversations}), 200
         

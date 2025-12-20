@@ -170,6 +170,9 @@ test/*.pyc
 logs/
 *.log
 
+# Uploaded files (runtime)
+backend/uploads/
+
 # Coverage reports
 htmlcov/
 .coverage

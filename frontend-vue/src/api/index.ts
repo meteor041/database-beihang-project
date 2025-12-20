@@ -75,8 +75,27 @@ const api = axios.create({
   }
 })
 
+// 上传专用axios实例（避免默认JSON Content-Type 影响 multipart/form-data）
+const uploadApi = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api',
+  timeout: 10000
+})
+
 // 请求拦截器
 api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
+  }
+)
+
+uploadApi.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token')
     if (token) {
@@ -99,6 +118,28 @@ api.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+uploadApi.interceptors.response.use(
+  (response) => {
+    return response.data
+  },
+  (error) => {
+    console.error('Upload API Error:', error)
+    return Promise.reject(error)
+  }
+)
+
+interface UploadImagesResponse {
+  paths: string[]
+}
+
+export const uploadAPI = {
+  uploadItemImages: (files: File[]): Promise<UploadImagesResponse> => {
+    const formData = new FormData()
+    files.forEach((file) => formData.append('files', file))
+    return uploadApi.post('/uploads/items', formData)
+  }
+}
 
 // 用户相关API
 export const userAPI = {

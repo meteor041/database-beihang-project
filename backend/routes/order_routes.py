@@ -4,6 +4,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from db import db_manager
+from media import parse_json_array, to_public_url
 
 order_bp = Blueprint('order', __name__)
 
@@ -120,12 +121,8 @@ def get_order(order_id):
         
         order = orders[0]
         
-        # 处理图片JSON
-        if order['item_images']:
-            import json
-            order['item_images'] = json.loads(order['item_images'])
-        else:
-            order['item_images'] = []
+        images = parse_json_array(order.get('item_images'))
+        order['item_images'] = [to_public_url(img, request.host_url) for img in images]
         
         return jsonify({'order': order}), 200
         
@@ -178,11 +175,8 @@ def get_user_orders(user_id):
         
         # 处理图片JSON
         for order in orders:
-            if order['item_images']:
-                import json
-                order['item_images'] = json.loads(order['item_images'])
-            else:
-                order['item_images'] = []
+            images = parse_json_array(order.get('item_images'))
+            order['item_images'] = [to_public_url(img, request.host_url) for img in images]
 
         # 获取总数用于分页
         count_sql = f"""

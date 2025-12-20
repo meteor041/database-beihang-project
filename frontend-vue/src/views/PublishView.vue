@@ -307,7 +307,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { itemAPI } from '@/api'
+import { itemAPI, uploadAPI } from '@/api'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules, type UploadFile } from 'element-plus'
 import {
   Plus, Document, EditPen, Location, Reading, Picture, PictureFilled,
@@ -336,6 +336,7 @@ const userStore = useUserStore()
 
 const formRef = ref<FormInstance>()
 const uploadRef = ref()
+const imageFiles = ref<File[]>([])
 
 const form = ref<PublishForm>({
   title: '',
@@ -432,22 +433,20 @@ const handleImageChange = (file: UploadFile): void => {
     return
   }
 
-  // 读取图片为base64
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    if (e.target?.result) {
-      form.value.images.push(e.target.result as string)
-    }
-  }
-  reader.onerror = () => {
-    ElMessage.error('图片读取失败')
-  }
-  reader.readAsDataURL(rawFile)
+  // 只用于本地预览：不要转成base64存数据库
+  const previewUrl = URL.createObjectURL(rawFile)
+  form.value.images.push(previewUrl)
+  imageFiles.value.push(rawFile)
 }
 
 // 删除图片
 const removeImage = (index: number): void => {
+  const previewUrl = form.value.images[index]
+  if (previewUrl) {
+    URL.revokeObjectURL(previewUrl)
+  }
   form.value.images.splice(index, 1)
+  imageFiles.value.splice(index, 1)
 }
 
 // 提交表单
@@ -473,6 +472,9 @@ const handleSubmit = async (): Promise<void> => {
 
     loading.value = true
 
+    // 先上传图片，拿到后端可访问的路径（数组）
+    const uploadRes = await uploadAPI.uploadItemImages(imageFiles.value)
+
     const publishData = {
       user_id: userStore.currentUser.user_id,
       title: form.value.title.trim(),
@@ -482,7 +484,7 @@ const handleSubmit = async (): Promise<void> => {
       condition_level: form.value.condition_level as ConditionLevel,
       location: form.value.location.trim(),
       description: form.value.description.trim(),
-      images: form.value.images
+      images: uploadRes.paths || []
     }
 
     const response = await itemAPI.createItem(publishData)
@@ -513,7 +515,9 @@ const handleReset = async (): Promise<void> => {
     })
 
     formRef.value?.resetFields()
+    form.value.images.forEach((url) => URL.revokeObjectURL(url))
     form.value.images = []
+    imageFiles.value = []
     ElMessage.success('表单已重置')
   } catch {
     // 用户取消

@@ -4,6 +4,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from db import db_manager
+from media import parse_json_array, to_public_url
 
 wishlist_bp = Blueprint('wishlist', __name__)
 
@@ -122,11 +123,8 @@ def get_wishlist(user_id):
         
         # 处理图片JSON
         for item in wishlist_items:
-            if item['images']:
-                import json
-                item['images'] = json.loads(item['images'])
-            else:
-                item['images'] = []
+            images = parse_json_array(item.get('images'))
+            item['images'] = [to_public_url(img, request.host_url) for img in images]
         
         # 获取总数
         count_sql = f"""

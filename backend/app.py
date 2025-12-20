@@ -19,6 +19,7 @@ from routes.message_routes import message_bp
 from routes.wishlist_routes import wishlist_bp
 from routes.address_routes import address_bp
 from routes.review_routes import review_bp
+from routes.upload_routes import upload_bp
 
 # ============================================
 # 订单超时自动取消任务
@@ -99,6 +100,7 @@ class CustomJSONProvider(DefaultJSONProvider):
 app = Flask(__name__)
 app.json = CustomJSONProvider(app)  # 使用自定义JSON编码器
 app.config['JSON_AS_ASCII'] = False  # 支持中文字符
+app.config['MAX_CONTENT_LENGTH'] = 60 * 1024 * 1024  # 允许最多约60MB上传（9*5MB + 余量）
 
 # 配置CORS,允许所有来源(开发环境)
 CORS(app,
@@ -115,6 +117,7 @@ app.register_blueprint(message_bp, url_prefix='/api/messages')
 app.register_blueprint(wishlist_bp, url_prefix='/api/wishlist')
 app.register_blueprint(address_bp, url_prefix='/api/addresses')
 app.register_blueprint(review_bp, url_prefix='/api/reviews')
+app.register_blueprint(upload_bp, url_prefix='/api/uploads')
 
 @app.route('/')
 def index():

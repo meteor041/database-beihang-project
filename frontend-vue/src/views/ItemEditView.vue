@@ -168,7 +168,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { itemAPI } from '@/api'
+import { itemAPI, uploadAPI } from '@/api'
 import type { Item, Category } from '@/types'
 import { ElMessage } from 'element-plus'
 
@@ -183,6 +183,8 @@ const submitting = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
+const newImageFiles = ref<File[]>([])
+const newImagePreviewUrls = ref<string[]>([])
 
 interface EditForm {
   title: string
@@ -279,19 +281,25 @@ const handleImageUpload = (event: Event): void => {
       return
     }
 
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      if (e.target?.result) {
-        form.value.images.push(e.target.result as string)
-      }
-    }
-    reader.readAsDataURL(file)
+    const previewUrl = URL.createObjectURL(file)
+    form.value.images.push(previewUrl)
+    newImageFiles.value.push(file)
+    newImagePreviewUrls.value.push(previewUrl)
   })
 
   target.value = ''
 }
 
 const removeImage = (index: number): void => {
+  const url = form.value.images[index]
+  if (url?.startsWith('blob:')) {
+    const blobIndex = newImagePreviewUrls.value.indexOf(url)
+    if (blobIndex !== -1) {
+      URL.revokeObjectURL(url)
+      newImagePreviewUrls.value.splice(blobIndex, 1)
+      newImageFiles.value.splice(blobIndex, 1)
+    }
+  }
   form.value.images.splice(index, 1)
 }
 
@@ -341,6 +349,24 @@ const handleSubmit = async (): Promise<void> => {
   successMessage.value = ''
 
   try {
+    let uploadedPaths: string[] = []
+    if (newImageFiles.value.length > 0) {
+      const uploadRes = await uploadAPI.uploadItemImages(newImageFiles.value)
+      uploadedPaths = uploadRes.paths || []
+    }
+
+    let uploadIndex = 0
+    const finalImages = form.value.images
+      .map((url) => {
+        if (url.startsWith('blob:')) {
+          const p = uploadedPaths[uploadIndex]
+          uploadIndex += 1
+          return p || ''
+        }
+        return url
+      })
+      .filter(Boolean)
+
     const updateData: any = {
       title: form.value.title.trim(),
       price: parseFloat(form.value.price),
@@ -348,11 +374,15 @@ const handleSubmit = async (): Promise<void> => {
       condition_level: form.value.condition_level,
       location: form.value.location.trim(),
       description: form.value.description.trim(),
-      images: form.value.images,
+      images: finalImages,
       user_id: userStore.currentUser?.user_id
     }
 
     await itemAPI.updateItem(item.value.item_id, updateData)
+
+    newImagePreviewUrls.value.forEach((u) => URL.revokeObjectURL(u))
+    newImageFiles.value = []
+    newImagePreviewUrls.value = []
 
     successMessage.value = '商品更新成功！'
     ElMessage.success('商品更新成功！')
