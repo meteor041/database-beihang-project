@@ -33,8 +33,9 @@ const isAuthPage = computed(() => {
 })
 
 // 初始化
-onMounted(() => {
+onMounted(async () => {
   userStore.initUser()
+  await userStore.refreshUserInfo()
 })
 </script>
 

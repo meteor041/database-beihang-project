@@ -14,7 +14,7 @@
             <p class="real-name">{{ currentUser?.real_name }}</p>
             <div class="credit-badge">
               <el-icon><Medal /></el-icon>
-              <span>信用分: {{ currentUser?.credit_score || 100 }}</span>
+              <span>信用分: {{ currentUser?.credit_score ?? 80 }}</span>
             </div>
           </div>
         </div>

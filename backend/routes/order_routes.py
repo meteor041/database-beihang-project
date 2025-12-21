@@ -275,7 +275,7 @@ def update_order_status(order_id):
         # 如果订单完成，更新用户信用分
         if new_status == 'completed':
             # 买家和卖家都增加信用分
-            update_credit_sql = "UPDATE user SET credit_score = LEAST(100, credit_score + 5) WHERE user_id IN (%s, %s)"
+            update_credit_sql = "UPDATE user SET credit_score = LEAST(100, COALESCE(credit_score, 80) + 1) WHERE user_id IN (%s, %s)"
             db_manager.execute_update(update_credit_sql, (order['buyer_id'], order['seller_id']))
         
         return jsonify({'message': 'Order status updated successfully'}), 200

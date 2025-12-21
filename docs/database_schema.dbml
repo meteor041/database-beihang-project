@@ -20,7 +20,7 @@ Table user {
   phone varchar(11) [not null, note: '手机号']
   email varchar(100) [not null, note: '邮箱']
   avatar varchar(255) [note: '头像URL']
-  credit_score int [default: 100, note: '信用评分(0-100)']
+  credit_score int [default: 80, note: '信用评分(0-100)']
   registration_date datetime [default: `CURRENT_TIMESTAMP`, note: '注册时间']
   last_login datetime [note: '最后登录时间']
   status user_status [default: 'active', note: '账户状态']

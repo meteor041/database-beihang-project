@@ -11,7 +11,7 @@ CREATE TABLE user (
     phone VARCHAR(11) NOT NULL COMMENT '手机号',
     email VARCHAR(100) NOT NULL COMMENT '邮箱',
     avatar VARCHAR(255) DEFAULT NULL COMMENT '头像URL',
-    credit_score INT DEFAULT 100 COMMENT '信用评分',
+    credit_score INT DEFAULT 80 COMMENT '信用评分',
     registration_date DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间',
     last_login DATETIME DEFAULT NULL COMMENT '最后登录时间',
     status ENUM('active', 'frozen', 'deleted') DEFAULT 'active' COMMENT '账户状态',
@@ -232,7 +232,7 @@ INSERT INTO category (category_name, parent_category_id, description, sort_order
 -- ============================================
 
 -- 存储过程1: 完成订单
--- 功能: 将订单状态改为completed，并给买卖双方各加5分信用分
+-- 功能: 将订单状态改为completed，并给买卖双方各加1分信用分
 DELIMITER //
 CREATE PROCEDURE sp_complete_order(IN p_order_id INT)
 BEGIN
@@ -255,14 +255,14 @@ BEGIN
     SET order_status = 'completed', complete_time = NOW()
     WHERE order_id = p_order_id;
 
-    -- 给买家加5分信用分（不超过100）
+    -- 给买家加1分信用分（不超过100）
     UPDATE user
-    SET credit_score = LEAST(100, credit_score + 5)
+    SET credit_score = LEAST(100, credit_score + 1)
     WHERE user_id = v_buyer_id;
 
-    -- 给卖家加5分信用分（不超过100）
+    -- 给卖家加1分信用分（不超过100）
     UPDATE user
-    SET credit_score = LEAST(100, credit_score + 5)
+    SET credit_score = LEAST(100, credit_score + 1)
     WHERE user_id = v_seller_id;
 END //
 DELIMITER ;
@@ -445,11 +445,11 @@ BEGIN
 
     -- 根据评分计算信用分变化
     SET v_credit_change = CASE NEW.rating
-        WHEN 5 THEN 3   -- 5星好评 +3分
-        WHEN 4 THEN 1   -- 4星好评 +1分
-        WHEN 3 THEN 0   -- 3星中评 不变
-        WHEN 2 THEN -2  -- 2星差评 -2分
-        WHEN 1 THEN -5  -- 1星差评 -5分
+        WHEN 5 THEN 3    -- 5星好评 +3分
+        WHEN 4 THEN 1    -- 4星好评 +1分
+        WHEN 3 THEN 0    -- 3星中评 不变
+        WHEN 2 THEN -3   -- 2星差评 -3分
+        WHEN 1 THEN -10  -- 1星差评 -10分
         ELSE 0
     END;
 
@@ -467,9 +467,9 @@ CREATE TRIGGER trg_before_user_insert
 BEFORE INSERT ON user
 FOR EACH ROW
 BEGIN
-    -- 确保新用户信用分为100
+    -- 确保新用户信用分为80
     IF NEW.credit_score IS NULL THEN
-        SET NEW.credit_score = 100;
+        SET NEW.credit_score = 80;
     END IF;
 
     -- 设置注册时间

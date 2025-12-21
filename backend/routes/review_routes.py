@@ -80,19 +80,19 @@ def create_review():
         ))
 
         # 根据评分更新被评价者的信用分
-        # 5分: +3, 4分: +1, 3分: 0, 2分: -2, 1分: -5
-        credit_change = {5: 3, 4: 1, 3: 0, 2: -2, 1: -5}
+        # 1分: -10, 2分: -3, 3分: 0, 4分: +1, 5分: +3
+        credit_change = {5: 3, 4: 1, 3: 0, 2: -3, 1: -10}
         change = credit_change.get(rating, 0)
 
         if change != 0:
             if change > 0:
                 update_credit_sql = """
-                UPDATE user SET credit_score = LEAST(100, credit_score + %s)
+                UPDATE user SET credit_score = LEAST(100, COALESCE(credit_score, 80) + %s)
                 WHERE user_id = %s
                 """
             else:
                 update_credit_sql = """
-                UPDATE user SET credit_score = GREATEST(0, credit_score + %s)
+                UPDATE user SET credit_score = GREATEST(0, COALESCE(credit_score, 80) + %s)
                 WHERE user_id = %s
                 """
             db_manager.execute_update(update_credit_sql, (change, reviewee_id))

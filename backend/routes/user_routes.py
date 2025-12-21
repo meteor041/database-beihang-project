@@ -7,6 +7,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from db import db_manager
 
 user_bp = Blueprint('user', __name__)
+INITIAL_CREDIT_SCORE = 80
 
 def validate_email(email):
     """验证邮箱格式"""
@@ -61,8 +62,8 @@ def register():
         
         # 插入新用户
         insert_sql = """
-        INSERT INTO user (student_id, username, password, real_name, phone, email, avatar)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO user (student_id, username, password, real_name, phone, email, avatar, credit_score)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """
         hashed_password = db_manager.hash_password(data['password'])
         
@@ -73,7 +74,8 @@ def register():
             data['real_name'],
             data['phone'],
             data['email'],
-            data.get('avatar')
+            data.get('avatar'),
+            INITIAL_CREDIT_SCORE
         ))
         
         return jsonify({
@@ -305,7 +307,7 @@ def update_credit(user_id):
         
         sql = """
         UPDATE user 
-        SET credit_score = GREATEST(0, LEAST(100, credit_score + %s))
+        SET credit_score = GREATEST(0, LEAST(100, COALESCE(credit_score, 80) + %s))
         WHERE user_id = %s
         """
         rows_affected = db_manager.execute_update(sql, (change, user_id))

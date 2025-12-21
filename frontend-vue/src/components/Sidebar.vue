@@ -62,7 +62,7 @@
           <transition name="fade">
             <div v-show="!isCollapsed" class="user-details">
               <div class="username">{{ currentUser?.username }}</div>
-              <div class="user-credit">信用分: {{ currentUser?.credit_score || 100 }}</div>
+              <div class="user-credit">信用分: {{ currentUser?.credit_score ?? 80 }}</div>
             </div>
           </transition>
         </div>

@@ -1,0 +1,16 @@
+#
+# Backend Python dependencies (Python 3.6 compatible)
+#
+# NOTE: Python 3.6 is EOL. These versions are pinned to avoid installing
+# newer transitive dependencies that dropped Python 3.6 support.
+#
+Flask==2.0.3
+Flask-Cors==3.0.10
+PyMySQL==1.0.2
+
+# Transitive pins for Flask 2.0.x on Python 3.6
+Werkzeug==2.0.3
+Jinja2==3.0.3
+itsdangerous==2.0.1
+click==8.0.4
+MarkupSafe==2.0.1

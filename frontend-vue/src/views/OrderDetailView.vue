@@ -264,7 +264,7 @@
 
         <!-- 操作按钮 -->
         <div class="actions">
-          <button @click="router.back()" class="btn-secondary">
+          <button @click="handleBack" class="btn-secondary">
             返回
           </button>
           <button
@@ -310,7 +310,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { orderAPI, reviewAPI } from '@/api'
 import type { Review } from '@/api'
@@ -350,6 +350,9 @@ const reviewForm = ref({
 const ORDER_TIMEOUT_MINUTES = 60 // 1小时超时
 const timeoutRemaining = ref(0) // 剩余秒数
 let countdownTimer: ReturnType<typeof setInterval> | null = null
+let countdownRefreshTimer: ReturnType<typeof setTimeout> | null = null
+let leaving = false
+let loadOrderRequestId = 0
 
 // 计算并更新剩余时间
 const updateTimeoutRemaining = () => {
@@ -403,8 +406,10 @@ const startCountdown = () => {
       if (timeoutRemaining.value <= 0) {
         stopCountdown()
         // 延迟几秒后刷新订单，让后端有时间处理
-        setTimeout(() => {
-          loadOrder()
+        countdownRefreshTimer = setTimeout(() => {
+          if (!leaving) {
+            loadOrder()
+          }
         }, 3000)
       }
     }, 1000)
@@ -416,6 +421,10 @@ const stopCountdown = () => {
   if (countdownTimer) {
     clearInterval(countdownTimer)
     countdownTimer = null
+  }
+  if (countdownRefreshTimer) {
+    clearTimeout(countdownRefreshTimer)
+    countdownRefreshTimer = null
   }
 }
 
@@ -523,16 +532,18 @@ const normaliseImages = (images: unknown): string[] => {
 }
 
 const loadOrder = async (): Promise<void> => {
+  if (leaving) return
   const orderId = route.params.id
   if (!orderId) {
-    ElMessage.error('缺少订单ID')
-    router.back()
+    router.replace('/profile?tab=orders')
     return
   }
 
+  const requestId = ++loadOrderRequestId
   loading.value = true
   try {
     const response = await orderAPI.getOrder(Number(orderId))
+    if (leaving || requestId !== loadOrderRequestId) return
     const raw = response.order as any
 
     if (!raw) {
@@ -564,6 +575,8 @@ const loadOrder = async (): Promise<void> => {
     // 如果是待支付订单，启动倒计时
     if (detail.order_status === 'pending_payment') {
       startCountdown()
+    } else {
+      stopCountdown()
     }
 
     // 如果订单已完成，加载评价信息
@@ -571,11 +584,20 @@ const loadOrder = async (): Promise<void> => {
       await Promise.all([loadReviews(), checkReviewStatus()])
     }
   } catch (error) {
+    if (leaving || requestId !== loadOrderRequestId) return
     console.error('Failed to load order:', error)
     ElMessage.error('加载订单失败')
   } finally {
-    loading.value = false
+    if (!leaving && requestId === loadOrderRequestId) {
+      loading.value = false
+    }
   }
+}
+
+const handleBack = (): void => {
+  leaving = true
+  stopCountdown()
+  router.push('/profile?tab=orders')
 }
 
 const handleCancel = async (): Promise<void> => {
@@ -735,10 +757,10 @@ const submitReview = async (): Promise<void> => {
     ElMessage.success('评价提交成功！')
     hasReviewed.value = true
 
-    // 重新加载评价列表
-    await loadReviews()
+    // 刷新订单信息（包含买卖双方信用分）及评价列表
+    await loadOrder()
 
-    // 刷新用户信息以更新信用分显示
+    // 刷新当前用户信息（用于同步本地缓存中的信用分等字段）
     await userStore.refreshUserInfo()
 
     // 重置表单
@@ -764,8 +786,14 @@ onMounted(async () => {
   loadOrder()
 })
 
+onBeforeRouteLeave(() => {
+  leaving = true
+  stopCountdown()
+})
+
 // 组件卸载时清理定时器
 onUnmounted(() => {
+  leaving = true
   stopCountdown()
 })
 </script>
